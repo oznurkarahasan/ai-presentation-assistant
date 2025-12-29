@@ -92,3 +92,65 @@ Press Ctrl + C in the terminal, or run:
 ```bash
 docker-compose down
 ```
+
+### 6. Database Schema (PostgreSQL + pgvector)
+
+The system relies on a **7-Table Relational Structure** designed for data integrity and AI compatibility.
+
+| Table Name                  | Description                    | Key Features                                                        |
+| :-------------------------- | :----------------------------- | :------------------------------------------------------------------ |
+| **`users`**                 | Central identity table.        | Supports Age Analysis (`birth_date`). Root of all relations.        |
+| **`user_preferences`**      | User-specific settings.        | Stores `ideal_presentation_time`, `language`. (1:1 Relation).       |
+| **`presentations`**         | Metadata for uploaded files.   | Supports **Guest Mode** (`user_id` is nullable, uses `session_id`). |
+| **`slides`**                | The "Brain" of the RAG system. | Stores **Vector Embeddings (1536 dim)** for AI search.              |
+| **`notes`**                 | User-specific slide notes.     | Strictly for registered users (`user_id` NOT null).                 |
+| **`presentation_analyses`** | AI-generated report card.      | JSON-based storage for flexible AI metrics.                         |
+| **`presentation_sessions`** | Performance logs.              | Tracks `practice` vs `live` sessions and duration.                  |
+
+> **Security Note:** All relationships utilize `CASCADE DELETE`. If a user is deleted, all their data (slides, notes, sessions) is automatically wiped to prevent orphan data.
+
+### 7. Project Roadmap & Status
+
+## Phase 1: Infrastructure & Architecture
+
+- [x] Docker environment setup (FastAPI, Next.js, Postgres).
+- [x] Database Schema Design (7 Tables, 3NF Normalized).
+- [x] Vector Database integration (`pgvector` setup).
+- [x] Cascade Delete & Integrity Rules implementation.
+- [x] Guest User vs Registered User logic definition.
+
+## Phase 2: Authentication
+
+- [ ] Pydantic Schemas (Register/Login validation).
+- [ ] Password Hashing (bcrypt).
+- [ ] JWT Token generation & handling.
+- [ ] Login/Register API Endpoints.
+- [ ] Current User dependency injection.
+
+## Phase 3: File Ingestion
+
+- [ ] PDF & PPTX Parsing Logic.
+- [ ] File Upload API Endpoint.
+- [ ] Text Extraction & Cleaning.
+- [ ] Vector Embedding Generation (OpenAI).
+- [ ] Saving to Database (Slides + Vectors).
+
+## Phase 4: Core AI Services
+
+- [ ] RAG Engine (Semantic Search).
+- [ ] Presentation Analysis Service (GPT-4o).
+- [ ] Real-time Speech-to-Text (Whisper).
+- [ ] Auto-Slide Switching Logic.
+
+## Phase 5: Frontend Integration
+
+- [ ] Authentication Pages (Login/Register).
+- [ ] Dashboard & Library.
+- [ ] Upload & Progress Bar.
+- [ ] Live Presentation Mode (WebSocket).
+
+## Phase 6: Optimization & Polish
+
+- [ ] Guest Data Cleanup (Cron Job).
+- [ ] Error Handling & Logging.
+- [ ] Deployment Configuration.
