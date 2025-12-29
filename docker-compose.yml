@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # 1. DATABASE (PostgreSQL + pgvector)
+  db:
+    image: ankane/pgvector:latest
+    container_name: presentation_db
+    environment:
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
+      POSTGRES_DB: ${DB_NAME:-presentation_assistant_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - presentation_network
+
+  # 2. BACKEND (FastAPI)
+  backend:
+    build: ./backend
+    container_name: presentation_backend
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app  # For Hot Reloading
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://${DB_USER:-admin}:${DB_PASSWORD:-admin}@db:5432/${DB_NAME:-presentation_assistant_db}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      - db
+    networks:
+      - presentation_network
+
+  # 3. FRONTEND (Next.js)
+  frontend:
+    build: ./frontend
+    container_name: presentation_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Prevent overwriting node_modules inside container
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - HOSTNAME=0.0.0.0
+    depends_on:
+      - backend
+    networks:
+      - presentation_network
+
+volumes:
+  postgres_data:
+
+networks:
+  presentation_network:
+    driver: bridge
