@@ -50,7 +50,30 @@ docker-compose up --build
 
 Wait until you see the logs "Application startup complete" and "Ready in ... ms".
 
-### 4. Access Points
+### 4. Local Development Setup (For Coding & IntelliSense)
+
+To fix missing imports in VS Code and enable auto-completion:
+
+1.  **Navigate to backend:**
+    ```bash
+    cd backend
+    ```
+2.  **Create Virtual Environment:**
+    ```bash
+    python -m venv venv
+    ```
+3.  **Activate Environment:**
+    - **Windows:** `.\venv\Scripts\activate`
+    - **Mac/Linux:** `source venv/bin/activate`
+4.  **Install Dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+5.  **VS Code Configuration:**
+    - Press `Ctrl + Shift + P` -> `Python: Select Interpreter`
+    - Select the interpreter inside `./backend/venv/Scripts/python.exe`
+
+### 5. Access Points
 
 Once the system is running, you can access:
 
@@ -62,7 +85,7 @@ Once the system is running, you can access:
 
     Database: Connect via any SQL client (DBeaver, TablePlus) using localhost:5432 (User/Pass: admin/admin).
 
-### 5. Development Workflow
+### 6. Development Workflow
 
 When should I run --build?
 Only if you modify:
@@ -71,7 +94,7 @@ Only if you modify:
 - frontend/package.json (Adding new Node packages)
 - Dockerfile or docker-compose.yml
 
-# if you add new python libraries please dont forget to add to requirements.txt
+Important: if you add new python libraries please dont forget to add to requirements.txt
 
 ```bash
 cd backend
@@ -93,7 +116,7 @@ Press Ctrl + C in the terminal, or run:
 docker-compose down
 ```
 
-### 6. Database Schema (PostgreSQL + pgvector)
+### 7. Database Schema (PostgreSQL + pgvector)
 
 The system relies on a **7-Table Relational Structure** designed for data integrity and AI compatibility.
 
@@ -108,49 +131,3 @@ The system relies on a **7-Table Relational Structure** designed for data integr
 | **`presentation_sessions`** | Performance logs.              | Tracks `practice` vs `live` sessions and duration.                  |
 
 > **Security Note:** All relationships utilize `CASCADE DELETE`. If a user is deleted, all their data (slides, notes, sessions) is automatically wiped to prevent orphan data.
-
-### 7. Project Roadmap & Status
-
-## Phase 1: Infrastructure & Architecture
-
-- [x] Docker environment setup (FastAPI, Next.js, Postgres).
-- [x] Database Schema Design (7 Tables, 3NF Normalized).
-- [x] Vector Database integration (`pgvector` setup).
-- [x] Cascade Delete & Integrity Rules implementation.
-- [x] Guest User vs Registered User logic definition.
-
-## Phase 2: Authentication
-
-- [ ] Pydantic Schemas (Register/Login validation).
-- [ ] Password Hashing (bcrypt).
-- [ ] JWT Token generation & handling.
-- [ ] Login/Register API Endpoints.
-- [ ] Current User dependency injection.
-
-## Phase 3: File Ingestion
-
-- [ ] PDF & PPTX Parsing Logic.
-- [ ] File Upload API Endpoint.
-- [ ] Text Extraction & Cleaning.
-- [ ] Vector Embedding Generation (OpenAI).
-- [ ] Saving to Database (Slides + Vectors).
-
-## Phase 4: Core AI Services
-
-- [ ] RAG Engine (Semantic Search).
-- [ ] Presentation Analysis Service (GPT-4o).
-- [ ] Real-time Speech-to-Text (Whisper).
-- [ ] Auto-Slide Switching Logic.
-
-## Phase 5: Frontend Integration
-
-- [ ] Authentication Pages (Login/Register).
-- [ ] Dashboard & Library.
-- [ ] Upload & Progress Bar.
-- [ ] Live Presentation Mode (WebSocket).
-
-## Phase 6: Optimization & Polish
-
-- [ ] Guest Data Cleanup (Cron Job).
-- [ ] Error Handling & Logging.
-- [ ] Deployment Configuration.
