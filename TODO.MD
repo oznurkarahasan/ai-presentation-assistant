@@ -10,11 +10,11 @@
 
 ## Phase 2: Authentication
 
-- [ ] Pydantic Schemas (Register/Login validation).
-- [ ] Password Hashing (bcrypt).
-- [ ] JWT Token generation & handling.
-- [ ] Login/Register API Endpoints.
-- [ ] Current User dependency injection.
+- [x] Pydantic Schemas (Register/Login validation).
+- [x] Password Hashing (bcrypt).
+- [x] JWT Token generation & handling.
+- [x] Login/Register API Endpoints.
+- [x] Current User dependency injection.
 
 ## Phase 3: File Ingestion
 

@@ -8,9 +8,9 @@ services:
     environment:
       POSTGRES_USER: ${DB_USER:-admin}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-admin}
-      POSTGRES_DB: ${DB_NAME:-presentation_assistant_db}
+      POSTGRES_DB: ${DB_NAME:-presentation_db}
     ports:
-      - "5432:5432"
+      - "5435:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -26,7 +26,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://${DB_USER:-admin}:${DB_PASSWORD:-admin}@db:5432/${DB_NAME:-presentation_assistant_db}
+      - DATABASE_URL=postgresql+asyncpg://${DB_USER:-admin}:${DB_PASSWORD:-admin}@db:5432/${DB_NAME:-presentation_db}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - db

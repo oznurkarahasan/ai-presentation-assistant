@@ -131,3 +131,26 @@ The system relies on a **7-Table Relational Structure** designed for data integr
 | **`presentation_sessions`** | Performance logs.              | Tracks `practice` vs `live` sessions and duration.                  |
 
 > **Security Note:** All relationships utilize `CASCADE DELETE`. If a user is deleted, all their data (slides, notes, sessions) is automatically wiped to prevent orphan data.
+
+### Shortcuts
+
+- To access the database via Docker
+
+```bash
+docker exec -it presentation_db psql -U admin -d presentation_db
+```
+
+- To delete and reinstall in Docker
+
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+- Pyhton virtual environment
+
+```bash
+cd backend
+.\venv\Scripts\activate
+pip install -r requirements.txt
+```

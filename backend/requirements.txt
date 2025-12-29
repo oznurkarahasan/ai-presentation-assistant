@@ -6,4 +6,11 @@ pgvector
 python-dotenv
 openai
 pydantic
+pydantic-settings
 requests
+bcrypt==4.0.1
+passlib[bcrypt]
+python-jose[cryptography]
+python-multipart
+email-validator
+asyncpg
