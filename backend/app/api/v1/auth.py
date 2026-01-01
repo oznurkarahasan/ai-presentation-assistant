@@ -3,11 +3,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-
+from jose import jwt, JWTError
+from app.models.presentation import User
 from app.core.database import AsyncSessionLocal
 from app.core import security
 from app.models import presentation as models
 from app.schemas import auth as schemas
+from app.core.config import settings
 
 # Define the API router login register endpoints
 router = APIRouter()
@@ -15,6 +17,31 @@ router = APIRouter()
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+async def get_current_user(
+    token: str = Depends(security.oauth2_scheme),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Kimlik doğrulanamadı",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+        
+    result = await db.execute(select(User).where(User.id == int(user_id)))
+    user = result.scalar_one_or_none()
+    
+    if user is None:
+        raise credentials_exception
+        
+    return user
 
 @router.post("/register", response_model=schemas.UserResponse)
 async def register(
@@ -47,7 +74,6 @@ async def register(
     return user
 
 @router.post("/login", response_model=schemas.Token)
-# Oauth2PasswordRequestForm has 'username' and 'password' fields
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)

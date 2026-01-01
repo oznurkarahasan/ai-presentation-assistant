@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     DATABASE_URL: str = "postgresql+asyncpg://admin:admin@presentation_db:5432/presentation_db"
+    OPENAI_API_KEY: str
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
 settings = Settings()
