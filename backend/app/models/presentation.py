@@ -50,6 +50,7 @@ class SessionType(str, enum.Enum):
 class StorageTier(str, enum.Enum):
     STANDARD = "standard"
     ARCHIVED = "archived"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -247,7 +248,7 @@ class ActivityLog(Base):
     entity_id = Column(Integer, nullable=True)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
-    metadata = Column(JSON, nullable=True)
+    log_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
     
     user = relationship("User")
