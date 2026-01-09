@@ -6,11 +6,11 @@ An intelligent system that analyzes real-time speech during presentations to aut
 
 This project utilizes a decoupled microservice architecture orchestrated via Docker Compose.
 
-| Service      | Technology            | Internal Port | External Port | Description                                                    |
-| :----------- | :-------------------- | :------------ | :------------ | :------------------------------------------------------------- |
-| **Backend**  | Python (FastAPI)      | `8000`        | `8000`        | Handles AI logic, RAG pipeline, and WebSocket connections.     |
-| **Frontend** | Next.js (React)       | `3000`        | `3000`        | User interface for uploading presentations and live mode.      |
-| **Database** | PostgreSQL + pgvector | `5432`        | `5432`        | Stores user data and vector embeddings for AI semantic search. |
+| Service      | Technology            | Host Port (Local) | Container Port (Docker) | Description                                                    |
+| :----------- | :-------------------- | :---------------- | :---------------------- | :------------------------------------------------------------- |
+| **Backend**  | Python (FastAPI)      | `8000`            | `8000`                  | Handles AI logic, RAG pipeline, and WebSocket connections.     |
+| **Frontend** | Next.js (React)       | `3000`            | `3000`                  | User interface for uploading presentations and live mode.      |
+| **Database** | PostgreSQL + pgvector | `5435`            | `5432`                  | Stores user data and vector embeddings for AI semantic search. |
 
 ---
 
