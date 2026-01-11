@@ -9,6 +9,9 @@ from app.core.exceptions import ValidationError
 # Allowed MIME types
 ALLOWED_MIME_TYPES = {
     "application/pdf": [b"%PDF-"],  # PDF magic bytes
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": [
+        b"PK\x03\x04"  # PPTX magic bytes (ZIP format)
+    ],
 }
 
 def validate_file_type(file_content: bytes, filename: str) -> str:
@@ -38,10 +41,10 @@ def validate_file_type(file_content: bytes, filename: str) -> str:
     if not detected_mime:
         logger.warning(f"Invalid file type detected for {filename}")
         raise ValidationError(
-            f"Invalid file type. Only PDF files are allowed. "
-            f"The uploaded file does not appear to be a valid PDF."
+            f"Invalid file type. Only PDF and PPTX files are allowed. "
+            f"The uploaded file does not appear to be a valid PDF or PPTX."
         )
-    
+
     logger.debug(f"File type validated: {detected_mime} for {filename}")
     return detected_mime
 

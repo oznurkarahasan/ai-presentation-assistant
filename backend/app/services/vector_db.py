@@ -16,13 +16,16 @@ async def save_presentation_with_slides(
     try:
         # Get file size
         file_size = os.path.getsize(file_path) if os.path.exists(file_path) else 0
-        
+
+        # Determine file type from filename
+        file_type = FileType.PPTX if file_path.endswith('.pptx') else FileType.PDF
+
         # Create presentation with ANALYZING status
         presentation = Presentation(
             title=title,
             original_filename=title,
             file_path=file_path,
-            file_type=FileType.PDF,
+            file_type=file_type,
             file_size_bytes=file_size,
             file_hash=file_hash,
             user_id=user_id,

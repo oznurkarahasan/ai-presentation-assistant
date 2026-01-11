@@ -4,7 +4,7 @@ from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
-from app.services import pdf_service, embedding_service, vector_db, file_validator
+from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator
 import os
 import shutil
 
@@ -24,12 +24,12 @@ async def upload_presentation(
     current_user = Depends(auth.get_current_user)
 ):
     logger.info(f"Upload request from user {current_user.id}: {file.filename}")
-    
+
     # Validate file extension
-    if not file.filename.endswith(".pdf"):
+    if not (file.filename.endswith(".pdf") or file.filename.endswith(".pptx")):
         logger.warning(f"Invalid file type attempted: {file.filename}")
-        raise ValidationError("Only PDF files are accepted.")
-    
+        raise ValidationError("Only PDF and PPTX files are accepted.")
+
     # Read first 512 bytes for magic byte validation
     file_header = await file.read(512)
     file.file.seek(0)
@@ -70,9 +70,15 @@ async def upload_presentation(
         
         file.file.seek(0)
 
-        # Extract text with security validation
-        slide_texts = await pdf_service.extract_text_from_pdf(file, file_size)
-        logger.info(f"Extracted {len(slide_texts)} slides from {file.filename}")
+        # Extract text based on file type (with security validation)
+        if file.filename.endswith(".pdf"):
+            slide_texts = await pdf_service.extract_text_from_pdf(file, file_size)
+            logger.info(f"Extracted {len(slide_texts)} slides from PDF")
+        elif file.filename.endswith(".pptx"):
+            slide_texts = await pptx_service.extract_text_from_pptx(file, file_size)
+            logger.info(f"Extracted {len(slide_texts)} slides from PPTX")
+        else:
+            raise ValidationError("Unsupported file type")
 
         # Generate embeddings in parallel (10x faster!)
         logger.info(f"Generating embeddings for {len(slide_texts)} slides...")

@@ -15,5 +15,6 @@ python-multipart
 email-validator
 asyncpg
 pypdf
+python-pptx
 tiktoken
 loguru
