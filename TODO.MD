@@ -26,8 +26,8 @@
 
 ## Phase 4: Core AI Services
 
-- [ ] RAG Engine (Semantic Search).
-- [ ] Presentation Analysis Service (GPT-4o).
+- [x] RAG Engine (Semantic Search).
+- [x] Presentation Analysis Service (GPT-4o).
 - [ ] Real-time Speech-to-Text (Whisper).
 - [ ] Auto-Slide Switching Logic.
 
@@ -84,3 +84,13 @@
   - CDN integration for file serving
   - Automatic tier migration (Standard → Archive after 90 days)
   - Compression for large files
+
+> **Current Implementation Status:**
+>
+> [x] Authentication & User Management (JWT, bcrypt, email verification)
+> [x] PDF & PPTX Upload with magic-bytes validation, security checks, and hash tracking
+> [x] Vector Embeddings (OpenAI text-embedding-3-small, 1536 dimensions)
+> [x] RAG System (Semantic search with pgvector, GPT-4o-mini for Q&A)
+> [x] File Cleanup Policies (Failed uploads, expired guest files)
+> [ ] WebSocket for Real-time Speech (Phase 4 - In Progress)
+> [ ] Frontend Dashboard & Live Mode (Phase 5 - Planned)

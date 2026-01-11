@@ -118,19 +118,21 @@ docker-compose down
 
 ### 7. Database Schema (PostgreSQL + pgvector)
 
-The system relies on a **7-Table Relational Structure** designed for data integrity and AI compatibility.
+The system relies on a **9-Table Relational Structure** designed for data integrity, AI compatibility, and comprehensive audit logging.
 
-| Table Name                  | Description                    | Key Features                                                        |
-| :-------------------------- | :----------------------------- | :------------------------------------------------------------------ |
-| **`users`**                 | Central identity table.        | Supports Age Analysis (`birth_date`). Root of all relations.        |
-| **`user_preferences`**      | User-specific settings.        | Stores `ideal_presentation_time`, `language`. (1:1 Relation).       |
-| **`presentations`**         | Metadata for uploaded files.   | Supports **Guest Mode** (`user_id` is nullable, uses `session_id`). |
-| **`slides`**                | The "Brain" of the RAG system. | Stores **Vector Embeddings (1536 dim)** for AI search.              |
-| **`notes`**                 | User-specific slide notes.     | Strictly for registered users (`user_id` NOT null).                 |
-| **`presentation_analyses`** | AI-generated report card.      | JSON-based storage for flexible AI metrics.                         |
-| **`presentation_sessions`** | Performance logs.              | Tracks `practice` vs `live` sessions and duration.                  |
+| Table Name                  | Description                           | Key Features                                                                      |
+| :-------------------------- | :------------------------------------ | :-------------------------------------------------------------------------------- |
+| **`users`**                 | Central identity table.               | Supports Age Analysis (`birth_date`). Root of all relations.                      |
+| **`user_preferences`**      | User-specific settings.               | Stores `ideal_presentation_time`, `language`. (1:1 Relation).                     |
+| **`presentations`**         | Metadata for uploaded files.          | Supports **Guest Mode** (`user_id` nullable). PDF/PPTX with file hash & security. |
+| **`slides`**                | The "Brain" of the RAG system.        | Stores **Vector Embeddings (1536 dim)** for AI semantic search via pgvector.      |
+| **`notes`**                 | User-specific slide notes.            | Strictly for registered users (`user_id` NOT null).                               |
+| **`presentation_analyses`** | AI-generated report card.             | JSON-based storage for flexible AI metrics and feedback.                          |
+| **`presentation_sessions`** | Performance logs.                     | Tracks `practice` vs `live` sessions and duration.                                |
+| **`activity_logs`**         | System-wide audit trail.              | Logs all user actions (upload, delete, login) for security and analytics.         |
+| **`verification_tokens`**   | Email verification & password resets. | Time-limited tokens for secure user authentication flows.                         |
 
-> **Security Note:** All relationships utilize `CASCADE DELETE`. If a user is deleted, all their data (slides, notes, sessions) is automatically wiped to prevent orphan data.
+> **Security Note:** All relationships utilize `CASCADE DELETE`. If a user is deleted, all their data (slides, notes, sessions, logs) is automatically wiped to prevent orphan data.
 
 ### Shortcuts
 
