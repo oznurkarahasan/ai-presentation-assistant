@@ -8,6 +8,9 @@ Thumbs.db
 # --- DOCKER ---
 postgres_data/
 
+# --- UPLOADED FILES ---
+backend/uploaded_files/
+
 .env
 .env.local
 .env.development.local

@@ -5,7 +5,7 @@ from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
-from app.api.v1 import auth
+from app.api.v1 import auth, presentations, chat
 
 # Lifespan event to create tables and extensions
 @asynccontextmanager
@@ -33,7 +33,8 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"]) # Authentication routes modules seperated
-
+app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presentations", tags=["Presentations"])
+app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
 @app.get("/")
 async def root():
     return {"message": "AI Presentation Assistant API is running successfully."}
