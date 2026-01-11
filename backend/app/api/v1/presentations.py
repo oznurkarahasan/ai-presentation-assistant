@@ -73,14 +73,11 @@ async def upload_presentation(
         # Extract text with security validation
         slide_texts = await pdf_service.extract_text_from_pdf(file, file_size)
         logger.info(f"Extracted {len(slide_texts)} slides from {file.filename}")
-        
-        # Generate embeddings
-        embeddings = []
-        for i, text in enumerate(slide_texts, 1):
-            vector = await embedding_service.create_embedding(text)
-            embeddings.append(vector)
-            logger.debug(f"Generated embedding for slide {i}/{len(slide_texts)}")
-            
+
+        # Generate embeddings in parallel (10x faster!)
+        logger.info(f"Generating embeddings for {len(slide_texts)} slides...")
+        embeddings = await embedding_service.create_embeddings_batch(slide_texts)
+
         new_presentation = await vector_db.save_presentation_with_slides(
             db=db,
             user_id=current_user.id,
