@@ -4,7 +4,7 @@ from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
-from app.services import pdf_service, embedding_service, vector_db
+from app.services import pdf_service, embedding_service, vector_db, file_validator
 import os
 import shutil
 
@@ -29,6 +29,13 @@ async def upload_presentation(
     if not file.filename.endswith(".pdf"):
         logger.warning(f"Invalid file type attempted: {file.filename}")
         raise ValidationError("Only PDF files are accepted.")
+    
+    # Read first 512 bytes for magic byte validation
+    file_header = await file.read(512)
+    file.file.seek(0)
+    
+    # Validate file type using magic bytes (not just extension)
+    detected_mime = file_validator.validate_file_type(file_header, file.filename)
     
     # Validate file size
     file.file.seek(0, 2)  # Move to end
@@ -58,10 +65,13 @@ async def upload_presentation(
             shutil.copyfileobj(file.file, buffer)
         logger.info(f"File saved: {file_path}")
         
+        # Calculate file hash for analytics (optional)
+        file_hash = file_validator.calculate_file_hash(file_path)
+        
         file.file.seek(0)
 
-        # Extract text
-        slide_texts = await pdf_service.extract_text_from_pdf(file)
+        # Extract text with security validation
+        slide_texts = await pdf_service.extract_text_from_pdf(file, file_size)
         logger.info(f"Extracted {len(slide_texts)} slides from {file.filename}")
         
         # Generate embeddings
@@ -77,7 +87,8 @@ async def upload_presentation(
             title=file.filename,
             file_path=file_path,
             slide_texts=slide_texts,
-            embeddings=embeddings
+            embeddings=embeddings,
+            file_hash=file_hash
         )
         
         logger.info(f"Presentation uploaded successfully: ID={new_presentation.id}, User={current_user.id}")

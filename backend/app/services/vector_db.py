@@ -9,7 +9,8 @@ async def save_presentation_with_slides(
     title: str, 
     file_path: str,
     slide_texts: list[str], 
-    embeddings: list[list[float]]
+    embeddings: list[list[float]],
+    file_hash: str = None
 ):
     presentation = None
     try:
@@ -23,6 +24,7 @@ async def save_presentation_with_slides(
             file_path=file_path,
             file_type=FileType.PDF,
             file_size_bytes=file_size,
+            file_hash=file_hash,
             user_id=user_id,
             status=PresentationStatus.ANALYZING,
             slide_count=len(slide_texts),
