@@ -1,5 +1,7 @@
 from openai import AsyncOpenAI
 from app.core.config import settings
+from app.core.exceptions import EmbeddingError
+from app.core.logger import logger
 
 client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -18,5 +20,8 @@ async def create_embedding(text: str) -> list[float]:
         return response.data[0].embedding
 
     except Exception as e:
-        print(f"Embedding Hatası: {e}")
-        raise e
+        logger.error(f"Embedding generation failed: {str(e)}", exc_info=True)
+        raise EmbeddingError(
+            message="Failed to generate text embedding",
+            details=str(e)
+        )

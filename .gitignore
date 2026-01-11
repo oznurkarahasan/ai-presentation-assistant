@@ -11,6 +11,10 @@ postgres_data/
 # --- UPLOADED FILES ---
 backend/uploaded_files/
 
+# --- LOGS ---
+backend/logs/*.log
+backend/logs/*.zip
+
 .env
 .env.local
 .env.development.local
