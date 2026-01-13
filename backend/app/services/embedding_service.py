@@ -4,7 +4,26 @@ from app.core.exceptions import EmbeddingError
 from app.core.logger import logger
 import asyncio
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+# Lazy initialization of OpenAI client
+_client = None
+
+def get_client() -> AsyncOpenAI:
+    """
+    Get or create the OpenAI client instance with lazy initialization.
+    This allows proper error handling if the API key is missing or invalid.
+    """
+    global _client
+    if _client is None:
+        try:
+            _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            logger.info("OpenAI client initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAI client: {str(e)}")
+            raise EmbeddingError(
+                message="Failed to initialize OpenAI client",
+                details=str(e)
+            )
+    return _client
 
 # Batch processing configuration
 MAX_CONCURRENT_EMBEDDINGS = 10  # Process 10 embeddings at a time
@@ -14,6 +33,7 @@ async def create_embedding(text: str) -> list[float]:
     Converts text to a vector. If the text is empty, it vectorizes the word ‘empty’ instead of a space to avoid errors.
     """
     try:
+        client = get_client()
         target_text = text if text.strip() else "empty slide content"
         target_text = target_text.replace("\n", " ")
 

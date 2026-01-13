@@ -13,7 +13,6 @@ from app.core.exceptions import (
     PDFExtractionError,
     EmbeddingError,
     DatabaseError,
-    AuthenticationError,
     ResourceNotFoundError,
     ValidationError
 )
@@ -43,8 +42,9 @@ app = FastAPI(
 async def custom_exception_handler(request: Request, exc: AppBaseException):
     """Handle custom application exceptions"""
     logger.error(f"Custom Exception: {exc.message} | Details: {exc.details}")
+    status_code = getattr(exc, "status_code", status.HTTP_400_BAD_REQUEST)
     return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
+        status_code=status_code,
         content={"detail": exc.message}
     )
 

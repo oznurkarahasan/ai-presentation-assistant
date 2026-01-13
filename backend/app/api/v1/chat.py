@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
+from app.core.logger import logger
 from app.services import rag_service
 from app.models.presentation import Presentation
 
@@ -13,8 +14,10 @@ router = APIRouter()
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+
 class ChatRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=1, max_length=500, description="Question about the presentation (max 500 characters)")
 
 class ChatResponse(BaseModel):
     answer: str
@@ -51,5 +54,5 @@ async def ask_presentation(
         return response
 
     except Exception as e:
-        print(f"Chat Error: {e}")
+        logger.error(f"Chat error for presentation {presentation_id}: {e}")
         raise HTTPException(status_code=500, detail="Response generation failed.")

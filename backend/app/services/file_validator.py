@@ -2,7 +2,6 @@
 File validation service for security and integrity checks.
 """
 import hashlib
-from pathlib import Path
 from app.core.logger import logger
 from app.core.exceptions import ValidationError
 
