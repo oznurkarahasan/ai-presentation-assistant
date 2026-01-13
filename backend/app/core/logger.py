@@ -14,9 +14,7 @@ logger.remove()
 is_production = settings.ENV.lower() in ["production", "prod"]
 
 # Check if logging is enabled
-if not settings.ENABLE_LOGGING:
-    logger.info("Logging is disabled via ENABLE_LOGGING configuration")
-else:
+if settings.ENABLE_LOGGING:
     # Console output (always enabled when logging is on)
     logger.add(
         sys.stderr,

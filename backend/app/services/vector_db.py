@@ -37,7 +37,7 @@ async def save_presentation_with_slides(
         await db.flush()
 
         if len(slide_texts) != len(embeddings):
-             raise ValueError("The number of characters and vectors do not match!")
+             raise ValueError("The number of slide texts and embeddings do not match!")
         
         # Create slides with embeddings
         slide_objects = [
@@ -70,7 +70,7 @@ async def save_presentation_with_slides(
                 presentation.error_message = str(e)
                 presentation.processing_completed_at = datetime.now(timezone.utc)
                 await db.commit()
-            except:
+            except Exception:
                 pass
         
         raise e

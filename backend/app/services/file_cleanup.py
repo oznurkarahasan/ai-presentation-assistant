@@ -97,7 +97,8 @@ async def cleanup_old_files(
     
     logger.info(
         f"Cleanup {'simulation' if dry_run else 'completed'}: "
-        f"{stats['deleted_files']} files ({stats['deleted_records']} failed uploads, "
+        f"{stats['deleted_files']} files "
+        f"({stats['deleted_records']} records: {len(failed_presentations)} failed uploads, "
         f"{len(expired_guests)} expired guests), "
         f"{stats['freed_bytes'] / (1024*1024):.2f}MB freed. "
         f"User uploads are never auto-deleted."

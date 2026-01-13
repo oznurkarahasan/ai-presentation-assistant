@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, Depends, UploadFile, File, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
@@ -7,6 +7,7 @@ from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator
 import os
 import shutil
+import uuid
 
 router = APIRouter()
 
@@ -30,14 +31,7 @@ async def upload_presentation(
         logger.warning(f"Invalid file type attempted: {file.filename}")
         raise ValidationError("Only PDF and PPTX files are accepted.")
 
-    # Read first 512 bytes for magic byte validation
-    file_header = await file.read(512)
-    file.file.seek(0)
-    
-    # Validate file type using magic bytes (not just extension)
-    detected_mime = file_validator.validate_file_type(file_header, file.filename)
-    
-    # Validate file size
+    # Validate file size first (more efficient to fail early)
     file.file.seek(0, 2)  # Move to end
     file_size = file.file.tell()
     file.file.seek(0)  # Reset to beginning
@@ -49,14 +43,20 @@ async def upload_presentation(
     if file_size == 0:
         logger.warning(f"Empty file uploaded: {file.filename}")
         raise ValidationError("File is empty.")
+    
+    # Read first 512 bytes for magic byte validation
+    file_header = await file.read(512)
+    file.file.seek(0)
+    
+    # Validate file type using magic bytes (not just extension)
+    file_validator.validate_file_type(file_header, file.filename)
 
     upload_dir = "uploaded_files"
     os.makedirs(upload_dir, exist_ok=True)
     
     # Generate unique filename to prevent overwrite
-    import time
-    timestamp = int(time.time())
-    safe_filename = f"{current_user.id}_{timestamp}_{file.filename}"
+    unique_id = uuid.uuid4().hex
+    safe_filename = f"{current_user.id}_{unique_id}_{file.filename}"
     file_path = f"{upload_dir}/{safe_filename}"
     
     try:
@@ -109,8 +109,11 @@ async def upload_presentation(
             try:
                 os.remove(file_path)
                 logger.info(f"Cleaned up file after error: {file_path}")
-            except:
-                pass
+            except Exception as cleanup_error:
+                logger.warning(
+                    f"Failed to clean up file after error: {file_path}. Cleanup error: {cleanup_error}",
+                    exc_info=True,
+                )
         
         logger.error(f"Upload failed for user {current_user.id}: {str(e)}", exc_info=True)
         raise FileProcessingError(

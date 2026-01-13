@@ -3,7 +3,7 @@ PPTX text extraction service with security validation.
 """
 from pptx import Presentation
 from fastapi import UploadFile
-from app.core.exceptions import PDFExtractionError, ValidationError
+from app.core.exceptions import FileProcessingError, ValidationError
 from app.core.logger import logger
 import re
 import io
@@ -70,7 +70,7 @@ async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> list[s
         prs = Presentation(file_bytes)
         
         if len(prs.slides) == 0:
-            raise PDFExtractionError("PPTX file has no slides")
+            raise FileProcessingError("PPTX file has no slides")
         
         # Security validation
         validate_pptx_security(prs, file_size)
@@ -108,7 +108,7 @@ async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> list[s
 
     except Exception as e:
         logger.error(f"PPTX extraction error: {str(e)}", exc_info=True)
-        raise PDFExtractionError(
+        raise FileProcessingError(
             message="Failed to extract text from PPTX",
             details=str(e)
         )

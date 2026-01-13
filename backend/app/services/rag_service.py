@@ -3,9 +3,30 @@ from sqlalchemy import select
 from app.models.presentation import Slide
 from app.services import embedding_service
 from app.core.config import settings
+from app.core.logger import logger
+from app.core.exceptions import EmbeddingError
 from openai import AsyncOpenAI
 
-client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+# Lazy initialization of OpenAI client
+_client = None
+
+def get_client() -> AsyncOpenAI:
+    """
+    Get or create the OpenAI client instance with lazy initialization.
+    This allows proper error handling if the API key is missing or invalid.
+    """
+    global _client
+    if _client is None:
+        try:
+            _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+            logger.info("OpenAI client initialized successfully in RAG service")
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenAI client in RAG service: {str(e)}")
+            raise EmbeddingError(
+                message="Failed to initialize OpenAI client",
+                details=str(e)
+            )
+    return _client
 
 async def ask_question(
     db: AsyncSession, 
@@ -38,7 +59,7 @@ async def ask_question(
         }
 
     # Context & Prompt
-    context_text = "\n\n".join([f"[Sayfa {s.page_number}]: {s.content_text}" for s in top_slides])
+    retrieved_context = "\n\n".join([f"[Sayfa {s.page_number}]: {s.content_text}" for s in top_slides])
 
     system_prompt = """
     Sen yardımcı bir asistanısın. Aşağıda verilen SUNUM İÇERİĞİ'ni (Context) kullanarak soruyu cevapla.
@@ -53,9 +74,10 @@ async def ask_question(
     SORU (USER QUESTION): {question}
 
     SUNUM İÇERİĞİ (CONTEXT):
-    {context_text}
+    {retrieved_context}
     """
 
+    client = get_client()
     response = await client.chat.completions.create(
         model="gpt-4o-mini", 
         messages=[
@@ -68,5 +90,5 @@ async def ask_question(
     return {
         "answer": response.choices[0].message.content,
         "sources": [s.page_number for s in top_slides],
-        "context_used": context_text
+        "context_used": retrieved_context
     }
