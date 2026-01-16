@@ -97,3 +97,12 @@ async def login(
         "access_token": access_token,
         "token_type": "bearer"
     }
+
+@router.get("/me", response_model=schemas.UserResponse)
+async def get_me(
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    """
+    Get current user profile information.
+    """
+    return current_user
