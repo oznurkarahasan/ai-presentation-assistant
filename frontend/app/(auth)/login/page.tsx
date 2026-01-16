@@ -70,7 +70,7 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full max-w-md space-y-8"
+            className="w-full max-w-md space-y-6 my-auto"
         >
             <div className="text-center">
                 <motion.h1
@@ -118,7 +118,7 @@ export default function LoginPage() {
             </AnimatePresence>
 
             <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-8 rounded-2xl shadow-2xl">
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-zinc-300 ml-1">Email</label>
                         <div className="relative group">
@@ -180,7 +180,7 @@ export default function LoginPage() {
                     </button>
                 </form>
 
-                <div className="mt-8">
+                <div className="mt-6">
                     <div className="relative">
                         <div className="absolute inset-0 flex items-center">
                             <div className="w-full border-t border-zinc-800"></div>
