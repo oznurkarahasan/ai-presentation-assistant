@@ -9,14 +9,15 @@ import {
     CheckCircle2,
     AlertCircle,
     ArrowLeft,
-    Sparkles,
     Presentation,
     Zap,
     Play,
-    Eye
+    Eye,
+    Lock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import client from "../api/client";
 
 export default function UploadPage() {
     const router = useRouter();
@@ -26,7 +27,9 @@ export default function UploadPage() {
     const [isPdf, setIsPdf] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+    const [error, setError] = useState<string | null>(null);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
         if (file) {
@@ -77,31 +80,85 @@ export default function UploadPage() {
 
     const handleFileSelection = (selectedFile: File) => {
         const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.ms-powerpoint'];
-        if (validTypes.includes(selectedFile.type)) {
-            setFile(selectedFile);
-            setUploadStatus('idle');
-        } else {
-            alert("Please upload a PDF or PowerPoint file.");
+        const maxSize = 50 * 1024 * 1024; // 50MB
+
+        setError(null);
+
+        if (!validTypes.includes(selectedFile.type)) {
+            setError("Invalid file format. Please upload a PDF or PowerPoint file.");
+            return;
         }
+
+        if (selectedFile.size > maxSize) {
+            setError("File is too large. Maximum limit is 50MB.");
+            return;
+        }
+
+        setFile(selectedFile);
+        setUploadStatus('idle');
     };
 
     const handleUpload = async () => {
         if (!file) return;
 
-        setUploading(true);
-        setUploadProgress(0);
+        // Check for real internet connection
+        if (!navigator.onLine) {
+            setError("No internet connection. Please check your connectivity.");
+            setUploadStatus('error');
+            return;
+        }
 
-        const interval = setInterval(() => {
-            setUploadProgress((prev) => {
-                if (prev >= 100) {
-                    clearInterval(interval);
-                    setUploading(false);
-                    setUploadStatus('success');
-                    return 100;
-                }
-                return prev + 10;
+        setUploading(true);
+        setUploadStatus('uploading');
+        setUploadProgress(0);
+        setError(null);
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            // Check if user is authenticated
+            const response = await client.post('/api/v1/presentations/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+                onUploadProgress: (progressEvent: any) => {
+                    const progress = progressEvent.total
+                        ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                        : 0;
+                    setUploadProgress(progress);
+                },
             });
-        }, 150);
+
+            if (response.data.status === 'success') {
+                setUploadStatus('success');
+                // Store presentation info - works for both guest and authenticated
+                const presentationId = response.data.id || response.data.presentation_id;
+                const presentationTitle = response.data.title || response.data.presentation_title || file.name;
+
+                localStorage.setItem('last_presentation_id', presentationId);
+                localStorage.setItem('last_presentation_title', presentationTitle);
+
+                // If guest token is provided, store it
+                if (response.data.guest_token) {
+                    localStorage.setItem('guest_presentation_token', response.data.guest_token);
+                }
+            }
+        } catch (err: unknown) {
+            console.error("Upload failed:", err);
+            setUploadStatus('error');
+            const error = err as { response?: { status?: number; data?: { detail?: string } } };
+
+            // Handle 401 specifically for guest users
+            if (error.response?.status === 401) {
+                setError("This feature requires authentication. Please sign in to upload presentations.");
+            } else {
+                const detail = error.response?.data?.detail || "Failed to upload and process the presentation.";
+                setError(detail);
+            }
+        } finally {
+            setUploading(false);
+        }
     };
 
     const removeFile = () => {
@@ -109,6 +166,43 @@ export default function UploadPage() {
         setUploadProgress(0);
         setUploadStatus('idle');
         setFilePreview(null);
+        setError(null);
+    };
+
+    const handleAnalyzeClick = (e: React.MouseEvent) => {
+        const token = localStorage.getItem("access_token");
+
+        // Check if user is authenticated
+        if (!token || token === 'undefined' || token === 'null' || token === '') {
+            e.preventDefault();
+            setShowAuthModal(true);
+            return;
+        }
+
+        // Authenticated user - redirect to analyze page
+        const presentationId = localStorage.getItem("last_presentation_id");
+        if (presentationId) {
+            router.push(`/analyze?id=${presentationId}`);
+        } else {
+            router.push("/analyze");
+        }
+    };
+
+    const handleRealTimeClick = () => {
+        // Real-time mode available for both guest and authenticated users
+        const presentationId = localStorage.getItem("last_presentation_id");
+        const guestToken = localStorage.getItem("guest_presentation_token");
+
+        if (presentationId) {
+            const params = new URLSearchParams();
+            params.set('id', presentationId);
+            if (guestToken) {
+                params.set('guest_token', guestToken);
+            }
+            router.push(`/presentation?${params.toString()}`);
+        } else {
+            router.push("/presentation");
+        }
     };
 
     return (
@@ -127,9 +221,12 @@ export default function UploadPage() {
                                 className="space-y-8"
                             >
                                 <header className="flex items-center gap-6">
-                                    <Link href="/" className="w-12 h-12 flex items-center justify-center hover:bg-white/5 rounded-full transition-all border border-transparent hover:border-white/10">
+                                    <button
+                                        onClick={() => router.back()}
+                                        className="w-12 h-12 flex items-center justify-center hover:bg-white/5 rounded-full transition-all border border-transparent hover:border-white/10"
+                                    >
                                         <ArrowLeft size={24} />
-                                    </Link>
+                                    </button>
                                     <div>
                                         <h1 className="text-4xl md:text-5xl font-black tracking-tight italic uppercase">New Presentation</h1>
                                         <p className="text-sm text-zinc-500 mt-1 uppercase tracking-[0.3em] font-bold">Initiate your narrative and sync for stage</p>
@@ -203,10 +300,10 @@ export default function UploadPage() {
                                                         </button>
                                                     )}
 
-                                                    {uploading && (
+                                                    {uploadStatus === 'uploading' && (
                                                         <div className="w-full max-w-xs space-y-4">
                                                             <div className="flex justify-between items-center px-1">
-                                                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">Contextual Analysis...</span>
+                                                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary animate-pulse">Contextual Analysis...</span>
                                                                 <span className="text-xl font-black italic">{uploadProgress}%</span>
                                                             </div>
                                                             <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
@@ -218,9 +315,34 @@ export default function UploadPage() {
                                                             </div>
                                                         </div>
                                                     )}
+
+                                                    {uploadStatus === 'error' && (
+                                                        <div className="flex flex-col items-center gap-4">
+                                                            <div className="flex items-center gap-2 text-red-500 bg-red-500/10 px-4 py-2 rounded-xl border border-red-500/20">
+                                                                <AlertCircle size={16} />
+                                                                <span className="text-[10px] font-black uppercase tracking-widest">{error}</span>
+                                                            </div>
+                                                            <button
+                                                                onClick={handleUpload}
+                                                                className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors underline underline-offset-4"
+                                                            >
+                                                                Retry
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
+                                        {error && uploadStatus === 'idle' && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="flex items-center gap-3 text-red-400 bg-red-500/5 px-6 py-4 rounded-2xl border border-red-500/10"
+                                            >
+                                                <AlertCircle size={18} />
+                                                <p className="text-xs font-bold uppercase tracking-widest">{error}</p>
+                                            </motion.div>
+                                        )}
                                     </div>
 
                                     <div className="space-y-6">
@@ -308,10 +430,13 @@ export default function UploadPage() {
                                     </div>
                                 </div>
 
-                                {/* Smaller Action Buttons Container */}
+                                {/* Action Buttons Container */}
                                 <div className="grid grid-cols-2 gap-6 w-full max-w-2xl px-4">
-                                    <button className="group relative overflow-hidden bg-zinc-900/50 hover:bg-primary transition-all duration-300 p-[1px] rounded-2xl active:scale-[0.98] border border-white/5 hover:border-primary">
-                                        <div className="bg-[#050505] group-hover:bg-primary transition-colors flex items-center justify-center gap-4 py-5 px-8 rounded-[0.9rem] h-full">
+                                    <button
+                                        onClick={handleAnalyzeClick}
+                                        className="group relative overflow-hidden bg-zinc-900/50 hover:bg-primary transition-all duration-300 p-[1px] rounded-2xl active:scale-[0.98] border border-white/5 hover:border-primary text-left"
+                                    >
+                                        <div className="bg-[#050505] group-hover:bg-primary transition-colors flex items-center justify-center gap-4 py-5 px-8 rounded-[0.9rem] h-full w-full">
                                             <Zap className="text-primary group-hover:text-white" size={24} />
                                             <div className="text-left">
                                                 <p className="text-xl font-black uppercase italic group-hover:text-white tracking-widest italic tracking-tighter leading-none">Analyze</p>
@@ -320,7 +445,10 @@ export default function UploadPage() {
                                         </div>
                                     </button>
 
-                                    <button className="group relative overflow-hidden bg-zinc-900/50 hover:bg-white transition-all duration-300 p-[1px] rounded-2xl active:scale-[0.98] border border-white/5 hover:border-white">
+                                    <button
+                                        onClick={handleRealTimeClick}
+                                        className="group relative overflow-hidden bg-zinc-900/50 hover:bg-white transition-all duration-300 p-[1px] rounded-2xl active:scale-[0.98] border border-white/5 hover:border-white"
+                                    >
                                         <div className="bg-[#050505] group-hover:bg-white transition-colors flex items-center justify-center gap-4 py-5 px-8 rounded-[0.9rem] h-full">
                                             <Play className="text-white group-hover:text-black" size={24} />
                                             <div className="text-left">
@@ -344,6 +472,57 @@ export default function UploadPage() {
             </main>
 
             <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none translate-x-1/2 translate-y-1/2" />
+
+            {/* Auth Warning Modal */}
+            <AnimatePresence>
+                {showAuthModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-zinc-900 border border-white/10 p-8 rounded-[2.5rem] max-w-sm w-full text-center relative overflow-hidden"
+                        >
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-primary/20 blur-[60px] rounded-full pointer-events-none" />
+
+                            <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-primary/20 relative z-10">
+                                <Lock size={32} className="text-primary" />
+                            </div>
+
+                            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-3 relative z-10 text-white">Premium Feature</h3>
+                            <p className="text-zinc-400 text-sm font-bold uppercase tracking-widest leading-relaxed mb-8 relative z-10">
+                                AI Analysis is available for registered users. Sign up to unlock advanced insights and analytics.
+                            </p>
+
+                            <div className="flex flex-col gap-3 relative z-10">
+                                <Link
+                                    href="/register"
+                                    className="bg-primary hover:bg-orange-500 text-white py-4 rounded-2xl font-black uppercase italic tracking-widest transition-all text-center"
+                                >
+                                    Sign Up Free
+                                </Link>
+                                <Link
+                                    href="/login"
+                                    className="border border-white/20 hover:bg-white/5 text-white py-4 rounded-2xl font-black uppercase italic tracking-widest transition-all text-center"
+                                >
+                                    Login
+                                </Link>
+                                <button
+                                    onClick={() => setShowAuthModal(false)}
+                                    className="text-zinc-500 hover:text-white py-2 text-[10px] font-black uppercase tracking-[0.3em] transition-colors"
+                                >
+                                    Dismiss
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

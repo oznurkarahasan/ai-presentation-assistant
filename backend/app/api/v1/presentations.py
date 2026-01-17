@@ -14,9 +14,37 @@ router = APIRouter()
 # File size limit: 50MB
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
+from sqlalchemy import select
+from app.models.presentation import Presentation
+
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+@router.get("/{presentation_id}")
+async def get_presentation(
+    presentation_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(auth.get_current_user)
+):
+    stmt = select(Presentation).where(
+        Presentation.id == presentation_id,
+        Presentation.user_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    presentation = result.scalar_one_or_none()
+    
+    if not presentation:
+        raise ValidationError("Presentation not found")
+        
+    return {
+        "id": presentation.id,
+        "title": presentation.title,
+        "file_path": presentation.file_path,
+        "file_type": presentation.file_type,
+        "slide_count": presentation.slide_count,
+        "status": presentation.status
+    }
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_presentation(

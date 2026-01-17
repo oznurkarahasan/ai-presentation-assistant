@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy import text  
@@ -119,6 +120,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve uploaded files
+app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"), name="uploaded_files")
 
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"]) # Authentication routes modules seperated
 app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presentations", tags=["Presentations"])
