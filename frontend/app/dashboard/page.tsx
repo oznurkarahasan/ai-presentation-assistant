@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { LayoutDashboard, Presentation, History, Settings, LogOut } from "lucide-react";
 import client from "../api/client";
 
@@ -94,12 +95,14 @@ export default function DashboardPage() {
                 </header>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <DashboardCard
-                        title="New Presentation"
-                        desc="Start a new presentation with voice command support."
-                        buttonText="Create"
-                        primary
-                    />
+                    <Link href="/upload" className="block">
+                        <DashboardCard
+                            title="New Presentation"
+                            desc="Start a new presentation with voice command support."
+                            buttonText="Create"
+                            primary
+                        />
+                    </Link>
                     <DashboardCard
                         title="Last Presentation"
                         desc="Marketing Presentation v2.pptx"
