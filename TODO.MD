@@ -33,9 +33,9 @@
 
 ## Phase 5: Frontend Integration
 
-- [ ] Authentication Pages (Login/Register).
+- [x] Authentication Pages (Login/Register).
 - [ ] Dashboard & Library.
-- [ ] Upload & Progress Bar.
+- [x] Upload & Progress Bar.
 - [ ] Live Presentation Mode (WebSocket).
 
 ## Phase 6: Optimization & Polish
@@ -60,20 +60,17 @@
   - Simpler than Redis but with DB query overhead
   - Table: `rate_limits (user_id, count_hourly, count_daily, reset_hourly, reset_daily)`
 - [ ] **Production Best Practice: API Gateway Rate Limiting**
-
   - Use AWS API Gateway / Azure API Management
   - Offload rate limiting to infrastructure layer
   - Better scalability and monitoring
 
 - [ ] **Monitoring & Metrics**
-
   - Prometheus/Grafana integration
   - Upload success rate tracking
   - Storage usage monitoring
   - API response time metrics
 
 - [ ] **Enhanced Security**
-
   - Content malware scanning (ClamAV integration)
   - XSS payload detection in PDFs
   - Rate limiting per IP (guest users)

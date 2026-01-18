@@ -1,26 +1,51 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #ea580c;
+  --color-primary-hover: #f97316;
+  --color-primary-foreground: #ffffff;
+
+  --color-card: #18181b;
+  --color-card-border: #27272a;
+
+  --font-geist-sans: "Inter", sans-serif;
+  --font-geist-mono: "Fira Code", monospace;
+
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #09090b;
+  --foreground: #fafafa;
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
+  background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.bg-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  pointer-events: none;
+}
+
+@layer components {
+  .input-field {
+    @apply w-full bg-zinc-900/50 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply w-full bg-primary hover:bg-primary-hover text-white font-medium py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-[0.98] shadow-lg shadow-orange-900/20;
+  }
 }
