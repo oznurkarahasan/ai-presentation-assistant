@@ -119,7 +119,7 @@ export default function DashboardPage() {
     );
 }
 
-function SidebarItem({ icon, label, active = false }: { icon: any, label: string, active?: boolean }) {
+function SidebarItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
     return (
         <div className={`p-3 rounded-lg flex items-center gap-3 cursor-pointer transition-colors ${active ? 'bg-primary/10 text-primary border border-primary/20' : 'text-zinc-400 hover:bg-white/5 hover:text-white'}`}>
             {icon}

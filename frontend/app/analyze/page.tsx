@@ -8,12 +8,8 @@ import {
     MessageSquare,
     FileText,
     Sparkles,
-    Eye,
     Maximize2,
-    Settings,
-    MoreVertical,
     User,
-    Bot,
     ChevronRight,
     X,
     Presentation,
@@ -23,7 +19,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import client from "../api/client";
+import { useCallback } from "react";
 
 interface Message {
     id: string;
@@ -120,7 +118,7 @@ export default function AnalyzePage() {
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, assistantMessage]);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Chat failed:", err);
             const errorMessage: Message = {
                 id: Date.now().toString(),
@@ -134,30 +132,30 @@ export default function AnalyzePage() {
         }
     };
 
-    const handlePrevPage = () => {
+    const handlePrevPage = useCallback(() => {
         if (currentPage > 1 && !isPageLoading) {
             setIsPageLoading(true);
             setTimeout(() => {
                 setCurrentPage(currentPage - 1);
             }, 200); // Overlay fades in first
         }
-    };
+    }, [currentPage, isPageLoading]);
 
-    const handleNextPage = () => {
+    const handleNextPage = useCallback(() => {
         if (currentPage < totalPages && !isPageLoading) {
             setIsPageLoading(true);
             setTimeout(() => {
                 setCurrentPage(currentPage + 1);
             }, 200); // Overlay fades in first
         }
-    };
+    }, [currentPage, totalPages, isPageLoading]);
 
     useEffect(() => {
         if (isPageLoading) {
             const timer = setTimeout(() => setIsPageLoading(false), 1200); // Sufficient time for PDF rendering
             return () => clearTimeout(timer);
         }
-    }, [currentPage]); // Only trigger when page actually changes while loading
+    }, [currentPage, isPageLoading]); // Added isPageLoading to dependencies
 
     // Keyboard navigation optimization
     useEffect(() => {
@@ -171,7 +169,7 @@ export default function AnalyzePage() {
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [currentPage, totalPages, isPageLoading]); // Added isPageLoading to dependencies for reliable logic inside handleKeyDown
+    }, [handlePrevPage, handleNextPage]); // Fixed missing dependencies
 
     const toggleFullScreen = () => {
         setIsFullScreen(!isFullScreen);
@@ -293,7 +291,7 @@ export default function AnalyzePage() {
                                             <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-zinc-100 rounded-2xl bg-zinc-50/50">
                                                 <Presentation size={64} className="text-zinc-200 mb-4" />
                                                 <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs text-center px-8">
-                                                    PPTX Viewer is coming soon. Use "Real-Time" mode for live presentation controls.
+                                                    PPTX Viewer is coming soon. Use &quot;Real-Time&quot; mode for live presentation controls.
                                                 </p>
                                             </div>
                                         </div>
@@ -356,7 +354,7 @@ export default function AnalyzePage() {
                                 <div className="flex items-center gap-3">
                                     <div className={`w-10 h-10 border rounded-xl flex items-center justify-center overflow-hidden
                                         ${chatTheme === 'dark' ? 'bg-zinc-900 border-white/10' : 'bg-white border-zinc-200'}`}>
-                                        <img src="/favicon.ico" alt="PreCue.ai Logo" className="w-6 h-6 object-contain" />
+                                        <Image src="/favicon.ico" alt="PreCue.ai Logo" width={24} height={24} className="object-contain" />
                                     </div>
                                     <div>
                                         <h2 className={`text-sm font-black italic uppercase tracking-wider ${chatTheme === 'light' ? 'text-zinc-900' : ''}`}>PreCue<span className="text-primary">.ai</span></h2>
@@ -396,7 +394,7 @@ export default function AnalyzePage() {
                                                 {message.role === 'user' ? (
                                                     <User size={16} />
                                                 ) : (
-                                                    <img src="/favicon.ico" alt="AI" className="w-5 h-5 object-contain" />
+                                                    <Image src="/favicon.ico" alt="AI" width={20} height={20} className="object-contain" />
                                                 )}
                                             </div>
                                             <div className={`max-w-[85%] space-y-1.5 ${message.role === 'user' ? 'text-right' : ''}`}>
@@ -473,7 +471,7 @@ export default function AnalyzePage() {
                         className="fixed bottom-8 right-8 w-14 h-14 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden z-50 group"
                     >
                         <div className="absolute inset-0 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <img src="/favicon.ico" alt="Reopen PreCue.ai" className="w-8 h-8 object-contain relative z-10" />
+                        <Image src="/favicon.ico" alt="Reopen PreCue.ai" width={32} height={32} className="object-contain relative z-10" />
                     </motion.button>
                 )}
             </div>

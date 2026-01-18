@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import React, { Suspense } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export default function RootLayout({
       <body className="antialiased min-h-screen relative" suppressHydrationWarning>
         <div className="bg-grid" />
         <main className="relative z-10">
-          {children}
+          <Suspense fallback={<div />}>{children}</Suspense>
         </main>
       </body>
     </html>

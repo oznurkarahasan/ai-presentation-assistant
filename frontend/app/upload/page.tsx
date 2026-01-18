@@ -122,7 +122,7 @@ export default function UploadPage() {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
-                onUploadProgress: (progressEvent: any) => {
+                onUploadProgress: (progressEvent) => {
                     const progress = progressEvent.total
                         ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
                         : 0;
@@ -145,17 +145,16 @@ export default function UploadPage() {
                 }
             }
         } catch (err: unknown) {
-            console.error("Upload failed:", err);
-            setUploadStatus('error');
-            const error = err as { response?: { status?: number; data?: { detail?: string } } };
-
+            console.error('Upload Error:', err);
+            const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } };
             // Handle 401 specifically for guest users
-            if (error.response?.status === 401) {
+            if (axiosErr.response?.status === 401) {
                 setError("This feature requires authentication. Please sign in to upload presentations.");
             } else {
-                const detail = error.response?.data?.detail || "Failed to upload and process the presentation.";
+                const detail = axiosErr.response?.data?.detail || "Failed to upload and process the presentation.";
                 setError(detail);
             }
+            setUploadStatus('error');
         } finally {
             setUploading(false);
         }

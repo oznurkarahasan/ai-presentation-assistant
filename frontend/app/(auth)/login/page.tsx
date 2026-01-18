@@ -11,7 +11,7 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     const [formData, setFormData] = useState({
         email: "",
         password: ""
@@ -56,9 +56,13 @@ export default function LoginPage() {
             localStorage.setItem("access_token", access_token);
             router.push("/dashboard");
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Login Error:", err);
-            const message = err.response?.data?.detail || "Login failed. Please check your credentials.";
+            let message = "Login failed. Please check your credentials.";
+            if (err && typeof err === 'object' && 'response' in err) {
+                const axiosError = err as { response: { data: { detail?: string } } };
+                message = axiosError.response?.data?.detail || message;
+            }
             setError(message);
         } finally {
             setLoading(false);

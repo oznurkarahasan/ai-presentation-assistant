@@ -113,9 +113,9 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 app.add_middleware(
-    #cors settings
+    # CORS settings - configurable via CORS_ORIGINS environment variable
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # Adjust as needed for your frontend URL
+    allow_origins=settings.CORS_ORIGINS,  # Can be configured via .env file
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

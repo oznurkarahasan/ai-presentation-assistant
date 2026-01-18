@@ -20,9 +20,13 @@ export default function ForgotPasswordPage() {
         try {
             await client.post("/api/v1/auth/forgot-password", { email });
             setSuccess(true);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Forgot Password Error:", err);
-            const message = err.response?.data?.detail || "Failed to send reset email. Please try again.";
+            let message = "Failed to send reset email. Please try again.";
+            if (err && typeof err === 'object' && 'response' in err) {
+                const axiosError = err as { response: { data: { detail?: string } } };
+                message = axiosError.response?.data?.detail || message;
+            }
             setError(message);
         } finally {
             setLoading(false);
@@ -43,10 +47,10 @@ export default function ForgotPasswordPage() {
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-3">Check Your Email</h2>
                     <p className="text-zinc-400 mb-6">
-                        We've sent a password reset link to <span className="text-white font-medium">{email}</span>
+                        We&apos;ve sent a password reset link to <span className="text-white font-medium">{email}</span>
                     </p>
                     <p className="text-sm text-zinc-500 mb-8">
-                        Didn't receive the email? Check your spam folder or try again.
+                        Didn&apos;t receive the email? Check your spam folder or try again.
                     </p>
                     <Link
                         href="/login"
@@ -92,7 +96,7 @@ export default function ForgotPasswordPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                 >
-                    No worries, we'll send you reset instructions
+                    No worries, we&apos;ll send you reset instructions
                 </motion.p>
             </div>
 

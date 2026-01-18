@@ -94,7 +94,7 @@ export default function Home() {
   );
 }
 
-function FeatureCard({ icon, title, desc }: { icon: any, title: string, desc: string }) {
+function FeatureCard({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
   return (
     <div className="p-6 rounded-xl bg-white/5 border border-white/10 hover:border-primary/30 transition-all text-left group">
       <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center mb-4 border border-white/10 group-hover:border-primary/30 transition-all">

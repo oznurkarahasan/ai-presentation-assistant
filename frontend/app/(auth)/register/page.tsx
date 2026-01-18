@@ -26,7 +26,7 @@ export default function RegisterPage() {
             [e.target.type === 'date' ? 'birth_date' : e.target.type === 'email' ? 'email' : e.target.type === 'text' ? 'full_name' : e.target.name]: e.target.value
         });
         if (e.target.name) {
-             setFormData(prev => ({...prev, [e.target.name]: e.target.value}));
+            setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
         }
         if (error) setError(null);
     };
@@ -66,9 +66,31 @@ export default function RegisterPage() {
             await client.post("/api/v1/auth/register", payload);
             router.push("/login?registered=true");
 
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error("Register Error:", err);
-            const message = err.response?.data?.detail || "Registration failed. Please try again.";
+            let message = "Registration failed. Please try again.";
+
+            if (err && typeof err === 'object') {
+                // Network error (backend not reachable)
+                if ('code' in err && err.code === 'ERR_NETWORK') {
+                    message = "Cannot connect to server. Please make sure the backend is running on http://localhost:8000";
+                }
+                // Axios error with response
+                else if ('response' in err) {
+                    const axiosError = err as { response: { status?: number; data?: { detail?: string } } };
+                    if (axiosError.response?.status === 400) {
+                        message = axiosError.response?.data?.detail || "Invalid registration data.";
+                    } else if (axiosError.response?.status === 500) {
+                        message = "Server error. Please try again later.";
+                    } else {
+                        message = axiosError.response?.data?.detail || message;
+                    }
+                }
+                // Request was made but no response received
+                else if ('request' in err) {
+                    message = "Server did not respond. Please check if backend is running.";
+                }
+            }
             setError(message);
         } finally {
             setLoading(false);
