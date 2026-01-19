@@ -35,6 +35,8 @@ venv/
 .venv/
 pip-log.txt
 pip-delete-this-directory.txt
+*.db
+test_temp.db
 
 # --- FRONTEND (Node & Next.js) ---
 node_modules/

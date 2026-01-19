@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.staticfiles import StaticFiles
@@ -23,12 +24,15 @@ from app.api.v1 import auth, presentations, chat
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Application startup initiated")
-    async with engine.begin() as conn:
-        # Ensure the vector extension is created
-        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-        
-        await conn.run_sync(Base.metadata.create_all)
-    logger.info("Database initialized successfully")
+    if not os.getenv("TESTING"):
+        async with engine.begin() as conn:
+            # Ensure the vector extension is created
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database initialized successfully")
+    else:
+        logger.info("Skipping database initialization in TESTING mode")
     yield
     logger.info("Application shutdown")
 

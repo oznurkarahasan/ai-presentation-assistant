@@ -70,7 +70,8 @@ async def save_presentation_with_slides(
                 presentation.error_message = str(e)
                 presentation.processing_completed_at = datetime.now(timezone.utc)
                 await db.commit()
-            except Exception:
-                pass
+            except Exception as inner_e:
+                from app.core.logger import logger
+                logger.error(f"Failed to update presentation status to FAILED: {inner_e}")
         
         raise e

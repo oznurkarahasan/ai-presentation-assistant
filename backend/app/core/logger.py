@@ -72,6 +72,6 @@ if settings.ENABLE_LOGGING:
         )
 
     # Log startup configuration
-    logger.info(f"🚀 Logger initialized for {settings.ENV.upper()} environment with level {settings.LOG_LEVEL}")
+    logger.info(f"Logger initialized for {settings.ENV.upper()} environment with level {settings.LOG_LEVEL}")
 
 __all__ = ["logger"]

@@ -18,3 +18,10 @@ pypdf
 python-pptx
 tiktoken
 loguru
+pytest
+pytest-asyncio
+httpx
+aiosqlite
+flake8
+bandit
+safety
