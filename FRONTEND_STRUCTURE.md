@@ -1,9 +1,8 @@
-```markdown
 # Project: Frontend Directory Structure
 
 Terminal-style ASCII tree showing the `frontend/` folder structure with one-line descriptions.
-```
 
+```bash
 frontend/
 ├── Dockerfile ........................ Node-based image and commands for containerized frontend (dev/prod)
 ├── package.json ...................... npm scripts and frontend dependency manifest
@@ -31,7 +30,15 @@ frontend/
 └── components/
 ├── Navbar.tsx .................. Top navigation component
 └── Footer.tsx .................. Footer component
-
 ```
 
+# How to test frontend
+İf you have some changes in frontend, you need to run these commands:
+
+```bash
+cd frontend
+npm run lint (Linter)
+npx tsc --noEmit (Type checking)
+npm run test (All tests)
 ```
+Some changes need to change test files. For example if you change login page, you need to change test files in `tests/login.test.tsx`. Dont forget.
