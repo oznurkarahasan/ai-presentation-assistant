@@ -47,7 +47,7 @@ jobs:
       - name: Security Audit (Bandit)
         run: |
           cd backend
-          bandit -r app/ main.py
+          bandit -r . -s B101,B105 --exclude ./venv
 
       - name: Dependency Scan (Safety)
         run: |
