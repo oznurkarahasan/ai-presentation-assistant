@@ -3,6 +3,7 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_register_user(client: AsyncClient):
+    """Test user registration"""
     response = await client.post(
         "/api/v1/auth/register",
         json={
@@ -13,8 +14,6 @@ async def test_register_user(client: AsyncClient):
             "birth_date": "1990-01-01"
         }
     )
-    if response.status_code != 200:
-        print(f"\nREGISTRATION FAILED: {response.status_code} - {response.text}")
     assert response.status_code == 200
     data = response.json()
     assert data["email"] == "test@example.com"
@@ -22,6 +21,7 @@ async def test_register_user(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_login_user(client: AsyncClient):
+    """Test user login after registration"""
     # First register
     await client.post(
         "/api/v1/auth/register",
@@ -47,8 +47,9 @@ async def test_login_user(client: AsyncClient):
     assert "access_token" in data
     assert data["token_type"] == "bearer"
 
-@pytest.mark.anyio
+@pytest.mark.asyncio
 async def test_login_invalid_credentials(client: AsyncClient):
+    """Test login with invalid credentials"""
     response = await client.post(
         "/api/v1/auth/login",
         data={
