@@ -126,6 +126,8 @@ app.add_middleware(
 )
 
 # Serve uploaded files
+if not os.path.exists("uploaded_files"):
+    os.makedirs("uploaded_files")
 app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"), name="uploaded_files")
 
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"]) # Authentication routes modules seperated
