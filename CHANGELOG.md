@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Testing & Quality Infrastructure**
+    - **Backend Testing**: Implemented asynchronous unit and integration tests using `pytest` and `pytest-asyncio`.
+    - **Frontend Testing**: Established unit testing environment with `Vitest` and `React Testing Library`.
+    - **GitHub Actions Workflows**:
+        - `Frontend Preview & Quality Check`: Automated linting, type checking, unit tests, and build size reporting.
+        - `Backend Quality & Security Check`: Integrated `Flake8` for linting, `Bandit` for security auditing, and `Safety` for dependency vulnerability scanning.
+        - `Presentation Assistant CI`: Unified CI/CD for Docker build validation and cross-platform compatibility checks.
+    - **Isolated Test Environment**: Configured in-memory SQLite database for backend tests to ensure fast and side-effect-free execution.
+    - **Authentication Tests**: Full coverage for User Registration, Login, and Invalid Credentials scenarios in both frontend and backend.
+
 - PPTX file support with slide and speaker notes extraction
 - ASCII tree format backend structure documentation (STRUCTURE.md)
 - Comprehensive error management system with custom exceptions
