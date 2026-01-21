@@ -3,8 +3,8 @@
 @theme {
   --color-primary: #ea580c;
   --color-primary-hover: #f97316;
-  --color-primary-foreground: #ffffff;
-
+  --color-primary-foreground: #fafafa;
+  --color-secondary-text: #a1a1aa;
   --color-card: #18181b;
   --color-card-border: #27272a;
 
@@ -27,7 +27,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -41,7 +46,7 @@ h1, h2, h3, h4, h5, h6 {
   height: 100vh;
   z-index: 0;
   background-size: 40px 40px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   pointer-events: none;
