@@ -16,6 +16,12 @@
 - [x] Login/Register API Endpoints.
 - [x] Current User dependency injection.
 
+## Phase 2.5: Backend Fixes
+
+- [ ] Forgot Password page done but backend is not working.
+- [ ] Guest API Endpoints.
+- [ ] Guest data clean up, file upload, check guest privileges.
+
 ## Phase 3: File Ingestion
 
 - [x] PDF & PPTX Parsing Logic.
@@ -31,18 +37,29 @@
 - [ ] Real-time Speech-to-Text (Whisper).
 - [ ] Auto-Slide Switching Logic.
 
+## Phase 4.5: CI/CD & Testing
+
+- [x] Backend Quality Check Workflow (Flake8, Bandit, Safety)
+- [x] Backend Test Suite (pytest, async fixtures)
+- [x] Docker Optimization (.dockerignore)
+- [x] Frontend Linting Workflow
+- [x] E2E Testing Setup
+
 ## Phase 5: Frontend Integration
 
 - [x] Authentication Pages (Login/Register).
 - [ ] Dashboard & Library.
 - [x] Upload & Progress Bar.
 - [ ] Live Presentation Mode (WebSocket).
+- [ ] Responsive UI try new fonts.
 
 ## Phase 6: Optimization & Polish
 
 - [ ] Guest Data Cleanup (Cron Job).
 - [ ] Error Handling & Logging.
 - [ ] Deployment Configuration.
+- [x] Backend Test Coverage
+- [x] Docker Build Optimization
 
 ## Phase 7: Performance Optimization (Future)
 
