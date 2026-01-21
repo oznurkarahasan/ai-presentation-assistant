@@ -149,6 +149,14 @@ docker-compose down
 docker-compose up -d
 ```
 
+- Docker commands
+
+```bash
+docker-compose up --build
+docker system prune -a --volumes
+docker compose build
+```
+
 - Pyhton virtual environment
 
 ```bash
