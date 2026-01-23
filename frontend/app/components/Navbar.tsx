@@ -33,7 +33,7 @@ export default function Navbar() {
                         <div className="flex items-center gap-14">
                             <Link href="/" className="flex items-center gap-3 group shrink-0">
                                 <div className="relative w-8 h-8 flex items-center justify-center">
-                                    <div className="absolute inset-0 bg-blue-500/20 blur-md rounded-full group-hover:bg-orange-500/30 transition-colors" />
+                                    <div className="absolute inset-0 bg-blue-500/20 blur-md rounded-full group-hover:bg-primary/30 transition-colors" />
                                     <Image
                                         src="/favicon.ico"
                                         alt="PreCue Logo"
@@ -43,7 +43,7 @@ export default function Navbar() {
                                     />
                                 </div>
                                 <span className="font-bold text-xl tracking-tight hidden sm:block text-white/90">
-                                    PreCue<span className="text-orange-500">.ai</span>
+                                    PreCue<span className="text-primary">.ai</span>
                                 </span>
                             </Link>
 
@@ -52,7 +52,7 @@ export default function Navbar() {
                                     <Link
                                         key={link.name}
                                         href={link.href}
-                                        className="flex items-center gap-1.5 text-[13px] font-medium text-zinc-400 hover:text-white transition-all duration-200"
+                                        className="flex items-center gap-1.5 text-[13px] font-medium text-secondary-text hover:text-white transition-all duration-200"
                                     >
                                         {link.hasDot && <span className="w-1 h-1 bg-white rounded-full shadow-[0_0_5px_white]" />}
                                         <span className={link.hasDot ? "text-white" : ""}>{link.name}</span>
@@ -68,7 +68,7 @@ export default function Navbar() {
                                     <Link
                                         key={link.name}
                                         href={link.href}
-                                        className="flex items-center gap-0.5 text-[13px] font-medium text-zinc-400 hover:text-white transition-all duration-200 group"
+                                        className="flex items-center gap-0.5 text-[13px] font-medium text-secondary-text hover:text-white transition-all duration-200 group"
                                     >
                                         {link.name}
                                         {link.hasArrow && (
@@ -81,14 +81,14 @@ export default function Navbar() {
                             <div className="flex items-center gap-5 lg:gap-10 border-l border-white/5 pl-5 lg:pl-10 ml-0 lg:ml-2">
                                 <Link
                                     href="/login"
-                                    className="hidden md:flex items-center gap-0.5 text-[13px] font-medium text-zinc-400 hover:text-white transition-all duration-200 group"
+                                    className="hidden md:flex items-center gap-0.5 text-[13px] font-medium text-secondary-text hover:text-white transition-all duration-200 group"
                                 >
                                     Login
                                     <ArrowUpRight size={13} className="opacity-40 group-hover:opacity-100 transition-all" />
                                 </Link>
                                 <Link
                                     href="/register"
-                                    className="bg-[#d2e2f0] hover:bg-white text-zinc-950 px-6 py-2 rounded-[14px] text-[13px] font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(210,226,240,0.1)]"
+                                    className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-[14px] text-[13px] font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(249,115,22,0.1)]"
                                 >
                                     Get started
                                 </Link>

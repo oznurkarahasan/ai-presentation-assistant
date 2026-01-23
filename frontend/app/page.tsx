@@ -42,7 +42,7 @@ export default function Home() {
               </span>
             </h1>
 
-            <p className="text-zinc-400 text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-secondary-text text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
               You speak, AI listens and switches your slides at the perfect moment.
               Rehearse, get analytics, and overcome your stage fright.
             </p>
@@ -50,7 +50,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10">
               <Link
                 href="/upload"
-                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-lg font-medium text-sm transition-all active:scale-95 shadow-lg shadow-primary/20"
+                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-3 rounded-lg font-medium text-sm transition-all active:scale-95 shadow-lg shadow-primary/20"
               >
                 <Presentation size={18} />
                 Try Demo (Guest)
@@ -66,7 +66,7 @@ export default function Home() {
           </motion.div>
         </section>
 
-        <section className="py-20 px-6 bg-gradient-to-b from-black to-zinc-950">
+        <section className="py-20 px-6 bg-gradient-to-b from-transparent to-card/50">
           <div className="container mx-auto max-w-6xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FeatureCard
@@ -101,7 +101,7 @@ function FeatureCard({ icon, title, desc }: { icon: React.ReactNode, title: stri
         {icon}
       </div>
       <h3 className="text-lg font-semibold mb-2 text-white">{title}</h3>
-      <p className="text-zinc-400 text-sm leading-relaxed">{desc}</p>
+      <p className="text-secondary-text text-sm leading-relaxed">{desc}</p>
     </div>
   )
 }

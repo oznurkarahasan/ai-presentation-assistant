@@ -3,15 +3,31 @@
 @theme {
   --color-primary: #ea580c;
   --color-primary-hover: #f97316;
-  --color-primary-foreground: #ffffff;
-
+  --color-primary-foreground: #fafafa;
+  --color-secondary-text: #a1a1aa;
   --color-card: #18181b;
   --color-card-border: #27272a;
 
-  --font-geist-sans: "Inter", sans-serif;
-  --font-geist-mono: "Fira Code", monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Fira Code", monospace;
 
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 :root {
@@ -22,8 +38,19 @@
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .bg-grid {
@@ -34,7 +61,7 @@ body {
   height: 100vh;
   z-index: 0;
   background-size: 40px 40px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
   pointer-events: none;

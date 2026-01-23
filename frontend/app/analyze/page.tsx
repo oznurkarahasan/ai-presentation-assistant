@@ -192,7 +192,7 @@ export default function AnalyzePage() {
 
     return (
         <div className="flex h-screen bg-black text-zinc-100 overflow-hidden relative font-sans">
-            <div className="bg-grid opacity-30" />
+            <div className="bg-grid" />
 
             {/* Main Application Container */}
             <div className={`flex flex-1 relative z-10 overflow-hidden flex-col md:flex-row ${isFullScreen ? 'p-0' : ''}`}>

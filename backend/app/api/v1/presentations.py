@@ -14,12 +14,35 @@ router = APIRouter()
 # File size limit: 50MB
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
-from sqlalchemy import select
-from app.models.presentation import Presentation
+from sqlalchemy import select, func, desc
+from app.models.presentation import Presentation, PresentationSession, SessionType
 
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+@router.get("/", response_model=list)
+async def list_presentations(
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(auth.get_current_user)
+):
+    stmt = select(Presentation).where(Presentation.user_id == current_user.id).order_by(Presentation.created_at.desc())
+    result = await db.execute(stmt)
+    presentations = result.scalars().all()
+    
+    return [
+        {
+            "id": p.id,
+            "title": p.title,
+            "file_name": os.path.basename(p.file_path),
+            "file_path": p.file_path,
+            "file_type": p.file_type,
+            "slide_count": p.slide_count,
+            "status": p.status,
+            "created_at": p.created_at.isoformat() if p.created_at else None
+        }
+        for p in presentations
+    ]
 
 @router.get("/{presentation_id}")
 async def get_presentation(
@@ -148,3 +171,36 @@ async def upload_presentation(
             message="Failed to process presentation",
             details=str(e)
         )
+
+@router.delete("/{presentation_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_presentation(
+    presentation_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(auth.get_current_user)
+):
+    """Delete a presentation"""
+    
+    stmt = select(Presentation).where(
+        Presentation.id == presentation_id,
+        Presentation.user_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    presentation = result.scalar_one_or_none()
+    
+    if not presentation:
+        raise ValidationError("Presentation not found")
+    
+    # Delete file from disk
+    if os.path.exists(presentation.file_path):
+        try:
+            os.remove(presentation.file_path)
+            logger.info(f"Deleted file: {presentation.file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete file: {presentation.file_path}. Error: {e}")
+    
+    # Delete from database (cascade will handle related records)
+    await db.delete(presentation)
+    await db.commit()
+    
+    logger.info(f"Presentation deleted: ID={presentation_id}, User={current_user.id}")
+    return None

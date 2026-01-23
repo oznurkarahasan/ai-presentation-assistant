@@ -37,8 +37,8 @@ frontend/
 
 ```bash
 cd frontend
-npm run lint (Linter)
-npx tsc --noEmit (Type checking)
-npm run test (All tests)
+npm run lint
+npx tsc --noEmit
+npm run test
 ```
 Some changes need to change test files. For example if you change login page, you need to change test files in `tests/login.test.tsx`. Dont forget.
