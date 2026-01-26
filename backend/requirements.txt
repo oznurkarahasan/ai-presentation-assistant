@@ -25,3 +25,5 @@ aiosqlite
 flake8
 bandit
 safety
+groq>=0.13.0
+urllib3>=2.6.3

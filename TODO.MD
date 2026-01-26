@@ -34,7 +34,7 @@
 
 - [x] RAG Engine (Semantic Search).
 - [x] Presentation Analysis Service (GPT-4o).
-- [ ] Real-time Speech-to-Text (Whisper).
+- [X] Real-time Speech-to-Text (Whisper).
 - [ ] Auto-Slide Switching Logic.
 
 ## Phase 4.5: CI/CD & Testing
@@ -48,10 +48,10 @@
 ## Phase 5: Frontend Integration
 
 - [x] Authentication Pages (Login/Register).
-- [ ] Dashboard & Library.
+- [X] Dashboard & Library.
 - [x] Upload & Progress Bar.
-- [ ] Live Presentation Mode (WebSocket).
-- [ ] Responsive UI try new fonts.
+- [ ] Live Presentation Mode.
+- [X] Responsive UI try new fonts.
 
 ## Phase 6: Optimization & Polish
 

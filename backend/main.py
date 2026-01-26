@@ -18,7 +18,7 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ValidationError
 )
-from app.api.v1 import auth, presentations, chat
+from app.api.v1 import auth, presentations, chat, transcribe
 
 # Lifespan event to create tables and extensions
 @asynccontextmanager
@@ -133,6 +133,7 @@ app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"), name="uplo
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"]) # Authentication routes modules seperated
 app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presentations", tags=["Presentations"])
 app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
+app.include_router(transcribe.router, prefix=settings.API_V1_STR + "/tools", tags=["STT"])
 @app.get("/")
 async def root():
     return {"message": "AI Presentation Assistant API is running successfully."}
