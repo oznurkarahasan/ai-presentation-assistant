@@ -15,17 +15,30 @@ const LiveAudioStreamer = ({ currentSlide, isActive, onSlideChange, onTranscript
     const streamRef = useRef<MediaStream | null>(null);
     const currentSlideRef = useRef(currentSlide);
 
+    const isActiveRef = useRef(isActive);
+
+    useEffect(() => {
+        isActiveRef.current = isActive;
+    }, [isActive]);
+
     const stopStreaming = useCallback(() => {
         if (socketRef.current) {
             socketRef.current.close();
             socketRef.current = null;
         }
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-            mediaRecorderRef.current.stop();
+            try {
+                mediaRecorderRef.current.stop();
+            } catch {
+                // Ignore if already stopped
+            }
             mediaRecorderRef.current = null;
         }
         if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current.getTracks().forEach(track => {
+                track.stop();
+                track.enabled = false;
+            });
             streamRef.current = null;
         }
     }, []);
@@ -38,44 +51,51 @@ const LiveAudioStreamer = ({ currentSlide, isActive, onSlideChange, onTranscript
             const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
 
             const createRecorder = () => {
-                const recorder = new MediaRecorder(stream, {
-                    mimeType,
-                    audioBitsPerSecond: 128000 // Consistent bitrate
-                });
+                // Safety checks before creating/starting a new recorder
+                if (!isActiveRef.current || !stream.active || socket.readyState !== WebSocket.OPEN) {
+                    return;
+                }
 
-                recorder.ondataavailable = (event) => {
-                    if (event.data.size > 1000 && socket.readyState === WebSocket.OPEN) {
-                        // Send raw audio data without metadata for now
-                        socket.send(event.data);
-                    }
-                };
+                try {
+                    const recorder = new MediaRecorder(stream, {
+                        mimeType,
+                        audioBitsPerSecond: 128000 // Consistent bitrate
+                    });
 
-                recorder.onstop = () => {
-                    if (isActive && socket.readyState === WebSocket.OPEN) {
-                        // Minimal gap for continuity
-                        setTimeout(() => {
-                            if (isActive) createRecorder();
-                        }, 100);
-                    }
-                };
+                    recorder.ondataavailable = (event) => {
+                        if (event.data.size > 1000 && socket.readyState === WebSocket.OPEN) {
+                            socket.send(event.data);
+                        }
+                    };
 
-                mediaRecorderRef.current = recorder;
-                recorder.start();
+                    recorder.onstop = () => {
+                        if (isActiveRef.current && stream.active && socket.readyState === WebSocket.OPEN) {
+                            setTimeout(() => {
+                                if (isActiveRef.current && stream.active) createRecorder();
+                            }, 100);
+                        }
+                    };
 
-                // Balanced chunk size for good context and responsiveness
-                setTimeout(() => {
-                    if (recorder.state === "recording") {
-                        recorder.stop();
-                    }
-                }, 2000); // 2 seconds - balanced approach
+                    mediaRecorderRef.current = recorder;
+                    recorder.start();
+
+                    setTimeout(() => {
+                        if (recorder.state === "recording") {
+                            recorder.stop();
+                        }
+                    }, 2000);
+                } catch (err) {
+                    console.error("MediaRecorder start error:", err);
+                    // Don't throw to avoid crashing the component
+                }
             };
 
             createRecorder();
 
         } catch (err) {
-            console.error("Microphone error:", err);
+            console.error("Microphone access error:", err);
         }
-    }, [isActive]);
+    }, []);
 
     const startStreaming = useCallback(async () => {
         try {

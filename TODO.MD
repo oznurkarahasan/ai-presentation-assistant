@@ -50,7 +50,7 @@
 - [x] Authentication Pages (Login/Register).
 - [X] Dashboard & Library.
 - [x] Upload & Progress Bar.
-- [ ] Live Presentation Mode.
+- [X] Live Presentation Mode.
 - [X] Responsive UI try new fonts.
 
 ## Phase 6: Optimization & Polish
@@ -106,5 +106,5 @@
 > [x] Vector Embeddings (OpenAI text-embedding-3-small, 1536 dimensions)
 > [x] RAG System (Semantic search with pgvector, GPT-4o-mini for Q&A)
 > [x] File Cleanup Policies (Failed uploads, expired guest files)
-> [ ] WebSocket for Real-time Speech (Phase 4 - In Progress)
-> [ ] Frontend Dashboard & Live Mode (Phase 5 - Planned)
+> [x] WebSocket for Real-time Speech (Phase 4 - In Progress)
+> [x] Frontend Dashboard & Live Mode (Phase 5 - Planned)
