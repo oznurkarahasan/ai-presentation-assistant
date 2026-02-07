@@ -160,16 +160,22 @@ export default function AnalyzePage() {
     // Keyboard navigation optimization
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Don't trigger slide change if user is typing in the chat or search input
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+
             if (e.key === "ArrowLeft") {
                 handlePrevPage();
-            } else if (e.key === "ArrowRight") {
+            } else if (e.key === "ArrowRight" || e.key === " ") {
+                if (e.key === " ") e.preventDefault(); // Prevent scroll on space
                 handleNextPage();
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [handlePrevPage, handleNextPage]); // Fixed missing dependencies
+    }, [handlePrevPage, handleNextPage]);
 
     const toggleFullScreen = () => {
         setIsFullScreen(!isFullScreen);
@@ -233,6 +239,30 @@ export default function AnalyzePage() {
                                 {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                             </button>
 
+                            <motion.div
+                                whileHover={{ scale: 1.02, y: -1 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="relative"
+                            >
+                                <Link
+                                    href={`/presentation?id=${presentationId}&slide=${currentPage}`}
+                                    className="group flex items-center gap-2.5 px-3 py-2 md:px-4 md:py-2 bg-gradient-to-br from-primary via-primary to-orange-600 text-white rounded-xl text-[10px] md:text-xs font-black uppercase tracking-[0.15em] shadow-[0_10px_20px_-10px_rgba(234,88,12,0.5)] border border-white/10 overflow-hidden transition-all hover:shadow-primary/40"
+                                >
+                                    {/* Glass reflection effect */}
+                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                                    {/* Shimmer animation */}
+                                    <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+
+                                    <Presentation size={18} className="relative z-10 transition-transform group-hover:rotate-6" />
+                                    <span className="relative z-10 hidden sm:inline whitespace-nowrap">Real-Time Presentation</span>
+                                    <span className="relative z-10 inline sm:hidden font-bold">Live</span>
+                                </Link>
+
+                                {/* Background glow */}
+                                <div className="absolute -inset-1 bg-primary/10 blur-xl rounded-full -z-10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            </motion.div>
+
                             <button
                                 onClick={() => setShowChat(!showChat)}
                                 className={`p-2 rounded-lg transition-all md:hidden ${showChat ? 'bg-primary/20 text-primary' : 'text-zinc-400'}`}
@@ -247,14 +277,42 @@ export default function AnalyzePage() {
                         <div className="w-full h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-zinc-900/50 flex items-center justify-center relative group">
                             {presentationFile ? (
                                 fileType === 'pdf' ? (
-                                    <div className="w-full h-full relative">
-                                        <iframe
-                                            key={currentPage}
-                                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${presentationFile}#page=${currentPage}&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                                            className="w-full h-full border-none rounded-xl"
-                                            title="Presentation Preview"
-                                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                                        />
+                                    <div className="w-full h-full relative bg-white rounded-xl overflow-hidden">
+                                        <div className="absolute inset-x-[-1px] inset-y-[-1px] overflow-hidden">
+                                            <iframe
+                                                key={currentPage}
+                                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${presentationFile}#page=${currentPage}&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
+                                                className="absolute top-0 left-0 w-[calc(100%+32px)] h-full border-none opacity-95"
+                                                title="Presentation Preview"
+                                                style={{ pointerEvents: 'none' }}
+                                            />
+                                        </div>
+
+                                        {/* Subtle overlay to soften the PDF rendering */}
+                                        <div className="absolute inset-0 z-10 pointer-events-none shadow-[inset_0_0_100px_rgba(0,0,0,0.05)]" />
+
+                                        {/* Click-to-navigate regions */}
+                                        <div className="absolute inset-0 z-20 flex">
+                                            <div
+                                                onClick={handlePrevPage}
+                                                className="w-1/4 h-full cursor-w-resize group/nav"
+                                                title="Previous Slide"
+                                            >
+                                                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover/nav:opacity-100 transition-opacity border border-white/10">
+                                                    <ChevronRight className="rotate-180 text-white" size={20} />
+                                                </div>
+                                            </div>
+                                            <div className="flex-1" />
+                                            <div
+                                                onClick={handleNextPage}
+                                                className="w-1/4 h-full cursor-e-resize group/nav"
+                                                title="Next Slide"
+                                            >
+                                                <div className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center opacity-0 group-hover/nav:opacity-100 transition-opacity border border-white/10">
+                                                    <ChevronRight className="text-white" size={20} />
+                                                </div>
+                                            </div>
+                                        </div>
 
                                         {/* Solid Smooth Loading Overlay */}
                                         <AnimatePresence mode="wait">
@@ -276,8 +334,6 @@ export default function AnalyzePage() {
                                                 </motion.div>
                                             )}
                                         </AnimatePresence>
-
-                                        <div className="absolute inset-0 pointer-events-none" />
                                     </div>
                                 ) : (
                                     <div className="relative z-10 w-full max-w-3xl aspect-[16/9] bg-white rounded-sm shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden">
