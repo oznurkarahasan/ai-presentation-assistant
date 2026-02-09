@@ -245,7 +245,7 @@ export default function AnalyzePage() {
                                 className="relative"
                             >
                                 <Link
-                                    href={`/presentation?id=${presentationId}&slide=${currentPage}`}
+                                    href={`/presentation?id=${presentationId}`}
                                     className="group flex items-center gap-2.5 px-3 py-2 md:px-4 md:py-2 bg-gradient-to-br from-primary via-primary to-orange-600 text-white rounded-xl text-[10px] md:text-xs font-black uppercase tracking-[0.15em] shadow-[0_10px_20px_-10px_rgba(234,88,12,0.5)] border border-white/10 overflow-hidden transition-all hover:shadow-primary/40"
                                 >
                                     {/* Glass reflection effect */}

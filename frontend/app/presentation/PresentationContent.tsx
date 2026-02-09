@@ -23,20 +23,13 @@ export default function PresentationContent() {
     const {
         currentSlide, isAudioActive, isStarted,
         handleSlideChange, addTranscript, setPresentationTitle,
-        setSlideCount, setElapsedTime, setCurrentSlide
+        setSlideCount, setElapsedTime
     } = usePresentation();
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [fileData, setFileData] = useState<{ url: string; isPdf: boolean } | null>(null);
 
-    // Initial slide sync from URL
-    useEffect(() => {
-        const slide = searchParams.get("slide");
-        if (slide) {
-            setCurrentSlide(Math.max(1, parseInt(slide)));
-        }
-    }, [searchParams, setCurrentSlide]);
 
     // Fetch presentation data
     useEffect(() => {
