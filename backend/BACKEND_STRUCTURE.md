@@ -18,7 +18,9 @@ backend/app/
 │   └── v1/
 │       ├── auth.py ................ Authentication endpoints (login, token issuance, JWT flows)
 │       ├── chat.py ................ Chat and RAG endpoints handling conversational requests
-│       └── presentations.py ....... Upload endpoints and ingestion orchestration for PDF/PPTX
+│       ├── live.py ................ WebSocket endpoint for real-time navigation and voice commands
+│       ├── presentations.py ....... Upload endpoints and ingestion orchestration for PDF/PPTX
+│       └── transcribe.py .......... Utility endpoint for audio-to-text transcription testing
 │
 ├── core/
 │   ├── config.py .................. Pydantic Settings with environment-backed defaults (ENV, logging, secrets, DB keys)
@@ -40,6 +42,7 @@ backend/app/
     ├── pdf_service.py ............. PDF text extraction, cleaning (null-bytes), and PDF-specific checks
     ├── pptx_service.py ............ PPTX slide and speaker-note extraction and security checks
     ├── rag_service.py ............. High-level RAG orchestration (retrieval + generation helpers)
+    ├── stt_service.py ............. Speech-to-Text service utilizing Groq's Whisper-v3 model
     ├── vector_db.py ............... Persists embeddings and slide metadata to Postgres + pgvector
     └── file_cleanup.py ............ Cleanup policies for failed/expired guest uploads
 ```
@@ -50,6 +53,7 @@ backend/app/
 
 - `DATABASE_URL` - PostgreSQL connection string with pgvector support
 - `OPENAI_API_KEY` - OpenAI API key for embeddings and chat completions
+- `GROQ_API_KEY` - API key for Groq STT (Speech-to-Text) services
 
 **Optional Variables:**
 

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 # 1. Set environment variables BEFORE any imports
 os.environ["DATABASE_URL"] = "postgresql+asyncpg://user:pass@localhost/dbname"
 os.environ["OPENAI_API_KEY"] = "sk-dummy-key-for-testing"
+os.environ["GROQ_API_KEY"] = "sk-dummy-key-for-testing"
 os.environ["TESTING"] = "True"
 os.environ["ENABLE_LOGGING"] = "False"  # Disable logging in tests
 
