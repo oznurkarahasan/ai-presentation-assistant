@@ -34,7 +34,7 @@
 
 - [x] RAG Engine (Semantic Search).
 - [x] Presentation Analysis Service (GPT-4o).
-- [X] Real-time Speech-to-Text (Whisper).
+- [ ] Real-time Speech-to-Text (Whisper).
 - [ ] Auto-Slide Switching Logic.
 
 ## Phase 4.5: CI/CD & Testing
@@ -48,10 +48,10 @@
 ## Phase 5: Frontend Integration
 
 - [x] Authentication Pages (Login/Register).
-- [X] Dashboard & Library.
+- [ ] Dashboard & Library.
 - [x] Upload & Progress Bar.
-- [X] Live Presentation Mode.
-- [X] Responsive UI try new fonts.
+- [ ] Live Presentation Mode (WebSocket).
+- [ ] Responsive UI try new fonts.
 
 ## Phase 6: Optimization & Polish
 
@@ -106,5 +106,5 @@
 > [x] Vector Embeddings (OpenAI text-embedding-3-small, 1536 dimensions)
 > [x] RAG System (Semantic search with pgvector, GPT-4o-mini for Q&A)
 > [x] File Cleanup Policies (Failed uploads, expired guest files)
-> [x] WebSocket for Real-time Speech (Phase 4 - In Progress)
-> [x] Frontend Dashboard & Live Mode (Phase 5 - Planned)
+> [ ] WebSocket for Real-time Speech (Phase 4 - In Progress)
+> [ ] Frontend Dashboard & Live Mode (Phase 5 - Planned)
