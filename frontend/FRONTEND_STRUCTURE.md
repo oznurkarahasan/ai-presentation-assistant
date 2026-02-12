@@ -25,21 +25,11 @@ frontend/
 │ ├── register/page.tsx .......... Registration page and validations
 │ └── forgot-password/page.tsx ... Password reset request UI
 ├── analyze/page.tsx ............... Presentation analysis & chat UI (uses client hooks)
-├── dashboard/ ..................... User dashboard and statistics
-│   ├── layout.tsx ................. Persisted dashboard layout (Sidebar/Header)
-│   ├── DashboardContext.tsx ....... Centralized state for dashboard data
-│   └── page.tsx ................... Dashboard overview and presentation list
-├── presentation/ .................. Real-time presentation view and control
-│   ├── page.tsx ................... Presentation entry point and context provider
-│   ├── PresentationContext.tsx .... State management for active presentation
-│   ├── PresentationContent.tsx .... Main presentation structure and logic
-│   ├── PDFViewer.tsx .............. PDF rendering component for slides
-│   └── LiveAudioStreamer.tsx ...... WebSocket audio streaming for voice commands
+├── dashboard/page.tsx ............. User dashboard (protected route)
 ├── upload/page.tsx ................ Upload UI and multipart file handling
 └── components/
-    ├── Navbar.tsx .................. Top navigation component
-    ├── Footer.tsx .................. Footer component
-    └── InteractiveGrid.tsx ......... Mouse-following grid effect for home page
+├── Navbar.tsx .................. Top navigation component
+└── Footer.tsx .................. Footer component
 ```
 
 # How to test frontend

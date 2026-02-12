@@ -27,7 +27,6 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = Field(..., description="PostgreSQL database connection URL (e.g., postgresql+asyncpg://user:pass@localhost/dbname)")
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key for GPT-4 and embeddings (required for AI features)")
-    GROQ_API_KEY: str = Field(..., description="Groq API key for Groq model access (required for AI features)")
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 
