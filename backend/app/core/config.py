@@ -19,6 +19,20 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Password reset configuration
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 60
+
+    # Frontend URL used to build password reset links
+    FRONTEND_URL: str = Field(default="http://localhost:3000", description="Frontend base URL for reset links")
+
+    # SMTP / Email settings (used for sending password reset emails)
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int | None = None
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str | None = None
+    SMTP_FROM_NAME: str | None = None
+
     # CORS configuration
     CORS_ORIGINS: list[str] = Field(
         default=["http://localhost:3000"],
