@@ -18,7 +18,7 @@
 
 ## Phase 2.5: Backend Fixes
 
-- [ ] Forgot Password page done but backend is not working.
+- [x] Forgot Password page & backend (JWT, email, reset endpoint).
 - [ ] Guest API Endpoints.
 - [ ] Guest data clean up, file upload, check guest privileges.
 
