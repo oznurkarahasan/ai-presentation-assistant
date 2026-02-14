@@ -16,12 +16,12 @@ backend/app/
 │
 ├── api/
 │   └── v1/
-│       ├── auth.py ................ Authentication endpoints (login, token issuance, JWT flows)
+│       ├── auth.py ................ Authentication endpoints (register/login/me + forgot/reset password)
 │       ├── chat.py ................ Chat and RAG endpoints handling conversational requests
 │       └── presentations.py ....... Upload endpoints and ingestion orchestration for PDF/PPTX
 │
 ├── core/
-│   ├── config.py .................. Pydantic Settings with environment-backed defaults (ENV, logging, secrets, DB keys)
+│   ├── config.py .................. Pydantic Settings (ENV, logging, JWT, DB, CORS, SMTP, password-reset settings)
 │   ├── database.py ................ Async SQLAlchemy engine/session creation and helpers
 │   ├── exceptions.py .............. Custom application exceptions and global exception handlers
 │   ├── logger.py .................. Central loguru setup and formatting wrappers
@@ -35,6 +35,7 @@ backend/app/
 │   └── chat.py .................... Pydantic schemas for chat/RAG payload validation
 │
 └── services/
+    ├── email_service.py ........... SMTP email sender for password-reset messages and reset-link generation
     ├── embedding_service.py ....... OpenAI embedding wrapper with batching and concurrency limits
     ├── file_validator.py .......... Magic-bytes, size, page-count and basic file sanity checks
     ├── pdf_service.py ............. PDF text extraction, cleaning (null-bytes), and PDF-specific checks
@@ -56,6 +57,23 @@ backend/app/
 - `ENV` - Environment mode (development/production), default: `development`
 - `ENABLE_LOGGING` - Enable/disable logging, default: `true`
 - `LOG_LEVEL` - Logging level (DEBUG/INFO/WARNING/ERROR), default: `INFO`
+- `PASSWORD_RESET_TOKEN_EXPIRE_MINUTES` - Password reset token lifetime (minutes), default: `60`
+- `FRONTEND_URL` - Frontend base URL used in reset links, default: `http://localhost:3000`
+- `SMTP_HOST` - SMTP server hostname (required to actually send email)
+- `SMTP_PORT` - SMTP server port (for Gmail usually `587`)
+- `SMTP_USER` - SMTP username/login
+- `SMTP_PASSWORD` - SMTP password/app password
+- `SMTP_FROM_EMAIL` - Sender email address shown in password-reset emails
+- `SMTP_FROM_NAME` - Sender display name shown in password-reset emails
+
+## Password Reset Mail Flow
+
+- `POST /api/v1/auth/forgot-password`
+  - Accepts an email and returns a generic success response.
+  - If the user exists, generates a short-lived JWT reset token and queues email sending via FastAPI `BackgroundTasks`.
+  - Uses `app/services/email_service.py` to send the reset link.
+- `POST /api/v1/auth/reset-password`
+  - Validates reset token, finds the user, hashes the new password, and updates the stored password hash.
 
 ## Development Notes
 
