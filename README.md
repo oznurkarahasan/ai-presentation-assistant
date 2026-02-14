@@ -164,3 +164,45 @@ cd backend
 .\venv\Scripts\activate
 pip install -r requirements.txt
 ```
+
+## Commands for Linux Users
+
+- Builds images and starts all services in the background.
+
+```bash
+docker compose up -d --build
+```
+- Starts existing containers without rebuilding images.
+```bash
+docker compose up -d
+```
+- Stops and removes containers and the project network.
+```bash
+docker compose down
+```
+- watch logs
+```bash
+docker compose logs -f
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+- only one service
+```bash
+docker compose up -d --build backend
+docker compose up -d --build frontend
+```
+- in container
+```bash
+docker compose exec backend bash
+docker compose exec frontend sh
+```
+- delete volumes, db container. all data will be deleted
+```bash
+docker compose down -v
+```
+- Pyhton virtual environment
+```bash
+cd backend
+source venv/bin/activate
+pip install -r requirements.txt
+```
