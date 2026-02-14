@@ -35,3 +35,19 @@ class UserResponse(BaseModel):
     is_active: bool = True
     
     model_config = ConfigDict(from_attributes=True)
+
+class ForgotPassword(BaseModel):
+    email: EmailStr
+
+
+class ResetPassword(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8)
+    new_password_confirm: str
+
+    @field_validator('new_password_confirm')
+    @classmethod
+    def passwords_match(cls, v: str, info):
+        if 'new_password' in info.data and v != info.data['new_password']:
+            raise ValueError('Passwords do not match!')
+        return v

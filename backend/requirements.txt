@@ -25,3 +25,4 @@ aiosqlite
 flake8
 bandit
 safety
+aiosmtplib
