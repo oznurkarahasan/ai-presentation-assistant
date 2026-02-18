@@ -26,3 +26,4 @@ flake8
 bandit
 safety
 aiosmtplib
+websockets>=12.0
