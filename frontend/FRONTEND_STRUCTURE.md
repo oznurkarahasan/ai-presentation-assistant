@@ -10,35 +10,205 @@ frontend/
 ├── tsconfig.json ...................... TypeScript compiler options and project includes
 ├── eslint.config.mjs .................. ESLint configuration (Next.js presets + overrides)
 ├── next.config.js ..................... Next.js configuration (turbopack minimal config present)
+├── next.config.ts ..................... TypeScript Next.js configuration
 ├── postcss.config.mjs ................. PostCSS/Tailwind configuration
 ├── next-env.d.ts ...................... Next.js type definitions for TypeScript
+├── vitest.config.ts ................... Vitest test configuration
+├── vitest.setup.ts .................... Vitest setup file
+├── .env.local ......................... Local environment variables (NEXT_PUBLIC_API_URL)
 ├── public/ ............................ Static assets (favicon, images, icons)
 ├── globals.css ........................ Global Tailwind/CSS styles imported by `layout.tsx`
 ├── .next/ ............................. Build output directory (generated; ignored in VCS)
 └── app/ ................................ Next.js App Router source directory (pages, layouts, components)
-├── layout.tsx ...................... Root layout that wraps all pages (contains Suspense wrapper)
-├── page.tsx ........................ Home page component
-├── api/
-│ └── client.ts ................... Axios client configured with `NEXT_PUBLIC_API_URL` base
-├── (auth)/ Auth routes grouped (client-only pages)
-│ ├── login/page.tsx ............. Login page and authentication flow (client component)
-│ ├── register/page.tsx .......... Registration page and validations
-│ └── forgot-password/page.tsx ... Password reset request UI
-├── analyze/page.tsx ............... Presentation analysis & chat UI (uses client hooks)
-├── dashboard/page.tsx ............. User dashboard (protected route)
-├── upload/page.tsx ................ Upload UI and multipart file handling
-└── components/
-├── Navbar.tsx .................. Top navigation component
-└── Footer.tsx .................. Footer component
+    ├── layout.tsx ...................... Root layout that wraps all pages (contains Suspense wrapper)
+    ├── page.tsx ........................ Home page component
+    ├── globals.css ..................... Global styles with Tailwind directives
+    ├── favicon.ico ..................... Site favicon
+    │
+    ├── api/
+    │   └── client.ts ................... Axios client configured with `NEXT_PUBLIC_API_URL` base
+    │
+    ├── (auth)/ ......................... Auth routes grouped (client-only pages)
+    │   ├── layout.tsx .................. Auth layout wrapper
+    │   ├── login/page.tsx .............. Login page and authentication flow (client component)
+    │   ├── register/page.tsx ........... Registration page and validations
+    │   ├── forgot-password/page.tsx .... Password reset request UI
+    │   └── reset-password/page.tsx ..... Password reset confirmation UI
+    │
+    ├── analyze/page.tsx ................ Presentation analysis & chat UI (uses client hooks)
+    │
+    ├── dashboard/ ...................... User dashboard (protected route)
+    │   ├── page.tsx .................... Dashboard main page with presentations list
+    │   ├── layout.tsx .................. Dashboard layout with sidebar
+    │   └── DashboardContext.tsx ........ Dashboard state management context
+    │
+    ├── upload/page.tsx ................. Upload UI and multipart file handling
+    │
+    ├── presentation/ ................... Real-time presentation mode with speech recognition
+    │   ├── page.tsx .................... Presentation page wrapper with PresentationProvider
+    │   ├── presentation_content.tsx .... Main presentation content component
+    │   ├── presentation_context.tsx .... Presentation state management (slides, audio, timer)
+    │   ├── presentation_header.tsx ..... Header with title, timer, and controls
+    │   ├── presentation_control.tsx .... Bottom control bar (mic, slide counter, pause)
+    │   ├── presentation_hero.tsx ....... Start screen before presentation begins
+    │   ├── pdf_viewer.tsx .............. PDF slide viewer component
+    │   ├── transcript_panel.tsx ........ Live transcript display panel
+    │   ├── live_audio_streamer.tsx ..... Web Speech API integration (browser-based STT)
+    │   └── deepgram_audio_streamer.tsx . Deepgram WebSocket streaming (real-time STT)
+    │
+    ├── speech-test/ .................... Speech recognition testing page
+    │
+    ├── hooks/ .......................... Custom React hooks directory
+    │
+    ├── components/
+    │   ├── Navbar.tsx .................. Top navigation component
+    │   └── Footer.tsx .................. Footer component
+    │
+    └── tests/ .......................... Frontend test files
+        └── (test files)
 ```
 
-# How to test frontend
-İf you have some changes in frontend, you need to run these commands:
+## Presentation Mode Architecture
 
+The presentation mode (`/presentation`) provides real-time speech-to-slide control:
+
+### State Management
+- **presentation_context.tsx**: Centralized state for slides, audio, timer, and transcript
+- Uses React Context API for global state sharing
+
+### Speech Recognition Options
+
+#### 1. Web Speech API (Browser-based)
+- **File**: `live_audio_streamer.tsx`
+- **Pros**: Free, no API key needed, low latency (500ms)
+- **Cons**: Chrome/Edge only, requires internet, lower accuracy
+- **Use case**: Quick testing, MVP
+
+#### 2. Deepgram Streaming (Production)
+- **File**: `deepgram_audio_streamer.tsx`
+- **Pros**: High accuracy (96-98%), fast (250ms), multi-language
+- **Cons**: Requires API key, costs $0.26/hour
+- **Use case**: Production deployment
+
+### Component Flow
+```
+page.tsx (Provider wrapper)
+  └─► presentation_content.tsx (Main logic)
+      ├─► presentation_hero.tsx (Start screen)
+      ├─► presentation_header.tsx (Top bar)
+      ├─► pdf_viewer.tsx (Slide display)
+      ├─► transcript_panel.tsx (Live transcript)
+      ├─► presentation_control.tsx (Bottom controls)
+      └─► deepgram_audio_streamer.tsx (Speech recognition)
+          └─► WebSocket → Backend → Deepgram → AI Slide Matching
+```
+
+### Real-time Communication
+```
+Frontend (WebSocket Client)
+  ↓ Audio chunks (100ms)
+Backend (WebSocket Handler)
+  ↓ Forward to Deepgram
+Deepgram (Streaming STT)
+  ↓ Transcript (250ms)
+Backend (Speech Service)
+  ├─► Quick keyword match (10ms)
+  └─► AI match with GPT-4o-mini (100ms)
+  ↓ Slide change decision
+Frontend (Update UI)
+```
+
+## Environment Variables
+
+### Required
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### Docker
+```bash
+# In docker-compose.yml
+NEXT_PUBLIC_API_URL=http://localhost:8000  # Browser access
+```
+
+## Key Features
+
+### Authentication
+- JWT token stored in localStorage
+- Automatic token refresh on 401
+- Protected routes with middleware
+
+### File Upload
+- Drag & drop support
+- PDF and PPTX validation
+- Progress tracking
+- Guest mode support
+
+### Presentation Mode
+- Real-time speech recognition
+- Automatic slide switching
+- Live transcript display
+- Keyboard navigation (←/→/Space)
+- Fullscreen support
+- Timer and slide counter
+
+### Dashboard
+- Presentation library
+- Session history
+- Quick actions (view, delete, start)
+- Search and filter
+
+## Testing
+
+### Run Tests
 ```bash
 cd frontend
-npm run lint
-npx tsc --noEmit
 npm run test
 ```
-Some changes need to change test files. For example if you change login page, you need to change test files in `tests/login.test.tsx`. Dont forget.
+
+### Lint
+```bash
+npm run lint
+```
+
+### Type Check
+```bash
+npx tsc --noEmit
+```
+
+### Test Files Location
+- `tests/` - Component and integration tests
+- Update tests when modifying components
+
+## Development
+
+### Local Development
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Docker Development
+```bash
+docker-compose up frontend
+```
+
+### Hot Reload
+- Changes auto-reload in development
+- Volume mounted for live updates
+
+## Production Build
+
+```bash
+npm run build
+npm start
+```
+
+## Notes
+
+- All presentation components use snake_case naming (matching backend convention)
+- Speech recognition requires HTTPS in production
+- WebSocket connections need proper CORS configuration
+- Deepgram API key optional for development (falls back to Web Speech API)
+

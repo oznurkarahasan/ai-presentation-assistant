@@ -41,6 +41,9 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = Field(..., description="PostgreSQL database connection URL (e.g., postgresql+asyncpg://user:pass@localhost/dbname)")
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key for GPT-4 and embeddings (required for AI features)")
+    DEEPGRAM_API_KEY: str | None = Field(default=None, description="Deepgram API key for real-time speech recognition")
+    DEEPGRAM_MODEL: str = Field(default="nova-2", description="Deepgram speech model")
+    DEEPGRAM_LANGUAGE: str = Field(default="tr", description="Deepgram language code")
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
 

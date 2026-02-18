@@ -29,6 +29,9 @@ services:
     environment:
       - DATABASE_URL=postgresql+asyncpg://${DB_USER:-admin}:${DB_PASSWORD:-admin}@db:5432/${DB_NAME:-presentation_db}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+      - DEEPGRAM_MODEL=${DEEPGRAM_MODEL:-nova-2}
+      - DEEPGRAM_LANGUAGE=${DEEPGRAM_LANGUAGE:-tr}
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}

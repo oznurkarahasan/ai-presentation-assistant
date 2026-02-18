@@ -24,6 +24,10 @@ from app.api.v1 import auth, presentations, chat
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Application startup initiated")
+    logger.info(
+        f"Deepgram enabled: {bool(settings.DEEPGRAM_API_KEY)} | "
+        f"model={settings.DEEPGRAM_MODEL} | lang={settings.DEEPGRAM_LANGUAGE}"
+    )
     if not os.getenv("TESTING"):
         async with engine.begin() as conn:
             # Ensure the vector extension is created
