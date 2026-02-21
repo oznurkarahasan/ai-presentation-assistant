@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Monitor, AlertCircle } from "lucide-react";
+import dynamic from "next/dynamic";
 import client from "../api/client";
 import { usePresentation } from "./presentation_context";
 import PresentationHeader from "./presentation_header";
@@ -11,7 +12,9 @@ import TranscriptPanel from "./transcript_panel";
 import PresentationHero from "./presentation_hero";
 import PDFViewer from "./pdf_viewer";
 
-// TODO: LiveAudioStreamer component needs to be implemented
+const DeepgramAudioStreamer = dynamic(() => import("./deepgram_audio_streamer"), {
+    ssr: false,
+});
 
 export default function PresentationContent() {
     const searchParams = useSearchParams();
@@ -21,8 +24,7 @@ export default function PresentationContent() {
         currentSlide, isStarted,
         handleSlideChange, setPresentationTitle,
         setSlideCount, setElapsedTime
-        // TODO: Uncomment when LiveAudioStreamer is implemented
-        // isAudioActive, addTranscript
+        , isAudioActive, addTranscript
     } = usePresentation();
 
     const [loading, setLoading] = useState(true);
@@ -144,14 +146,14 @@ export default function PresentationContent() {
 
             <div className="bg-grid" />
 
-            {/* TODO: Implement LiveAudioStreamer component */}
-            {/* <LiveAudioStreamer
-                presentationId={Number(presentationId)}
-                currentSlide={currentSlide}
-                isActive={isAudioActive}
-                onSlideChange={handleSlideChange}
-                onTranscript={addTranscript}
-            /> */}
+            <DeepgramAudioStreamer
+                enabled={isAudioActive}
+                onTranscript={({ text }) => {
+                    if (text.trim()) {
+                        addTranscript(text);
+                    }
+                }}
+            />
 
             <PresentationHeader />
 

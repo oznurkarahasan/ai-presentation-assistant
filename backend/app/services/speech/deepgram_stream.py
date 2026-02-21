@@ -90,8 +90,20 @@ def extract_transcript(payload: dict) -> tuple[str, bool, float]:
     Return (text, is_final, confidence).
     """
     is_final = bool(payload.get("is_final", False))
+
+    # Deepgram listen v1 shape
     channel = payload.get("channel") or {}
     alts = channel.get("alternatives") or []
+
+    # Fallback for alternate payload layouts
+    if not alts:
+        results = payload.get("results") or {}
+        channels = results.get("channels") or []
+        if channels:
+            alts = (channels[0] or {}).get("alternatives") or []
+        if "is_final" in results and "is_final" not in payload:
+            is_final = bool(results.get("is_final", False))
+
     if not alts:
         return ("", is_final, 0.0)
     alt0 = alts[0] or {}
