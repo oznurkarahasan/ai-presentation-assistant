@@ -56,6 +56,13 @@ export default function Home() {
                 Try Demo (Guest)
               </Link>
               <Link
+                href="/dashboard"
+                className="inline-flex items-center justify-center gap-2 bg-white text-black hover:bg-zinc-200 px-6 py-3 rounded-lg font-medium text-sm transition-all shadow-lg active:scale-95"
+              >
+                <Sparkles size={18} />
+                Start Real-time Presentation
+              </Link>
+              <Link
                 href="/register"
                 className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white px-6 py-3 rounded-lg font-medium text-sm transition-all border border-white/10"
               >

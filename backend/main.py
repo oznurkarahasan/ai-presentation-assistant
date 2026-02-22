@@ -18,19 +18,22 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ValidationError
 )
-from app.api.v1 import auth, presentations, chat
+from app.api.v1 import auth, presentations, chat, orchestration
 
 # Lifespan event to create tables and extensions
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Application startup initiated")
     if not os.getenv("TESTING"):
-        async with engine.begin() as conn:
-            # Ensure the vector extension is created
-            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-            
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database initialized successfully")
+        try:
+            async with engine.begin() as conn:
+                # Ensure the vector extension is created
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database initialized successfully")
+        except Exception as e:
+            logger.error(f"Database initialization failed: {str(e)}")
+            logger.warning("Application starting without database initialization. Expect errors if DB is needed.")
     else:
         logger.info("Skipping database initialization in TESTING mode")
     yield
@@ -130,9 +133,12 @@ if not os.path.exists("uploaded_files"):
     os.makedirs("uploaded_files")
 app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"), name="uploaded_files")
 
-app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"]) # Authentication routes modules seperated
+app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"])
 app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presentations", tags=["Presentations"])
 app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
+app.include_router(orchestration.router, prefix=settings.API_V1_STR + "/orchestration", tags=["Orchestration"])
+
+
 @app.get("/")
 async def root():
     return {"message": "AI Presentation Assistant API is running successfully."}

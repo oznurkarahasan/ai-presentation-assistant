@@ -193,12 +193,10 @@ export default function UploadPage() {
         const guestToken = localStorage.getItem("guest_presentation_token");
 
         if (presentationId) {
-            const params = new URLSearchParams();
-            params.set('id', presentationId);
-            if (guestToken) {
-                params.set('guest_token', guestToken);
-            }
-            router.push(`/presentation?${params.toString()}`);
+            const url = guestToken
+                ? `/presentation/${presentationId}?guest_token=${guestToken}`
+                : `/presentation/${presentationId}`;
+            router.push(url);
         } else {
             router.push("/presentation");
         }

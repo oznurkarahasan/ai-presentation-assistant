@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -18,6 +19,7 @@ async def get_db():
 
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=500, description="Question about the presentation (max 500 characters)")
+    current_slide: Optional[int] = Field(None, description="The current slide being viewed")
 
 class ChatResponse(BaseModel):
     answer: str
@@ -49,7 +51,8 @@ async def ask_presentation(
         response = await rag_service.ask_question(
             db=db, 
             presentation_id=presentation_id, 
-            question=chat_request.question
+            question=chat_request.question,
+            current_slide=chat_request.current_slide
         )
         return response
 

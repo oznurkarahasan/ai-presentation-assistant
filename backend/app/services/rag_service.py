@@ -1,3 +1,4 @@
+from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.presentation import Slide
@@ -31,7 +32,8 @@ def get_client() -> AsyncOpenAI:
 async def ask_question(
     db: AsyncSession, 
     presentation_id: int, 
-    question: str
+    question: str,
+    current_slide: Optional[int] = None
 ) -> dict:
     """
     1. Converts the question into a vector.
@@ -42,15 +44,33 @@ async def ask_question(
     # 1. Embedding
     query_vector = await embedding_service.create_embedding(question)
 
-    # 2. Vector Search
-    stmt = select(Slide).filter(
-        Slide.presentation_id == presentation_id
-    ).order_by(
-        Slide.embedding.l2_distance(query_vector)
-    ).limit(3)
+    # 2. Vector Search + Current Slide Context
+    top_slides = []
     
-    result = await db.execute(stmt)
-    top_slides = result.scalars().all()
+    # Always include the current slide if provided
+    if current_slide:
+        current_stmt = select(Slide).filter(
+            Slide.presentation_id == presentation_id,
+            Slide.page_number == current_slide
+        )
+        current_res = await db.execute(current_stmt)
+        curr_slide_obj = current_res.scalar_one_or_none()
+        if curr_slide_obj:
+            top_slides.append(curr_slide_obj)
+
+    # Fetch nearest neighbors (excluding current slide if already added)
+    search_stmt = select(Slide).filter(
+        Slide.presentation_id == presentation_id
+    )
+    if current_slide:
+        search_stmt = search_stmt.filter(Slide.page_number != current_slide)
+    
+    search_stmt = search_stmt.order_by(
+        Slide.embedding.l2_distance(query_vector)
+    ).limit(3 - len(top_slides))
+    
+    result = await db.execute(search_stmt)
+    top_slides.extend(result.scalars().all())
 
     if not top_slides:
         return {
@@ -59,7 +79,10 @@ async def ask_question(
         }
 
     # Context & Prompt
-    retrieved_context = "\n\n".join([f"[Sayfa {s.page_number}]: {s.content_text}" for s in top_slides])
+    retrieved_context = "\n\n".join([
+        f"[Sayfa {s.page_number}]{' (Görüntülenen Sayfa)' if s.page_number == current_slide else ''}: {s.content_text}" 
+        for s in top_slides
+    ])
 
     system_prompt = """
     Sen yardımcı bir asistanısın. Aşağıda verilen SUNUM İÇERİĞİ'ni (Context) kullanarak soruyu cevapla.

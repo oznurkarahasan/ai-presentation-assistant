@@ -12,11 +12,10 @@ os.environ["TESTING"] = "True"
 os.environ["ENABLE_LOGGING"] = "False"  # Disable logging in tests
 
 # 2. Setup testing engine
-DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+DATABASE_URL = "sqlite+aiosqlite:///./test_temp.db"
 engine = create_async_engine(
     DATABASE_URL, 
     connect_args={"check_same_thread": False},
-    poolclass=None,  # Disable connection pooling for tests
     echo=False
 )
 TestingSessionLocal = async_sessionmaker(
@@ -78,6 +77,24 @@ async def client(db_session):
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
+    
+    app.dependency_overrides.clear()
+
+@pytest.fixture(scope="function")
+def sync_client(db_session):
+    """Provide a synchronous TestClient for WebSocket testing"""
+    from fastapi.testclient import TestClient
+    
+    def override_get_db():
+        # Note: TestClient is sync, but we want it to work with our async db session
+        # This is tricky because TestClient will call dependencies in a thread/sync mode.
+        # However, for WebSockets, the most important part is the connection.
+        yield db_session
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    with TestClient(app) as tc:
+        yield tc
     
     app.dependency_overrides.clear()
 
