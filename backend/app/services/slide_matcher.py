@@ -29,7 +29,7 @@ from typing import Optional
 
 from app.core.logger import logger
 from app.core.exceptions import AppBaseException
-
+from app.core.exceptions import SlideMatchError
 
 # Custom Exception
 

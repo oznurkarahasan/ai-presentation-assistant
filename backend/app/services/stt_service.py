@@ -25,6 +25,7 @@ from openai import AsyncOpenAI
 from app.core.config import settings
 from app.core.logger import logger
 from app.core.exceptions import AppBaseException
+from app.core.exceptions import STTError
 
 
 # Custom Exception
@@ -123,6 +124,9 @@ SUPPORTED_AUDIO_FORMATS = {
     "audio/ogg": "ogg",
     "audio/ogg;codecs=opus": "ogg",
     "audio/mp4": "mp4",
+    "video/mp4": "mp4",
+    "audio/m4a": "m4a",
+    "audio/x-m4a": "m4a",
     "audio/mpeg": "mp3",
     "audio/wav": "wav",
     "audio/x-wav": "wav",

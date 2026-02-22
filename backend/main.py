@@ -16,9 +16,11 @@ from app.core.exceptions import (
     EmbeddingError,
     DatabaseError,
     ResourceNotFoundError,
+    STTError,
+    SlideMatchError,
     ValidationError
 )
-from app.api.v1 import auth, presentations, chat
+from app.api.v1 import auth, presentations, chat, websocket, stt_test
 
 # Lifespan event to create tables and extensions
 @asynccontextmanager
@@ -98,6 +100,22 @@ async def not_found_error_handler(request: Request, exc: ResourceNotFoundError):
         content={"detail": exc.message}
     )
 
+app.exception_handler(STTError)
+async def stt_error_handler(request: Request, exc: STTError):
+    logger.error(f"STT Error: {exc.message}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "Speech-to-text service temporarily unavailable."}
+    )
+
+@app.exception_handler(SlideMatchError)
+async def slide_match_error_handler(request: Request, exc: SlideMatchError):
+    logger.error(f"Slide Match Error: {exc.message}", exc_info=True)
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={"detail": "Slide matching failed."}
+    )
+
 @app.exception_handler(ValidationError)
 async def validation_error_handler(request: Request, exc: ValidationError):
     """Handle validation errors"""
@@ -133,6 +151,8 @@ app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"), name="uplo
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"]) # Authentication routes modules seperated
 app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presentations", tags=["Presentations"])
 app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
+app.include_router(websocket.router, tags=["WebSocket"])
+app.include_router(stt_test.router, prefix=settings.API_V1_STR + "/stt", tags=["STT Test"])
 @app.get("/")
 async def root():
     return {"message": "AI Presentation Assistant API is running successfully."}
