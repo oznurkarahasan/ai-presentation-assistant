@@ -48,6 +48,11 @@ class ValidationError(AppBaseException):
 class RateLimitError(AppBaseException):
     """Raised when rate limit is exceeded"""
     pass
+
 class STTError(AppBaseException):
     """Raised when Speech-to-Text processing fails"""
+    pass
+
+class SlideMatchError(AppBaseException):
+    """Raised when slide matching fails"""
     pass
