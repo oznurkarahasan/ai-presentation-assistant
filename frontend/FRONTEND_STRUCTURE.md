@@ -39,6 +39,7 @@ frontend/
 cd frontend
 npm run lint
 npx tsc --noEmit
+npm audit --omit=dev --audit-level=high
 npm run test
 ```
 Some changes need to change test files. For example if you change login page, you need to change test files in `tests/login.test.tsx`. Dont forget.
