@@ -95,3 +95,15 @@ bandit -r . -s B101,B105 --exclude ./venv
 flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv
 ```
 Some changes need to change test files. Dont forget.
+
+### For ubuntu
+```bash
+cd backend
+source venv/bin/activate
+$env:PYTHONPATH="."; python -m pytest
+bandit -r . -s B101,B105 --exclude ./venv
+flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics --exclude=venv
+
+#for one test
+$env:PYTHONPATH="."; python -m pytest tests/test_stt_service.py -v
+```

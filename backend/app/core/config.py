@@ -33,6 +33,23 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str | None = None
     SMTP_FROM_NAME: str | None = None
 
+     # STT / Whisper Configuration
+    WHISPER_MODEL: str = "whisper-1"
+    STT_CHUNK_DURATION_SEC: int = 4          # Target chunk duration for sliding window
+    STT_OVERLAP_SEC: int = 2                  # Overlap between chunks (sliding window)
+    STT_MIN_AUDIO_BYTES: int = 1000           # Minimum audio chunk size
+    STT_MAX_AUDIO_BYTES: int = 26214400       # 25MB - Whisper API limit
+    STT_MAX_RETRIES: int = 2                  # Retry attempts for failed transcriptions
+    STT_DEFAULT_LANGUAGE: str = "auto"        # Default: auto-detect. Options: "tr", "en", "auto"
+
+    # Slide Matching Configuration
+    SLIDE_MATCH_THRESHOLD: float = 0.72       # Cosine similarity threshold for slide transition
+    SLIDE_KEYWORD_BOOST: float = 0.15         # Bonus score for keyword matches
+
+    # WebSocket Configuration
+    WS_HEARTBEAT_INTERVAL: int = 30           # WebSocket ping interval in seconds
+    WS_MAX_IDLE_SECONDS: int = 300            # Max idle time before closing connection
+
     # CORS configuration
     CORS_ORIGINS: list[str] = Field(
         default=["http://localhost:3000"],
