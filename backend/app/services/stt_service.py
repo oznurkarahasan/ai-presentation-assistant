@@ -7,6 +7,7 @@ This service handles real-time audio transcription with:
 - Language detection and fixed language modes
 - Retry logic with exponential backoff
 - Audio format validation
+- Whisper hallucination filtering
 
 Architecture Note:
     This service is designed as a swappable abstraction layer.
@@ -14,7 +15,6 @@ Architecture Note:
     whisper.cpp inference engine by implementing the same interface.
 """
 
-import io
 import time
 import asyncio
 from dataclasses import dataclass, field
@@ -24,17 +24,12 @@ from typing import Optional
 from openai import AsyncOpenAI
 from app.core.config import settings
 from app.core.logger import logger
-from app.core.exceptions import AppBaseException
 from app.core.exceptions import STTError
 
 
-# Custom Exception
-
-class STTError(AppBaseException):
-    """Raised when Speech-to-Text processing fails"""
-    pass
-
+# ──────────────────────────────────────────────
 # Data Models
+# ──────────────────────────────────────────────
 
 class SupportedLanguage(str, Enum):
     """Languages supported for STT processing."""
@@ -48,9 +43,9 @@ class TranscriptionResult:
     """Result of a single transcription request."""
     text: str
     language: str
-    duration_ms: float  # Processing time in milliseconds
+    duration_ms: float
     chunk_index: int = 0
-    is_partial: bool = False  # True for sliding window intermediate results
+    is_partial: bool = False
     confidence: float = 1.0
 
     @property
@@ -84,9 +79,8 @@ class STTSessionState:
     last_transcript: str = ""
     last_activity_time: float = field(default_factory=time.time)
 
-    # Sliding window: keep last N transcripts for context
     transcript_window: list[str] = field(default_factory=list)
-    window_size: int = 3  # Keep last 3 transcripts for overlap context
+    window_size: int = 3
 
     def add_transcript(self, text: str) -> None:
         """Add a transcript to the sliding window."""
@@ -98,7 +92,6 @@ class STTSessionState:
             self.total_transcribed_text += " " + text.strip()
             self.transcript_window.append(text.strip())
 
-            # Keep only last N transcripts
             if len(self.transcript_window) > self.window_size:
                 self.transcript_window.pop(0)
 
@@ -115,9 +108,10 @@ class STTSessionState:
         self.detected_language = None
 
 
+# ──────────────────────────────────────────────
 # Supported Audio Formats
+# ──────────────────────────────────────────────
 
-# Whisper API supported formats
 SUPPORTED_AUDIO_FORMATS = {
     "audio/webm": "webm",
     "audio/webm;codecs=opus": "webm",
@@ -133,24 +127,101 @@ SUPPORTED_AUDIO_FORMATS = {
     "audio/flac": "flac",
 }
 
-# Minimum audio size to avoid sending silence/noise (in bytes)
-MIN_AUDIO_SIZE_BYTES = 1000  # ~1KB - very short silence chunks are smaller
-
-# Maximum audio size (25MB - Whisper API limit)
+MIN_AUDIO_SIZE_BYTES = 1000
 MAX_AUDIO_SIZE_BYTES = 25 * 1024 * 1024
 
 
-# STT Service
+# ──────────────────────────────────────────────
+# Whisper Hallucination Filter
+# ──────────────────────────────────────────────
 
-# Lazy initialization of OpenAI client (same pattern as embedding_service)
+HALLUCINATION_PATTERNS = [
+    # Turkish hallucinations
+    "abone ol",
+    "beğen butonuna",
+    "lütfen abone",
+    "abone olmayı",
+    "beğenmeyi unutmayın",
+    "arkadaşlar",
+    "merhaba arkadaşlar",
+    "herkese merhaba",
+    "bu videoyu beğendiyseniz",
+    "kanala abone",
+    "yorumlarda belirtin",
+    "bir sonraki videoda görüşmek üzere",
+    "izlediğiniz için teşekkürler",
+    "ürünlerimizi inceleyebilirsiniz",
+    "seslendiren",
+    "altyazı",
+    "çeviri",
+    # English hallucinations
+    "like and subscribe",
+    "thank you for watching",
+    "don't forget to subscribe",
+    "subscribe to my channel",
+    "please subscribe",
+    "subtitles by",
+    "translated by",
+    "transcribed by",
+    # Common garbage patterns
+    "m.k.",
+    "a.r.",
+    "i'r cyfrifiadau",
+    "cyfrifiadau",
+    "amara.org",
+    "www.mooji.org",
+    "www.",
+    ".org",
+    ".com",
+]
+
+
+def is_hallucination(text: str) -> bool:
+    """
+    Detect common Whisper hallucination patterns.
+    Returns True if the text is likely a hallucination.
+    """
+    if not text or not text.strip():
+        return True
+
+    lower = text.lower().strip()
+
+    # Too short to be meaningful
+    if len(lower) < 3:
+        return True
+
+    # Check against known patterns
+    for pattern in HALLUCINATION_PATTERNS:
+        if pattern in lower:
+            return True
+
+    # Detect repetition: same phrase repeating ("abc abc abc")
+    words = lower.split()
+    if len(words) >= 4:
+        half = len(words) // 2
+        first_half = " ".join(words[:half])
+        second_half = " ".join(words[half:half * 2])
+        if first_half == second_half:
+            return True
+
+    # Single word repeated many times: "bu bu bu bu"
+    if len(words) >= 3:
+        unique_words = set(words)
+        if len(unique_words) <= 2:
+            return True
+
+    return False
+
+
+# ──────────────────────────────────────────────
+# OpenAI Client
+# ──────────────────────────────────────────────
+
 _client: Optional[AsyncOpenAI] = None
 
 
 def get_client() -> AsyncOpenAI:
-    """
-    Get or create the OpenAI client instance with lazy initialization.
-    Follows the same pattern as embedding_service.py for consistency.
-    """
+    """Get or create the OpenAI client instance."""
     global _client
     if _client is None:
         try:
@@ -165,24 +236,18 @@ def get_client() -> AsyncOpenAI:
     return _client
 
 
+# ──────────────────────────────────────────────
+# Audio Validation
+# ──────────────────────────────────────────────
+
 def validate_audio_data(
     audio_data: bytes,
     content_type: str = "audio/webm"
 ) -> str:
     """
     Validate audio data before sending to Whisper API.
-
-    Args:
-        audio_data: Raw audio bytes from the client.
-        content_type: MIME type of the audio.
-
-    Returns:
-        File extension string for the audio format.
-
-    Raises:
-        STTError: If audio data is invalid.
+    Returns file extension string.
     """
-    # Check size
     if len(audio_data) < MIN_AUDIO_SIZE_BYTES:
         raise STTError(
             message="Audio chunk too small",
@@ -197,11 +262,9 @@ def validate_audio_data(
                     f"maximum is {MAX_AUDIO_SIZE_BYTES} bytes"
         )
 
-    # Normalize content type (remove parameters like codecs)
     base_type = content_type.split(";")[0].strip().lower()
     full_type = content_type.strip().lower()
 
-    # Try full type first (e.g., "audio/webm;codecs=opus"), then base type
     extension = SUPPORTED_AUDIO_FORMATS.get(
         full_type,
         SUPPORTED_AUDIO_FORMATS.get(base_type)
@@ -217,6 +280,10 @@ def validate_audio_data(
     return extension
 
 
+# ──────────────────────────────────────────────
+# Transcription
+# ──────────────────────────────────────────────
+
 async def transcribe_audio(
     audio_data: bytes,
     content_type: str = "audio/webm",
@@ -226,20 +293,7 @@ async def transcribe_audio(
 ) -> TranscriptionResult:
     """
     Transcribe an audio chunk using OpenAI Whisper API.
-
-    Args:
-        audio_data: Raw audio bytes (WebM/Opus from browser MediaRecorder).
-        content_type: MIME type of the audio data.
-        language: Target language or AUTO for detection.
-        prompt: Previous transcript text for context continuity
-                (Whisper uses this to improve accuracy across chunks).
-        chunk_index: Sequential chunk number for tracking.
-
-    Returns:
-        TranscriptionResult with transcribed text and metadata.
-
-    Raises:
-        STTError: If transcription fails after retries.
+    Includes hallucination filtering.
     """
     # Validate audio
     extension = validate_audio_data(audio_data, content_type)
@@ -251,33 +305,23 @@ async def transcribe_audio(
     api_params = {
         "model": "whisper-1",
         "response_format": "json",
-        "temperature": 0.0,  # Deterministic output for consistency
+        "temperature": 0.0,
     }
 
-    # Set language if not auto-detect
     if language != SupportedLanguage.AUTO:
         api_params["language"] = language.value
 
-    # Use previous transcript as prompt for better continuity
-    # Whisper uses this to condition the model on recent context
     if prompt:
-        # Whisper prompt limit is ~224 tokens, keep it concise
-        api_params["prompt"] = prompt[-500:]  # Last ~500 chars
+        api_params["prompt"] = prompt[-500:]
 
-    # Prepare file-like object for the API
-    audio_file = io.BytesIO(audio_data)
-    audio_file.name = f"chunk_{chunk_index}.{extension}"
-
-    # Retry logic with exponential backoff
+    # Retry logic
     max_retries = 2
     last_error = None
 
     for attempt in range(max_retries + 1):
         try:
-            audio_file.seek(0)  # Reset position for retry
-
             response = await client.audio.transcriptions.create(
-                file=audio_file,
+                file=(f"chunk_{chunk_index}.{extension}", audio_data),
                 **api_params
             )
 
@@ -292,13 +336,26 @@ async def transcribe_audio(
                 is_partial=False,
             )
 
-            # Log performance metrics
-            logger.debug(
+            # ── Hallucination filter ──
+            if not result.is_empty and is_hallucination(result.text):
+                logger.info(
+                    f"STT chunk #{chunk_index}: filtered hallucination: "
+                    f"'{result.text[:80]}'"
+                )
+                return TranscriptionResult(
+                    text="",
+                    language=result.language,
+                    duration_ms=result.duration_ms,
+                    chunk_index=chunk_index,
+                    is_partial=False,
+                )
+
+            # Log successful transcription
+            logger.info(
                 f"STT chunk #{chunk_index}: "
-                f"'{result.text[:80]}...' "
+                f"'{result.text[:80]}' "
                 f"({result.duration_ms}ms, "
-                f"{len(audio_data)} bytes, "
-                f"attempt {attempt + 1})"
+                f"{len(audio_data)} bytes)"
             )
 
             return result
@@ -307,15 +364,12 @@ async def transcribe_audio(
             last_error = e
             error_msg = str(e)
 
-            # Don't retry on client errors (4xx)
             if "400" in error_msg or "invalid" in error_msg.lower():
-                logger.error(
-                    f"STT client error (no retry): {error_msg}"
-                )
+                logger.error(f"STT client error (no retry): {error_msg}")
                 break
 
             if attempt < max_retries:
-                wait_time = (2 ** attempt) * 0.5  # 0.5s, 1s
+                wait_time = (2 ** attempt) * 0.5
                 logger.warning(
                     f"STT attempt {attempt + 1} failed, "
                     f"retrying in {wait_time}s: {error_msg}"
@@ -323,8 +377,7 @@ async def transcribe_audio(
                 await asyncio.sleep(wait_time)
             else:
                 logger.error(
-                    f"STT failed after {max_retries + 1} attempts: "
-                    f"{error_msg}"
+                    f"STT failed after {max_retries + 1} attempts: {error_msg}"
                 )
 
     raise STTError(
@@ -333,6 +386,10 @@ async def transcribe_audio(
     )
 
 
+# ──────────────────────────────────────────────
+# Session-aware Transcription
+# ──────────────────────────────────────────────
+
 async def transcribe_with_session(
     audio_data: bytes,
     session: STTSessionState,
@@ -340,20 +397,8 @@ async def transcribe_with_session(
 ) -> TranscriptionResult:
     """
     Transcribe audio within a session context (sliding window).
-
-    This is the primary method for live presentation mode.
-    It uses the session's recent transcript history as prompt
-    context for Whisper, improving accuracy across chunks.
-
-    Args:
-        audio_data: Raw audio bytes from the client.
-        session: Active STT session with sliding window state.
-        content_type: MIME type of the audio data.
-
-    Returns:
-        TranscriptionResult with session-aware transcription.
+    Uses recent transcript history as prompt for better accuracy.
     """
-    # Use recent context as prompt for better continuity
     context_prompt = session.get_recent_context()
 
     result = await transcribe_audio(
@@ -364,10 +409,12 @@ async def transcribe_with_session(
         chunk_index=session.chunk_counter,
     )
 
-    # Update session state
-    session.add_transcript(result.text)
+    # Only add real transcripts to session (not hallucinations)
+    if not result.is_empty:
+        session.add_transcript(result.text)
+    else:
+        session.chunk_counter += 1
 
-    # Update detected language on first successful transcription
     if session.detected_language is None and not result.is_empty:
         session.detected_language = result.language
         logger.info(
@@ -378,20 +425,15 @@ async def transcribe_with_session(
     return result
 
 
+# ──────────────────────────────────────────────
+# Session Management
+# ──────────────────────────────────────────────
+
 def create_session(
     session_id: str,
     language: SupportedLanguage = SupportedLanguage.AUTO,
 ) -> STTSessionState:
-    """
-    Create a new STT session for a presentation.
-
-    Args:
-        session_id: Unique identifier (usually presentation_id + timestamp).
-        language: Preferred language or AUTO for detection.
-
-    Returns:
-        New STTSessionState ready for transcription.
-    """
+    """Create a new STT session for a presentation."""
     session = STTSessionState(
         session_id=session_id,
         language=language,
