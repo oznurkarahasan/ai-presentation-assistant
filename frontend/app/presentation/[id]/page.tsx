@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
     ArrowLeft,
     Mic,
@@ -10,16 +10,78 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    FileText,
-    Sparkles
+    FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import client from "../../api/client";
 
+type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
+
+interface CommandPayload {
+    intent: CommandIntent;
+    slide_number?: number;
+}
+
+interface WsCommandMessage {
+    type: "COMMAND";
+    payload: CommandPayload;
+}
+
+interface SpeechRecognitionAlternativeLike {
+    transcript: string;
+}
+
+interface SpeechRecognitionResultLike {
+    0: SpeechRecognitionAlternativeLike;
+    isFinal: boolean;
+}
+
+interface SpeechRecognitionEventLike {
+    resultIndex: number;
+    results: ArrayLike<SpeechRecognitionResultLike>;
+}
+
+interface SpeechRecognitionErrorEventLike {
+    error: string;
+}
+
+interface SpeechRecognitionLike {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onstart: (() => void) | null;
+    onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+    onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+    onend: (() => void) | null;
+    start: () => void;
+    stop: () => void;
+}
+
+interface SpeechRecognitionCtorLike {
+    new(): SpeechRecognitionLike;
+}
+
+declare global {
+    interface Window {
+        SpeechRecognition?: SpeechRecognitionCtorLike;
+        webkitSpeechRecognition?: SpeechRecognitionCtorLike;
+    }
+}
+
+function isWsCommandMessage(value: unknown): value is WsCommandMessage {
+    if (typeof value !== "object" || value === null) return false;
+    const maybe = value as Partial<WsCommandMessage>;
+    if (maybe.type !== "COMMAND") return false;
+    if (typeof maybe.payload !== "object" || maybe.payload === null) return false;
+    const payload = maybe.payload as Partial<CommandPayload>;
+    const validIntent = payload.intent === "NEXT_SLIDE" || payload.intent === "PREVIOUS_SLIDE" || payload.intent === "JUMP_TO_SLIDE";
+    const validSlide = payload.slide_number === undefined || typeof payload.slide_number === "number";
+    return validIntent && validSlide;
+}
+
 export default function RealTimePresentationPage() {
     const params = useParams();
-    const router = useRouter();
     const presentationId = params.id as string;
 
     const [presentationTitle, setPresentationTitle] = useState("Loading...");
@@ -35,7 +97,7 @@ export default function RealTimePresentationPage() {
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
 
     const socketRef = useRef<WebSocket | null>(null);
-    const recognitionRef = useRef<any>(null);
+    const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(totalPages);
 
@@ -68,6 +130,62 @@ export default function RealTimePresentationPage() {
         if (presentationId) fetchPresentation();
     }, [presentationId]);
 
+    const handlePrevPage = useCallback(() => {
+        setCurrentPage(prev => {
+            if (prev > 1) {
+                setIsPageLoading(true);
+                return prev - 1;
+            }
+            console.warn("[Navigation] Blocked: Already on first page.");
+            return prev;
+        });
+    }, []);
+
+    const handleNextPage = useCallback(() => {
+        const total = totalPagesRef.current;
+        setCurrentPage(prev => {
+            if (prev < total) {
+                setIsPageLoading(true);
+                return prev + 1;
+            }
+            console.warn(`[Navigation] Blocked: Already on last page (${total}).`);
+            return prev;
+        });
+    }, []);
+
+    const goToPage = useCallback((page: number) => {
+        const total = totalPagesRef.current;
+        console.log(`[Navigation] Request: Jump to ${page} | Total: ${total}`);
+        if (page >= 1 && page <= total) {
+            setIsPageLoading(true);
+            setCurrentPage(page);
+        } else {
+            console.warn(`[Navigation] Blocked: Page ${page} out of bounds (1-${total}).`);
+        }
+    }, []);
+
+    const handleCommand = useCallback((payload: CommandPayload) => {
+        const { intent, slide_number } = payload;
+        const currentTotal = totalPagesRef.current;
+        console.log(`[WebSocket] Received COMMAND: ${intent} | Slide: ${slide_number} | Total: ${currentTotal}`);
+
+        if (intent === "NEXT_SLIDE") {
+            if (slide_number) {
+                goToPage(slide_number);
+            } else {
+                handleNextPage();
+            }
+        } else if (intent === "PREVIOUS_SLIDE") {
+            if (slide_number) {
+                goToPage(slide_number);
+            } else {
+                handlePrevPage();
+            }
+        } else if (intent === "JUMP_TO_SLIDE" && slide_number) {
+            goToPage(slide_number);
+        }
+    }, [goToPage, handleNextPage, handlePrevPage]);
+
     // WebSocket Initialization
     useEffect(() => {
         let socket: WebSocket | null = null;
@@ -93,10 +211,10 @@ export default function RealTimePresentationPage() {
             socket.onmessage = (event) => {
                 if (socketRef.current !== socket) return;
                 try {
-                    const data = JSON.parse(event.data);
-                    console.log(`[WebSocket] [${socketId}] Message:`, data.type);
-                    if (data.type === "COMMAND") {
-                        handleCommandRef.current(data.payload);
+                    const data: unknown = JSON.parse(event.data);
+                    if (isWsCommandMessage(data)) {
+                        console.log(`[WebSocket] [${socketId}] Message:`, data.type);
+                        handleCommand(data.payload);
                     }
                 } catch (err) {
                     console.error(`[WebSocket] [${socketId}] Parse error:`, err);
@@ -104,8 +222,9 @@ export default function RealTimePresentationPage() {
             };
 
             socket.onerror = (error) => {
+                const activeSocket = socket;
                 // Ignore errors if we've already unmounted or if the socket is closing
-                if (socketRef.current !== socket || socket.readyState === WebSocket.CLOSING || socket.readyState === WebSocket.CLOSED) {
+                if (!activeSocket || socketRef.current !== activeSocket || activeSocket.readyState === WebSocket.CLOSING || activeSocket.readyState === WebSocket.CLOSED) {
                     return;
                 }
                 console.error(`[WebSocket] [${socketId}] Error observed:`, error);
@@ -130,68 +249,7 @@ export default function RealTimePresentationPage() {
             if (socket) socket.close();
             clearTimeout(reconnectTimeout);
         };
-    }, [presentationId]);
-
-    const handleCommand = (payload: any) => {
-        const { intent, slide_number } = payload;
-        const currentTotal = totalPagesRef.current;
-        console.log(`[WebSocket] Received COMMAND: ${intent} | Slide: ${slide_number} | Total: ${currentTotal}`);
-
-        if (intent === "NEXT_SLIDE") {
-            if (slide_number) {
-                goToPage(slide_number);
-            } else {
-                handleNextPage();
-            }
-        } else if (intent === "PREVIOUS_SLIDE") {
-            if (slide_number) {
-                goToPage(slide_number);
-            } else {
-                handlePrevPage();
-            }
-        } else if (intent === "JUMP_TO_SLIDE" && slide_number) {
-            goToPage(slide_number);
-        }
-    };
-
-    const handleCommandRef = useRef(handleCommand);
-    useEffect(() => {
-        handleCommandRef.current = handleCommand;
-    });
-
-    const handlePrevPage = useCallback(() => {
-        setCurrentPage(prev => {
-            if (prev > 1) {
-                setIsPageLoading(true);
-                return prev - 1;
-            }
-            console.warn("[Navigation] Blocked: Already on first page.");
-            return prev;
-        });
-    }, []);
-
-    const handleNextPage = useCallback(() => {
-        const total = totalPagesRef.current;
-        setCurrentPage(prev => {
-            if (prev < total) {
-                setIsPageLoading(true);
-                return prev + 1;
-            }
-            console.warn(`[Navigation] Blocked: Already on last page (${total}).`);
-            return prev;
-        });
-    }, []);
-
-    const goToPage = (page: number) => {
-        const total = totalPagesRef.current;
-        console.log(`[Navigation] Request: Jump to ${page} | Total: ${total}`);
-        if (page >= 1 && page <= total) {
-            setIsPageLoading(true);
-            setCurrentPage(page);
-        } else {
-            console.warn(`[Navigation] Blocked: Page ${page} out of bounds (1-${total}).`);
-        }
-    };
+    }, [presentationId, handleCommand]);
 
     useEffect(() => {
         if (isPageLoading) {
@@ -212,19 +270,19 @@ export default function RealTimePresentationPage() {
     };
 
     const startSpeechRecognition = () => {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        if (!SpeechRecognition) {
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionCtor) {
             alert("Speech recognition not supported in this browser.");
             return;
         }
 
-        const recognition = new SpeechRecognition();
+        const recognition = new SpeechRecognitionCtor();
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
         recognition.onstart = () => setIsListening(true);
-        recognition.onresult = (event: any) => {
+        recognition.onresult = (event: SpeechRecognitionEventLike) => {
             let interimTranscript = '';
             let finalTranscript = '';
 
@@ -258,7 +316,7 @@ export default function RealTimePresentationPage() {
             if (finalTranscript) setTranscript(prev => (prev + " " + finalTranscript).slice(-200));
         };
 
-        recognition.onerror = (event: any) => {
+        recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
             console.error("Speech recognition error", event.error);
             setIsListening(false);
 

@@ -1,6 +1,7 @@
 import pytest
 import json
 import asyncio
+import tempfile
 from unittest.mock import AsyncMock, patch
 from app.api.v1.orchestration import manager
 from app.services.intent_service import IntentType, IntentResult
@@ -14,7 +15,7 @@ async def test_presentation(db_session):
         title="Test Presentation",
         original_filename="test.pdf",
         file_type=FileType.PDF,
-        file_path="/tmp/test.pdf",
+        file_path=f"{tempfile.gettempdir()}/test.pdf",
         file_size_bytes=1024,
         slide_count=5
     )
