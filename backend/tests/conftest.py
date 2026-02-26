@@ -12,7 +12,7 @@ os.environ["TESTING"] = "True"
 os.environ["ENABLE_LOGGING"] = "False"  # Disable logging in tests
 
 # 2. Setup testing engine
-DATABASE_URL = "sqlite+aiosqlite:///./test_temp.db"
+DATABASE_URL = "sqlite+aiosqlite:///backend/tests/test_temp.db"
 engine = create_async_engine(
     DATABASE_URL, 
     connect_args={"check_same_thread": False},
