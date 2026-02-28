@@ -1,110 +1,100 @@
-### Project Roadmap & Status
+# Project Roadmap & Status (Updated: 2026-02-28)
 
-## Phase 1: Infrastructure & Architecture
+This file is maintained as a living backlog. Phases are updated based on the current codebase status.
 
-- [x] Docker environment setup (FastAPI, Next.js, Postgres).
-- [x] Database Schema Design (7 Tables, 3NF Normalized).
-- [x] Vector Database integration (`pgvector` setup).
-- [x] Cascade Delete & Integrity Rules implementation.
-- [x] Guest User vs Registered User logic definition.
+## Phase 1: Infrastructure & Core Architecture (Completed)
 
-## Phase 2: Authentication
+- [x] Docker environment (FastAPI + Next.js + PostgreSQL + pgvector) is set up.
+- [x] Async SQLAlchemy foundation and core model structure are implemented.
+- [x] `pgvector` extension integration is completed.
+- [x] Initial migration/schema baseline is in place.
+- [x] Environment-based configuration (`.env`, config management) is completed.
+- [x] Database init and extension checks are added at application startup.
 
-- [x] Pydantic Schemas (Register/Login validation).
-- [x] Password Hashing (bcrypt).
-- [x] JWT Token generation & handling.
-- [x] Login/Register API Endpoints.
-- [x] Current User dependency injection.
+## Phase 2: Authentication & Account Flows (Mostly Completed)
 
-## Phase 2.5: Backend Fixes
+- [x] Register / Login / Me endpoints are completed.
+- [x] JWT-based authentication and dependency chain are completed.
+- [x] Password hashing and verification (bcrypt) are completed.
+- [x] Forgot password + reset password backend flow is completed.
+- [x] Forgot/Reset password frontend pages are completed.
+- [x] SMTP-based reset email delivery is integrated.
+- [ ] Email verification flow (token verification endpoint + UI) is missing.
+- [ ] Refresh token and session invalidation strategy is missing.
 
-- [x] Forgot Password page & backend (JWT, email, reset endpoint).
-- [ ] Guest API Endpoints.
-- [ ] Guest data clean up, file upload, check guest privileges.
+## Phase 3: File Ingestion & Security (Completed, Guest Side Pending)
 
-## Phase 3: File Ingestion
+- [x] PDF and PPTX upload support is completed.
+- [x] Magic-bytes validation is added to prevent file type spoofing.
+- [x] File size limit (50MB) and empty file checks are added.
+- [x] PDF/PPTX extraction and text sanitization are completed.
+- [x] SHA256 hash generation and upload metadata persistence are completed.
+- [x] Embedding generation is optimized with batch/concurrent processing.
+- [x] Presentation + slide + vector persistence flow is completed.
+- [x] File cleanup flow for failure scenarios is added.
+- [ ] Guest upload lifecycle (permission model + data retention policy) needs to be finalized.
 
-- [x] PDF & PPTX Parsing Logic.
-- [x] File Upload API Endpoint.
-- [x] Text Extraction & Cleaning.
-- [x] Vector Embedding Generation (OpenAI).
-- [x] Saving to Database (Slides + Vectors).
+## Phase 4: AI/RAG & Real-Time Orchestration (In Progress)
 
-## Phase 4: Core AI Services
+- [x] RAG-based Q&A endpoint (`/api/v1/chat/{presentation_id}`) is active.
+- [x] Semantic retrieval + OpenAI-based response generation is active.
+- [x] Real-time orchestration WebSocket endpoint is active.
+- [x] Intent-driven slide commands are active (`NEXT/PREV/JUMP`).
+- [x] Real-time presentation frontend page is active.
+- [x] Analyze -> Real-Time navigation link is added.
+- [ ] Prompt/heuristic tuning for better intent accuracy is pending.
+- [ ] Multi-language intent stability and edge-case tests are pending.
+- [ ] Whisper/local STT alternative (beyond Web Speech fallback) is pending.
 
-- [x] RAG Engine (Semantic Search).
-- [x] Presentation Analysis Service (GPT-4o).
-- [ ] Real-time Speech-to-Text (Whisper).
-- [ ] Auto-Slide Switching Logic.
+## Phase 5: Frontend Product Flows (Mostly Completed)
 
-## Phase 4.5: CI/CD & Testing
+- [x] Auth screens (login/register/forgot/reset) are completed.
+- [x] Upload page with drag-drop, progress, and error states is completed.
+- [x] Dashboard, library, and session history screens are present.
+- [x] Analyze screen and chat experience are active.
+- [x] Real-time mode UI is active.
+- [ ] Small-screen/mobile optimization (especially dashboard/live mode) needs improvement.
+- [ ] Design token standardization for UI consistency is missing at component level.
 
-- [x] Backend Quality Check Workflow (Flake8, Bandit, Safety)
-- [x] Backend Test Suite (pytest, async fixtures)
-- [x] Docker Optimization (.dockerignore)
-- [x] Frontend Linting Workflow
-- [x] E2E Testing Setup
+## Phase 6: Testing, CI/CD & Quality Gates (In Progress)
 
-## Phase 5: Frontend Integration
+- [x] Backend test foundation (`pytest`, `pytest-asyncio`) is set up.
+- [x] Frontend unit test foundation (`Vitest`) is set up.
+- [x] Baseline tests for auth and orchestration are implemented.
+- [x] Backend quality workflow (`backend-check.yml`) is active.
+- [x] Frontend quality workflow (`frontend-preview.yml`) is active.
+- [x] Docker build validation workflow (`ci-cd.yml`) is active.
+- [ ] Backend + frontend test coverage for forgot/reset flow should be expanded.
+- [ ] End-to-end integration test coverage for upload flow (PDF + PPTX) should be expanded.
+- [ ] A real E2E pipeline (Playwright/Cypress) is not available yet.
 
-- [x] Authentication Pages (Login/Register).
-- [ ] Dashboard & Library.
-- [x] Upload & Progress Bar.
-- [ ] Live Presentation Mode (WebSocket).
-- [ ] Responsive UI try new fonts.
+## Phase 7: Reliability, Observability & Ops (Planned)
 
-## Phase 6: Optimization & Polish
+- [ ] Structured logging standard (request-id/correlation-id) should be expanded.
+- [ ] Centralized metrics collection (Prometheus/Grafana or equivalent) should be implemented.
+- [ ] Error tracking integration (Sentry or equivalent) should be implemented.
+- [ ] Health-check/readiness and operational runbooks should be expanded.
+- [ ] Backup/restore and disaster recovery procedures should be documented.
 
-- [ ] Guest Data Cleanup (Cron Job).
-- [ ] Error Handling & Logging.
-- [ ] Deployment Configuration.
-- [x] Backend Test Coverage
-- [x] Docker Build Optimization
+## Phase 8: Production Hardening & Security (Planned)
 
-## Phase 7: Performance Optimization (Future)
+- [ ] Distributed rate limiting (Redis or gateway layer) should be implemented.
+- [ ] IP-based abuse protection for guest users should be added.
+- [ ] Malware/content scanning (e.g., ClamAV) should be evaluated.
+- [ ] CORS/secret/cookie policies should be hardened for production.
+- [ ] Security testing (SAST/DAST + dependency policy) should be expanded.
 
-- [ ] Replace Python-based audio processing with C++ Microservice.
-- [ ] Implement local inference using `whisper.cpp` for zero-latency slide switching.
+## Phase 9: Performance & Scale (Future)
 
-## Phase 8: Production-Ready Features (Future Implementation)
+- [ ] Migrate large file storage to object storage (S3/Azure Blob).
+- [ ] Implement CDN + signed URL strategy.
+- [ ] Scale embedding pipeline with a queue-based worker architecture.
+- [ ] Optimize real-time latency (STT + intent + command loop).
+- [ ] Build a feasibility prototype for `whisper.cpp` / C++ microservice.
 
-- [ ] **Redis-based Distributed Rate Limiting**
-  - Dual limits: 20 uploads/hour (burst), 50 uploads/day (abuse)
-  - Persistent across server restarts
-  - Works with load balancers and multiple server instances
-  - Configuration: `UPLOAD_RATE_LIMIT_HOURLY=20`, `UPLOAD_RATE_LIMIT_DAILY=50`
-- [ ] **Alternative: Database-based Rate Limiting**
-  - Simpler than Redis but with DB query overhead
-  - Table: `rate_limits (user_id, count_hourly, count_daily, reset_hourly, reset_daily)`
-- [ ] **Production Best Practice: API Gateway Rate Limiting**
-  - Use AWS API Gateway / Azure API Management
-  - Offload rate limiting to infrastructure layer
-  - Better scalability and monitoring
+## Current Sprint Priorities (Next)
 
-- [ ] **Monitoring & Metrics**
-  - Prometheus/Grafana integration
-  - Upload success rate tracking
-  - Storage usage monitoring
-  - API response time metrics
-
-- [ ] **Enhanced Security**
-  - Content malware scanning (ClamAV integration)
-  - XSS payload detection in PDFs
-  - Rate limiting per IP (guest users)
-  - CAPTCHA for suspicious activity
-
-- [ ] **Storage Optimization**
-  - Migrate to S3/Azure Blob Storage
-  - CDN integration for file serving
-  - Automatic tier migration (Standard → Archive after 90 days)
-  - Compression for large files
-
-> **Current Implementation Status:**
->
-> [x] Authentication & User Management (JWT, bcrypt, email verification)
-> [x] PDF & PPTX Upload with magic-bytes validation, security checks, and hash tracking
-> [x] Vector Embeddings (OpenAI text-embedding-3-small, 1536 dimensions)
-> [x] RAG System (Semantic search with pgvector, GPT-4o-mini for Q&A)
-> [x] File Cleanup Policies (Failed uploads, expired guest files)
-> [ ] WebSocket for Real-time Speech (Phase 4 - In Progress)
-> [ ] Frontend Dashboard & Live Mode (Phase 5 - Planned)
+- [ ] Finalize backend contract for guest mode (token, permissions, cleanup durations).
+- [ ] Increase test coverage for forgot/reset flow (backend + frontend).
+- [ ] Add stronger integration tests for upload flow (PDF/PPTX + failure scenarios).
+- [ ] Define baseline metrics for real-time intent accuracy.
