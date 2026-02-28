@@ -224,7 +224,13 @@ export default function AnalyzePage() {
                         </div>
 
                         <div className="flex items-center gap-2">
-
+                            <Link
+                                href={`/presentation/${presentationId}`}
+                                className="px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-all text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2 hidden md:flex"
+                            >
+                                <Presentation size={16} />
+                                Real-Time Mode
+                            </Link>
 
                             <button
                                 onClick={toggleFullScreen}

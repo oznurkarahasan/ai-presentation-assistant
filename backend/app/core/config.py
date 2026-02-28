@@ -35,13 +35,13 @@ class Settings(BaseSettings):
 
     # CORS configuration
     CORS_ORIGINS: list[str] = Field(
-        default=["http://localhost:3000"],
+        default=["http://localhost:3000", "http://127.0.0.1:3000", "http://0.0.0.0:3000"],
         description="Allowed CORS origins. For .env, use JSON array format: [\"http://localhost:3000\"]"
     )
 
     DATABASE_URL: str = Field(..., description="PostgreSQL database connection URL (e.g., postgresql+asyncpg://user:pass@localhost/dbname)")
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key for GPT-4 and embeddings (required for AI features)")
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
 settings = Settings()

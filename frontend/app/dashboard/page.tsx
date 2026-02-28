@@ -332,7 +332,7 @@ function PresentationCard({ presentation, index, onDelete }: { presentation: Rec
                         <Eye size={14} />
                     </button>
                 </Link>
-                <Link href={`/analyze?id=${presentation.id}`} className="flex-1">
+                <Link href={`/presentation/${presentation.id}`} className="flex-1">
                     <button className="w-full py-3 px-4 rounded-xl bg-primary text-white font-bold text-xs transition-all shadow-lg shadow-orange-900/10 hover:shadow-orange-900/30 flex items-center justify-center gap-2 active:scale-95">
                         Start
                         <Play size={14} className="fill-white" />

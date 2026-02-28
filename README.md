@@ -128,7 +128,7 @@ The system relies on a **9-Table Relational Structure** designed for data integr
 | **`slides`**                | The "Brain" of the RAG system.        | Stores **Vector Embeddings (1536 dim)** for AI semantic search via pgvector.      |
 | **`notes`**                 | User-specific slide notes.            | Strictly for registered users (`user_id` NOT null).                               |
 | **`presentation_analyses`** | AI-generated report card.             | JSON-based storage for flexible AI metrics and feedback.                          |
-| **`presentation_sessions`** | Performance logs.                     | Tracks `practice` vs `live` sessions and duration.                                |
+| **`presentation_sessions`** | Performance logs.                     | Tracks `practice` vs `live` sessions, duration, and **real-time slide index**. |
 | **`activity_logs`**         | System-wide audit trail.              | Logs all user actions (upload, delete, login) for security and analytics.         |
 | **`verification_tokens`**   | Email verification & password resets. | Time-limited tokens for secure user authentication flows.                         |
 

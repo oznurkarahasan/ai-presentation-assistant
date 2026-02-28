@@ -66,6 +66,7 @@ async def get_presentation(
         "file_path": presentation.file_path,
         "file_type": presentation.file_type,
         "slide_count": presentation.slide_count,
+        "total_pages": presentation.slide_count,  # Added for frontend compatibility
         "status": presentation.status
     }
 
