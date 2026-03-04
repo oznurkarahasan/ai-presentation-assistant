@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text  
 
 from app.core.config import settings
-from app.core.database import engine, Base
+from app.core.database import engine
 from app.core.logger import logger
 from app.core.exceptions import (
     AppBaseException,
@@ -27,13 +27,12 @@ async def lifespan(app: FastAPI):
     if not os.getenv("TESTING"):
         try:
             async with engine.begin() as conn:
-                # Ensure the vector extension is created
+                # Keep this idempotent in case migrations are not applied yet.
                 await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-                await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database initialized successfully")
+            logger.info("Database extension check completed successfully")
         except Exception as e:
-            logger.error(f"Database initialization failed: {str(e)}")
-            logger.warning("Application starting without database initialization. Expect errors if DB is needed.")
+            logger.error(f"Database extension check failed: {str(e)}")
+            logger.warning("Application is starting without confirming extension setup.")
     else:
         logger.info("Skipping database initialization in TESTING mode")
     yield

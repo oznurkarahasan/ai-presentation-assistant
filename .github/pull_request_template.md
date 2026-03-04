@@ -20,5 +20,6 @@ Closes #
 - [ ] Code follows project style (flake8 + black)
 - [ ] Tests added or updated
 - [ ] Documentation updated if needed
+- [ ] If DB schema changed, Alembic migration file added (`backend/alembic/versions/*`)
 - [ ] Docker build tested locally
 - [ ] No direct push to `main`

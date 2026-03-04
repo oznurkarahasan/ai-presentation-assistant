@@ -116,6 +116,28 @@ Press Ctrl + C in the terminal, or run:
 docker-compose down
 ```
 
+### 6.1 Database Migrations (Alembic)
+
+Database schema changes are now managed with Alembic.
+
+- Migration files live in `backend/alembic/versions/`
+- To apply all pending migrations:
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+- After changing SQLAlchemy models, create a migration:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "describe your schema change"
+alembic upgrade head
+```
+
+- In Docker Compose, backend startup runs `alembic upgrade head` automatically before `uvicorn`.
+
 ### 7. Database Schema (PostgreSQL + pgvector)
 
 The system relies on a **9-Table Relational Structure** designed for data integrity, AI compatibility, and comprehensive audit logging.
