@@ -4,6 +4,7 @@ from app.services.intent_service import analyze_intent, IntentType
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("text, expected", [
+    # English commands
     ("Next slide please", IntentType.NEXT_SLIDE),
     ("Let's move on to the next part", IntentType.NEXT_SLIDE),
     ("Go back to the previous slide", IntentType.PREVIOUS_SLIDE),
@@ -11,6 +12,12 @@ from app.services.intent_service import analyze_intent, IntentType
     ("Let's jump to slide five", IntentType.JUMP_TO_SLIDE),
     ("What is the revenue for this year?", IntentType.GENERAL_QUERY),
     ("Hello everyone, welcome to the talk", IntentType.UNKNOWN),
+    # Turkish commands
+    ("Sonraki slayta geç", IntentType.NEXT_SLIDE),
+    ("Devam edelim", IntentType.NEXT_SLIDE),
+    ("Önceki slayta dön", IntentType.PREVIOUS_SLIDE),
+    ("Geri dön", IntentType.PREVIOUS_SLIDE),
+    ("Slayt beşe git", IntentType.JUMP_TO_SLIDE),
 ])
 async def test_analyze_intent_logic(text, expected):
     """Verify that the intent service correctly identifies various user intents."""

@@ -38,6 +38,7 @@ def get_client() -> AsyncOpenAI:
 async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 1) -> IntentResult:
     """
     Analyzes the user's speech transcript to detect presentation-related intents.
+    Supports both English and Turkish voice commands.
     Uses the current slide and total slides as context.
     """
     if not text.strip():
@@ -47,6 +48,7 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     
     system_prompt = f"""
     You are an AI Presentation Assistant. Your job is to analyze the speaker's transcript and identify if they want to navigate the presentation.
+    The speaker may use either English or Turkish. You must understand commands in both languages equally well.
     
     Current Presentation State:
     - Current Slide: {current_slide}
@@ -61,11 +63,18 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
       * For JUMP_TO_SLIDE: Extract the mentioned slide number.
       * Otherwise null.
 
-    Guidelines:
-    - NEXT_SLIDE: Triggered by phrases like "next slide", "let's move on", "forward", "following slide".
+    Guidelines (English):
+    - NEXT_SLIDE: Triggered by phrases like "next slide", "let's move on", "forward", "following slide", "continue".
     - PREVIOUS_SLIDE: Triggered by "go back", "previous slide", "let's look at that again", "return to the last part".
     - JUMP_TO_SLIDE: Triggered by "go to slide 5", "jump to page 10", etc.
     - GENERAL_QUERY: If the user is asking a question about the content.
+    - UNKNOWN: If it's just general speech with no navigation intent.
+
+    Guidelines (Turkish / Türkçe):
+    - NEXT_SLIDE: "sonraki slayt", "ileri", "devam", "devam edelim", "bir sonraki", "bir sonraki slayta geç", "ilerleyelim", "sonraki sayfaya geç", "sonraki sayfa".
+    - PREVIOUS_SLIDE: "önceki slayt", "geri", "geri dön", "bir önceki", "bir önceki slayta dön", "önceki sayfaya dön", "önceki sayfa", "tekrar görelim", "bi daha bakalım".
+    - JUMP_TO_SLIDE: "slayt 5'e git", "sayfa 10'a atla", "5. slayta geç", "10. sayfaya git", "beşinci slayta git", "onuncu sayfaya geç".
+    - GENERAL_QUERY: If the user is asking a question about the content in Turkish.
     - UNKNOWN: If it's just general speech with no navigation intent.
 
     Only provide the JSON.
