@@ -47,12 +47,13 @@ async def ask_presentation(
         raise HTTPException(status_code=404, detail="Presentation not found.")
 
     try:
-        # Parametre sayısı azaldı
         response = await rag_service.ask_question(
             db=db, 
             presentation_id=presentation_id, 
             question=chat_request.question,
-            current_slide=chat_request.current_slide
+            current_slide=chat_request.current_slide,
+            presentation_title=presentation.title,
+            total_slides=presentation.slide_count or 0
         )
         return response
 
