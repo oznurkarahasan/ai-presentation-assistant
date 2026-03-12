@@ -100,17 +100,17 @@ export default function Footer() {
                         <h3 className="font-semibold text-white mb-4">Legal</h3>
                         <ul className="space-y-3">
                             <li>
-                                <Link href="/privacy" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                <Link href="/legal/privacy" className="text-zinc-400 hover:text-white transition-colors text-sm">
                                     Privacy Policy
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/terms" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                <Link href="/legal/terms" className="text-zinc-400 hover:text-white transition-colors text-sm">
                                     Terms of Service
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/cookies" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                <Link href="/legal/cookies" className="text-zinc-400 hover:text-white transition-colors text-sm">
                                     Cookie Policy
                                 </Link>
                             </li>
