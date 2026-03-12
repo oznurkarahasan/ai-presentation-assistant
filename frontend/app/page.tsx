@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Typewriter from "typewriter-effect";
-import { Mic, Presentation, Zap, Sparkles, Layers, ShieldCheck, ChevronRight, Play } from "lucide-react";
+import { Mic, Presentation, Zap, Sparkles, Layers, ShieldCheck, ChevronRight, Play, Quote, Star, Users } from "lucide-react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -164,6 +164,47 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        {/* Customers / Testimonials Section */}
+        <section id="customers" className="py-24 px-6 relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-primary/5 blur-[120px] rounded-full pointer-events-none opacity-50" />
+
+          <div className="container mx-auto max-w-6xl relative z-10">
+            <div className="text-center mb-20 space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
+                <Users size={12} className="text-primary" />
+                Community Loved
+              </div>
+              <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">Trusted by Leading Speakers</h2>
+              <p className="text-secondary-text max-w-2xl mx-auto text-sm sm:text-base">Join the professionals who have transformed their presentation style with PreCue.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+              <TestimonialCard
+                name="Sarah Jenkins"
+                role="Marketing Director @ TechFlow"
+                content="PreCue changed the way I present. No more awkward fumbling for the remote. It's like having a silent assistant on stage with me."
+                rating={5}
+                avatar="SJ"
+              />
+              <TestimonialCard
+                name="Marcus Thorne"
+                role="Professional Keynote Speaker"
+                content="The rehearsal analytics are a game-changer. Being able to track my pace and filler words helped me land my biggest contract yet."
+                rating={5}
+                avatar="MT"
+              />
+              <TestimonialCard
+                name="Elena Rossi"
+                role="Graduate Researcher"
+                content="I used to be terrified of stage fright. PreCue handles the technical side flawlessly, so I can just focus on my data and storytelling."
+                rating={5}
+                avatar="ER"
+              />
+            </div>
+
+          </div>
+        </section>
       </main>
 
       <Footer />
@@ -185,6 +226,35 @@ function FeatureCard({ icon, title, desc }: { icon: React.ReactNode, title: stri
   )
 }
 
+
+function TestimonialCard({ name, role, content, rating, avatar }: { name: string, role: string, content: string, rating: number, avatar: string }) {
+  return (
+    <div className="p-8 rounded-[2rem] bg-zinc-900/50 border border-white/5 hover:border-white/10 transition-all duration-500 relative group flex flex-col justify-between h-full">
+      <div className="absolute top-6 right-8 text-primary/20 group-hover:text-primary/40 transition-colors">
+        <Quote size={40} fill="currentColor" />
+      </div>
+
+      <div className="space-y-6">
+        <div className="flex gap-1">
+          {[...Array(rating)].map((_, i) => (
+            <Star key={i} size={14} className="text-amber-500 fill-amber-500" />
+          ))}
+        </div>
+        <p className="text-zinc-300 text-base leading-relaxed italic">"{content}"</p>
+      </div>
+
+      <div className="mt-8 flex items-center gap-4">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center font-bold text-primary">
+          {avatar}
+        </div>
+        <div>
+          <h4 className="text-white font-bold text-sm">{name}</h4>
+          <p className="text-zinc-500 text-xs">{role}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
 function StepItem({ number, color, title, desc }: { number: string, color: string, title: string, desc: string }) {
   return (
     <div className="flex gap-6 items-start">
