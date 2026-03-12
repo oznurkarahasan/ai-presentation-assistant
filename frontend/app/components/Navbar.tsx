@@ -17,9 +17,8 @@ export default function Navbar() {
     ];
 
     const secondaryLinks = [
-        { name: "Customers", href: "/#customers", hasArrow: true },
         { name: "Careers", href: "/#careers", hasArrow: true },
-        { name: "Blog", href: "/#blog", hasArrow: true },
+        { name: "Blog", href: "/blog", hasArrow: true },
         { name: "Contact", href: "/contact", hasArrow: true },
         { name: "Docs", href: "/#docs", hasArrow: true },
     ];
