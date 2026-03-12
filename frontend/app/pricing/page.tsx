@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Check, Zap, Sparkles, ShieldCheck, ChevronRight } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
@@ -22,7 +22,7 @@ export default function PricingPage() {
                         >
                             <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight">Simple, Transparent Pricing</h1>
                             <p className="text-secondary-text max-w-2xl mx-auto text-lg pt-4">
-                                Choose the plan that's right for your presentation goals. No hidden fees.
+                                Choose the plan that&apos;s right for your presentation goals. No hidden fees.
                             </p>
                         </motion.div>
                     </div>
@@ -32,7 +32,7 @@ export default function PricingPage() {
                         <PricingCard
                             tier="Free"
                             price="0"
-                            desc="Perfect for trying out PreCue's core features."
+                            desc="Perfect for trying out PreCue&apos;s core features."
                             features={[
                                 "3 Presentations per month",
                                 "Basic AI Voice Control",
@@ -47,7 +47,7 @@ export default function PricingPage() {
                         <PricingCard
                             tier="Pro"
                             price="10"
-                            desc="The power user's choice for professional speaking."
+                            desc="The power user&apos;s choice for professional speaking."
                             features={[
                                 "Unlimited Presentations",
                                 "Advanced AI Voice Control",
@@ -85,7 +85,7 @@ export default function PricingPage() {
                         <div className="text-left space-y-8 mt-10">
                             <div>
                                 <h4 className="text-white font-semibold mb-2">Can I cancel anytime?</h4>
-                                <p className="text-secondary-text text-sm">Yes, you can cancel your subscription at any time. You'll keep your features until the end of your billing cycle.</p>
+                                <p className="text-secondary-text text-sm">Yes, you can cancel your subscription at any time. You&apos;ll keep your features until the end of your billing cycle.</p>
                             </div>
                             <div>
                                 <h4 className="text-white font-semibold mb-2">What format of presentations are supported?</h4>

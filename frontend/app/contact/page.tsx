@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Mail, MessageSquare, Send, MapPin, Phone, Github, Twitter, Linkedin } from "lucide-react";
+import { Mail, MessageSquare, Send, MapPin, Github, Twitter, Linkedin } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 

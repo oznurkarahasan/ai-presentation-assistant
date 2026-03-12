@@ -11,7 +11,7 @@ export default function PrivacyPage() {
             <div className="bg-grid" />
             <Navbar />
 
-            <main className="flex-1 pt-32 pb-20 px-6 relative z-10">
+            <main className="flex-1 pt-44 pb-20 px-6 relative z-10">
                 <div className="container mx-auto max-w-4xl">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -44,7 +44,7 @@ export default function PrivacyPage() {
                                     <li><span className="text-zinc-200">Presentation Files:</span> Documents (PDF, PPTX) you upload for processing.</li>
                                     <li><span className="text-zinc-200">Voice Data:</span> Real-time speech processed locally or on our secure servers for slide control.</li>
                                     <li><span className="text-zinc-200">Usage Data:</span> Analytics on how you interact with the application.</li>
-                                </ul> section
+                                </ul>
                             </section>
 
                             <section className="space-y-4">

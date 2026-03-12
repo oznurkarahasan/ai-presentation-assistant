@@ -11,7 +11,7 @@ export default function CookiesPage() {
             <div className="bg-grid" />
             <Navbar />
 
-            <main className="flex-1 pt-32 pb-20 px-6 relative z-10">
+            <main className="flex-1 pt-44 pb-20 px-6 relative z-10">
                 <div className="container mx-auto max-w-4xl">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -42,7 +42,7 @@ export default function CookiesPage() {
                                     </div>
                                     <p className="text-zinc-500 text-sm">
                                         Required for core site functionality like secure login and session management. Cannot be disabled.
-                                    </p> section
+                                    </p>
                                 </section>
                                 <section className="p-6 bg-white/5 rounded-2xl border border-white/5 space-y-3">
                                     <div className="flex items-center gap-2 text-white font-bold">
@@ -51,7 +51,7 @@ export default function CookiesPage() {
                                     </div>
                                     <p className="text-zinc-500 text-sm">
                                         Remember your language settings and AI voice preferences for a consistent experience.
-                                    </p> section
+                                    </p>
                                 </section>
                             </div>
 

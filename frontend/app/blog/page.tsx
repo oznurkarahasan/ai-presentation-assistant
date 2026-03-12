@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from "framer-motion";
-import { Calendar, Clock, User, ArrowRight, Search, Tag } from "lucide-react";
+import { Calendar, Clock, User, ArrowRight, Search } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
@@ -89,10 +89,11 @@ export default function BlogPage() {
                             <Link href={`/blog/${featuredPost.id}`} className="group block">
                                 <div className="glass-card overflow-hidden rounded-[3rem] border-white/10 bg-zinc-900/40 hover:bg-zinc-900/60 transition-all duration-500 flex flex-col lg:flex-row items-stretch">
                                     <div className="lg:w-1/2 relative min-h-[300px] sm:min-h-[400px]">
-                                        <img
+                                        <Image
                                             src={featuredPost.image}
                                             alt={featuredPost.title}
-                                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            fill
+                                            className="object-cover group-hover:scale-110 transition-transform duration-700"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent lg:hidden" />
                                     </div>
@@ -171,15 +172,28 @@ export default function BlogPage() {
     );
 }
 
-function BlogCard({ post }: { post: any }) {
+interface BlogPost {
+    id: number;
+    title: string;
+    excerpt: string;
+    category: string;
+    author: string;
+    date: string;
+    readTime: string;
+    image: string;
+    featured: boolean;
+}
+
+function BlogCard({ post }: { post: BlogPost }) {
     return (
         <Link href={`/blog/${post.id}`} className="group block h-full">
             <div className="glass-card h-full rounded-[2rem] border-white/5 bg-zinc-900/40 hover:bg-zinc-900/60 hover:border-primary/20 transition-all duration-300 overflow-hidden flex flex-col">
                 <div className="relative aspect-[16/10] overflow-hidden">
-                    <img
+                    <Image
                         src={post.image}
                         alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
                     />
                     <div className="absolute top-4 left-4">
                         <span className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 rounded-full text-[10px] font-bold text-white uppercase tracking-widest">

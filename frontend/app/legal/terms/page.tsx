@@ -11,7 +11,7 @@ export default function TermsPage() {
             <div className="bg-grid" />
             <Navbar />
 
-            <main className="flex-1 pt-32 pb-20 px-6 relative z-10">
+            <main className="flex-1 pt-44 pb-20 px-6 relative z-10">
                 <div className="container mx-auto max-w-4xl">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
@@ -50,7 +50,7 @@ export default function TermsPage() {
                                     <h2 className="text-xl font-bold tracking-tight">Intellectual Property</h2>
                                 </div>
                                 <p className="text-zinc-400 leading-relaxed">
-                                    The "PreCue.ai" platform, its UI, algorithms, and AI models are the exclusive property of PreCue.ai. However, <span className="text-zinc-200 font-semibold italic">you retain all ownership rights</span> to the presentation files and content you upload.
+                                    The &quot;PreCue.ai&quot; platform, its UI, algorithms, and AI models are the exclusive property of PreCue.ai. However, <span className="text-zinc-200 font-semibold italic">you retain all ownership rights</span> to the presentation files and content you upload.
                                 </p>
                             </section>
 
@@ -60,7 +60,7 @@ export default function TermsPage() {
                                     <h2 className="text-xl font-bold tracking-tight">Limitation of Liability</h2>
                                 </div>
                                 <p className="text-zinc-400 leading-relaxed">
-                                    PreCue.ai is provided "as is". While we strive for 100% accuracy, we are not liable for any presentation failures, slide sync delays, or data loss occurring during live events.
+                                    PreCue.ai is provided &quot;as is&quot;. While we strive for 100% accuracy, we are not liable for any presentation failures, slide sync delays, or data loss occurring during live events.
                                 </p>
                             </section>
                         </div>
