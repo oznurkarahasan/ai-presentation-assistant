@@ -11,7 +11,7 @@ export default function ContactPage() {
             <div className="bg-grid" />
             <Navbar />
 
-            <main className="flex-1 pt-32 pb-20 px-6 relative z-10">
+            <main className="flex-1 pt-44 pb-20 px-6 relative z-10">
                 <div className="container mx-auto max-w-6xl">
                     <div className="text-center mb-16 space-y-4">
                         <motion.div

@@ -261,9 +261,9 @@ export default function RegisterPage() {
 
             <p className="text-center text-xs text-zinc-500 px-8">
                 By clicking continue, you agree to our{" "}
-                <Link href="/terms" className="underline hover:text-zinc-300">Terms of Service</Link>{" "}
+                <Link href="/legal/terms" className="underline hover:text-zinc-300">Terms of Service</Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="underline hover:text-zinc-300">Privacy Policy</Link>.
+                <Link href="/legal/privacy" className="underline hover:text-zinc-300">Privacy Policy</Link>.
             </p>
         </motion.div>
     );
