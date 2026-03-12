@@ -69,7 +69,7 @@ export default function Home() {
         </section>
 
         {/* Features Section */}
-        <section className="py-24 px-6 relative">
+        <section id="features" className="py-24 px-6 relative">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-16 space-y-4">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">Powerful Features for the Stage</h2>
