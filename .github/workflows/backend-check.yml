@@ -73,14 +73,14 @@ jobs:
 
       - name: Verify Alembic Migrations
         env:
-          DATABASE_URL: postgresql+psycopg2://admin:admin@localhost:5435/presentation_db
+          DATABASE_URL: postgresql+asyncpg://admin:admin@localhost:5435/presentation_db
         run: |
           cd backend
           alembic upgrade head
           
       - name: Run Tests
         env:
-          DATABASE_URL: postgresql+psycopg2://admin:admin@localhost:5435/presentation_db
+          DATABASE_URL: postgresql+asyncpg://admin:admin@localhost:5435/presentation_db
         run: |
           cd backend
           python -m pytest
