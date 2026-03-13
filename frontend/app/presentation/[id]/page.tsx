@@ -10,7 +10,8 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    FileText
+    FileText,
+    Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -95,6 +96,7 @@ export default function RealTimePresentationPage() {
     const [isPageLoading, setIsPageLoading] = useState(false);
     const [sttError, setSttError] = useState<string | null>(null);
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
+    const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -279,7 +281,7 @@ export default function RealTimePresentationPage() {
         const recognition = new SpeechRecognitionCtor();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'en-US';
+        recognition.lang = sttLanguage;
 
         recognition.onstart = () => setIsListening(true);
         recognition.onresult = (event: SpeechRecognitionEventLike) => {
@@ -359,7 +361,32 @@ export default function RealTimePresentationPage() {
                             }`}
                     >
                         {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                        {isListening ? 'Stop Presentation' : 'Start Presentation'}
+                        {isListening
+                            ? (sttLanguage === 'tr-TR' ? 'Sunumu Durdur' : 'Stop Presentation')
+                            : (sttLanguage === 'tr-TR' ? 'Sunuma Başla' : 'Start Presentation')
+                        }
+                    </button>
+
+                    {/* Language Toggle */}
+                    <button
+                        onClick={() => {
+                            const newLang = sttLanguage === 'en-US' ? 'tr-TR' : 'en-US';
+                            setSttLanguage(newLang);
+                            // If currently listening, restart recognition with new language
+                            if (isListening) {
+                                recognitionRef.current?.stop();
+                                setTimeout(() => startSpeechRecognition(), 300);
+                            }
+                        }}
+                        disabled={isListening}
+                        className={`w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all border ${
+                            isListening
+                                ? 'border-white/5 bg-white/[0.02] text-zinc-600 cursor-not-allowed'
+                                : 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white'
+                        }`}
+                    >
+                        <Globe size={16} />
+                        <span className="text-sm">{sttLanguage === 'tr-TR' ? '🇹🇷 Türkçe' : '🇺🇸 English'}</span>
                     </button>
 
                     <AnimatePresence>
@@ -398,9 +425,19 @@ export default function RealTimePresentationPage() {
                     <div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Voice Commands</h3>
                         <div className="space-y-2">
-                            <CommandTip label="Next Slide" example="'Next slide', 'Moving on'" />
-                            <CommandTip label="Previous Slide" example="'Go back', 'Last slide'" />
-                            <CommandTip label="Jump to Page" example="'Go to slide five'" />
+                            {sttLanguage === 'tr-TR' ? (
+                                <>
+                                    <CommandTip label="Sonraki Slayt" example="'Sonraki slayt', 'Devam edelim'" />
+                                    <CommandTip label="Önceki Slayt" example="'Geri dön', 'Önceki slayt'" />
+                                    <CommandTip label="Sayfaya Atla" example="'Slayt beşe git'" />
+                                </>
+                            ) : (
+                                <>
+                                    <CommandTip label="Next Slide" example="'Next slide', 'Moving on'" />
+                                    <CommandTip label="Previous Slide" example="'Go back', 'Last slide'" />
+                                    <CommandTip label="Jump to Page" example="'Go to slide five'" />
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
