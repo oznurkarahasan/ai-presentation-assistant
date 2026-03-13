@@ -23,7 +23,7 @@ token_type_enum = sa.Enum(
     "password_reset",
     "api_key",
     "refresh_token",
-    name="token_type_enum",
+    name="token_type_enum", create_type=False,
 )
 activity_action_enum = sa.Enum(
     "login",
@@ -41,12 +41,12 @@ activity_action_enum = sa.Enum(
     "note_created",
     "note_updated",
     "note_deleted",
-    name="activity_action_enum",
+    name="activity_action_enum", create_type=False,
 )
-file_type_enum = sa.Enum("pdf", "pptx", name="file_type_enum")
-presentation_status_enum = sa.Enum("uploaded", "analyzing", "completed", "failed", name="presentation_status_enum")
-session_type_enum = sa.Enum("rehearsal", "live", name="session_type_enum")
-storage_tier_enum = sa.Enum("standard", "archived", name="storage_tier_enum")
+file_type_enum = sa.Enum("pdf", "pptx", name="file_type_enum", create_type=False)
+presentation_status_enum = sa.Enum("uploaded", "analyzing", "completed", "failed", name="presentation_status_enum", create_type=False)
+session_type_enum = sa.Enum("rehearsal", "live", name="session_type_enum", create_type=False)
+storage_tier_enum = sa.Enum("standard", "archived", name="storage_tier_enum", create_type=False)
 
 
 def upgrade() -> None:
