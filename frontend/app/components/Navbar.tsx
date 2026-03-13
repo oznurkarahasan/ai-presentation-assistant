@@ -11,16 +11,15 @@ export default function Navbar() {
 
     const navLinks = [
         { name: "Home", href: "/", hasDot: true },
-        { name: "Enterprise", href: "/#features" },
-        { name: "Pricing", href: "/#pricing" },
+        { name: "Features", href: "/#features" },
+        { name: "Pricing", href: "/pricing" },
         { name: "Customers", href: "/#customers" },
     ];
 
     const secondaryLinks = [
-        { name: "About us", href: "/#about", hasArrow: true },
         { name: "Careers", href: "/#careers", hasArrow: true },
-        { name: "Blog", href: "/#blog", hasArrow: true },
-        { name: "Contact", href: "/#contact", hasArrow: true },
+        { name: "Blog", href: "/blog", hasArrow: true },
+        { name: "Contact", href: "/contact", hasArrow: true },
         { name: "Docs", href: "/#docs", hasArrow: true },
     ];
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Github, Twitter, Linkedin, Mail } from "lucide-react";
 
 export default function Footer() {
@@ -7,11 +8,18 @@ export default function Footer() {
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                     <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-orange-600 to-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                                P
+                        <div className="flex items-center gap-3 group">
+                            <div className="relative w-8 h-8 flex items-center justify-center">
+                                <div className="absolute inset-0 bg-blue-500/20 blur-md rounded-full group-hover:bg-primary/30 transition-colors" />
+                                <Image
+                                    src="/favicon.ico"
+                                    alt="PreCue Logo"
+                                    width={32}
+                                    height={32}
+                                    className="relative z-10 group-hover:scale-110 transition-transform duration-300"
+                                />
                             </div>
-                            <span className="font-bold text-lg">
+                            <span className="font-bold text-lg text-white/90">
                                 PreCue<span className="text-primary">.ai</span>
                             </span>
                         </div>
@@ -55,7 +63,7 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/#pricing" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                <Link href="/pricing" className="text-zinc-400 hover:text-white transition-colors text-sm">
                                     Pricing
                                 </Link>
                             </li>
@@ -71,8 +79,8 @@ export default function Footer() {
                         <h3 className="font-semibold text-white mb-4">Company</h3>
                         <ul className="space-y-3">
                             <li>
-                                <Link href="/#about" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    About
+                                <Link href="/#customers" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                    Customers
                                 </Link>
                             </li>
                             <li>
@@ -92,17 +100,17 @@ export default function Footer() {
                         <h3 className="font-semibold text-white mb-4">Legal</h3>
                         <ul className="space-y-3">
                             <li>
-                                <Link href="/privacy" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                <Link href="/legal/privacy" className="text-zinc-400 hover:text-white transition-colors text-sm">
                                     Privacy Policy
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/terms" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                <Link href="/legal/terms" className="text-zinc-400 hover:text-white transition-colors text-sm">
                                     Terms of Service
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/cookies" className="text-zinc-400 hover:text-white transition-colors text-sm">
+                                <Link href="/legal/cookies" className="text-zinc-400 hover:text-white transition-colors text-sm">
                                     Cookie Policy
                                 </Link>
                             </li>
