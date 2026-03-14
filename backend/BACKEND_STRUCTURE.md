@@ -4,6 +4,11 @@ Terminal-style ASCII tree showing the `backend/` folder structure with one-line 
 
 ```bash
 backend/
+├── alembic.ini .................... Alembic configuration (migration script location + DB URL fallback)
+├── alembic/
+│   ├── env.py ..................... Alembic environment; loads SQLAlchemy metadata for autogenerate
+│   ├── script.py.mako ............. Alembic migration template
+│   └── versions/ .................. Versioned migration files committed to git
 ├── Dockerfile ..................... Docker build instructions for the backend service image
 ├── main.py ........................ FastAPI application entrypoint; mounts routers and configures startup
 ├── requirements.txt ............... Python dependencies installed into the container or venv
@@ -80,6 +85,12 @@ backend/app/
 - When adding Python dependencies (e.g., `python-pptx`), rebuild containers:
   ```bash
   docker-compose up --build
+  ```
+- Run migrations after model changes:
+  ```bash
+  cd backend
+  alembic revision --autogenerate -m "your message"
+  alembic upgrade head
   ```
 - Local `venv/` is for development only and excluded from Docker builds
 - All file paths use forward slashes (`/`) for cross-platform compatibility
