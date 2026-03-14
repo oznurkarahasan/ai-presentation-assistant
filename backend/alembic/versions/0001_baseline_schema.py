@@ -8,6 +8,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 from pgvector.sqlalchemy import Vector
 
 
@@ -18,14 +19,15 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-token_type_enum = sa.Enum(
+token_type_enum = postgresql.ENUM(
     "email_verify",
     "password_reset",
     "api_key",
     "refresh_token",
-    name="token_type_enum", create_type=False,
+    name="token_type_enum",
+    create_type=False,
 )
-activity_action_enum = sa.Enum(
+activity_action_enum = postgresql.ENUM(
     "login",
     "logout",
     "register",
@@ -41,12 +43,13 @@ activity_action_enum = sa.Enum(
     "note_created",
     "note_updated",
     "note_deleted",
-    name="activity_action_enum", create_type=False,
+    name="activity_action_enum",
+    create_type=False,
 )
-file_type_enum = sa.Enum("pdf", "pptx", name="file_type_enum", create_type=False)
-presentation_status_enum = sa.Enum("uploaded", "analyzing", "completed", "failed", name="presentation_status_enum", create_type=False)
-session_type_enum = sa.Enum("rehearsal", "live", name="session_type_enum", create_type=False)
-storage_tier_enum = sa.Enum("standard", "archived", name="storage_tier_enum", create_type=False)
+file_type_enum = postgresql.ENUM("pdf", "pptx", name="file_type_enum", create_type=False)
+presentation_status_enum = postgresql.ENUM("uploaded", "analyzing", "completed", "failed", name="presentation_status_enum", create_type=False)
+session_type_enum = postgresql.ENUM("rehearsal", "live", name="session_type_enum", create_type=False)
+storage_tier_enum = postgresql.ENUM("standard", "archived", name="storage_tier_enum", create_type=False)
 
 
 def upgrade() -> None:
