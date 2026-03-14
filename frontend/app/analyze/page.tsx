@@ -249,18 +249,26 @@ export default function AnalyzePage() {
                     </header>
 
                     {/* PDF / Slides View Area */}
-                    <div className="flex-1 overflow-hidden relative p-4 md:p-8 bg-[#050505]">
-                        <div className="w-full h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-zinc-900/50 flex items-center justify-center relative group">
+                    <div className="flex-1 overflow-hidden relative px-0 md:px-4 pt-4 pb-8 md:pt-6 md:pb-10 bg-[#050505]">
+                        <div
+                            className="w-full h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-zinc-900/50 flex items-center justify-center relative group"
+                            onWheel={(e) => e.preventDefault()}
+                            onTouchMove={(e) => e.preventDefault()}
+                        >
                             {presentationFile ? (
                                 fileType === 'pdf' ? (
-                                    <div className="w-full h-full relative">
+                                    <div className="w-full h-full relative flex items-center justify-center">
+                                        <div className="relative w-full h-full max-w-full overflow-hidden">
                                         <iframe
                                             key={currentPage}
-                                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${presentationFile}#page=${currentPage}&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                                            className="w-full h-full border-none rounded-xl"
+                                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${presentationFile}#page=${currentPage}&zoom=page-fit&toolbar=0&navpanes=0&scrollbar=0`}
+                                                className="w-full h-full border-none rounded-xl pointer-events-none"
                                             title="Presentation Preview"
                                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                                         />
+                                            {/* Mask built-in PDF toolbar area so controls are not visible */}
+                                            <div className="pointer-events-none absolute top-0 left-0 right-0 h-10 md:h-12 bg-[#050505]" />
+                                        </div>
 
                                         {/* Solid Smooth Loading Overlay */}
                                         <AnimatePresence mode="wait">
