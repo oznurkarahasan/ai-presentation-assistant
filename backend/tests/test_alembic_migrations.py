@@ -21,9 +21,9 @@ def migration_db():
     try:
         with engine_default.connect() as conn:
             # Drop test db if it exists
-            conn.execute(text(f"DROP DATABASE IF EXISTS {TEST_MIGRATION_DB_NAME}"))
+            conn.execute(text(f"DROP DATABASE IF EXISTS {TEST_MIGRATION_DB_NAME}"))  # nosec B608
             # Create a fresh db
-            conn.execute(text(f"CREATE DATABASE {TEST_MIGRATION_DB_NAME}"))
+            conn.execute(text(f"CREATE DATABASE {TEST_MIGRATION_DB_NAME}"))  # nosec B608
     except Exception as e:
         pytest.skip(f"Docker PostgreSQL not available on {CI_DB_URL_BASE}. Cannot test CI migrations locally. Error: {e}")
 
@@ -51,11 +51,11 @@ def migration_db():
                 SELECT pg_terminate_backend(pg_stat_activity.pid)
                 FROM pg_stat_activity
                 WHERE pg_stat_activity.datname = '{TEST_MIGRATION_DB_NAME}' AND pid <> pg_backend_pid();
-            """))
-            conn.execute(text(f"DROP DATABASE IF EXISTS {TEST_MIGRATION_DB_NAME}"))
-    except Exception as e:
+            """))  # nosec B608
+            conn.execute(text(f"DROP DATABASE IF EXISTS {TEST_MIGRATION_DB_NAME}"))  # nosec B608
+    except Exception:
         # Ignore cleanup errors
-        pass
+        pass  # nosec B110
 
 def test_alembic_upgrade_head(migration_db):
     """Test that applying migrations works from scratch (just like CI does)."""
