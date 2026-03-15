@@ -12,7 +12,7 @@ import Head from "next/head";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-[#E5E6E3] relative selection:bg-primary/30">
+    <div className="flex flex-col min-h-screen bg-black relative selection:bg-primary/30">
       <Head>
         {/* Preload the Spline Viewer Script and Scene Data for instant execution */}
         <link rel="preload" href="https://unpkg.com/@splinetool/viewer@1.9.7/build/spline-viewer.js" as="script" crossOrigin="anonymous" />
