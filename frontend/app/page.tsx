@@ -6,21 +6,36 @@ import Typewriter from "typewriter-effect";
 import { Mic, Presentation, Zap, Sparkles, Layers, ShieldCheck, ChevronRight, Play, Quote, Star, Users } from "lucide-react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Script from "next/script";
+import Head from "next/head";
+
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-black relative selection:bg-primary/30">
-      <div className="bg-grid" />
+    <div className="flex flex-col min-h-screen bg-[#E5E6E3] relative selection:bg-primary/30">
+      <Head>
+        {/* Preload the Spline Viewer Script and Scene Data for instant execution */}
+        <link rel="preload" href="https://unpkg.com/@splinetool/viewer@1.9.7/build/spline-viewer.js" as="script" crossOrigin="anonymous" />
+        <link rel="preload" href="https://prod.spline.design/gxGodnnFG7BPqJ2e/scene.splinecode" as="fetch" crossOrigin="anonymous" />
+      </Head>
       <Navbar />
 
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col relative">
+        {/* Spline 3D Scene Background */}
+        <Script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.7/build/spline-viewer.js" strategy="beforeInteractive" />
+        <div className="absolute inset-0 z-0 h-screen w-full overflow-hidden pointer-events-none sm:pointer-events-auto">
+          {/* USER: Replace the URL below with your own exported Splinecode URL */}
+          {/* @ts-expect-error - Custom element not typed */}
+          <spline-viewer url="https://prod.spline.design/gxGodnnFG7BPqJ2e/scene.splinecode"></spline-viewer>
+        </div>
+
         {/* Hero Section */}
-        <section className="flex-1 flex flex-col items-center justify-center text-center px-6 pt-32 pb-20 lg:pt-20 lg:pb-16 min-h-screen">
+        <section className="flex-1 flex flex-col items-center justify-center text-center px-6 pt-32 pb-20 lg:pt-20 lg:pb-16 min-h-screen relative z-10 pointer-events-none">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-8 max-w-4xl mx-auto"
+            className="space-y-8 max-w-4xl mx-auto pointer-events-auto"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-primary/30 bg-primary/10 rounded-full text-primary text-[11px] sm:text-[13px] mb-4 backdrop-blur-sm">
               <Sparkles size={14} />
@@ -43,7 +58,7 @@ export default function Home() {
               </span>
             </h1>
 
-            <p className="text-secondary-text text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed px-4">
+            <p className="text-orange-400 font-medium text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed px-4">
               Ditch the remote. You speak, AI listens and switches your slides at the perfect moment.
               Rehearse, get analytics, and dominate the stage.
             </p>
@@ -51,7 +66,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 px-6 sm:px-0">
               <Link
                 href="/upload"
-                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-8 py-4 rounded-xl font-bold text-sm sm:text-base transition-all active:scale-95 shadow-lg shadow-primary/20 group"
+                className="inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-black text-orange-400 px-8 py-4 rounded-xl font-bold text-sm sm:text-base transition-all active:scale-95 shadow-lg shadow-black/20 group"
               >
                 <Presentation size={18} />
                 Try Demo (Guest)
@@ -59,7 +74,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-xl font-bold text-sm sm:text-base transition-all border border-white/10 backdrop-blur-md"
+                className="inline-flex items-center justify-center gap-2 bg-white/50 hover:bg-white/70 text-zinc-900 px-8 py-4 rounded-xl font-bold text-sm sm:text-base transition-all border border-zinc-200 backdrop-blur-md"
               >
                 <Zap size={18} className="text-primary" />
                 Sign Up for Free
