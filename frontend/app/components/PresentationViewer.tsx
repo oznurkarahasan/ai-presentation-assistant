@@ -87,13 +87,10 @@ export default function PresentationViewer({
 
     const getIframeSrc = () => {
         const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
-        // We always use view=Fit on the iframe itself. 
-        // We handle zooming by resizing the iframe element within an overflow-auto container.
         const fragments = `#page=${currentPage}&view=Fit&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0`;
         return `${baseUrl}${fragments}`;
     };
 
-    // Calculate the orientation class if aspectRatio is not provided
     const orientationClass = orientation === 'landscape' ? 'w-full aspect-[16/9]' : 'h-full aspect-[0.707] mx-auto';
 
     return (
@@ -110,44 +107,63 @@ export default function PresentationViewer({
                 fileType === 'pdf' ? (
                     <div className="absolute inset-0 w-full h-full overflow-hidden flex flex-col">
 
-                        {/* Custom UI Toolbar (High Z-Index) */}
+                        {/* Custom UI Header Toolbar */}
                         <div className="absolute top-0 left-0 right-0 h-10 bg-[#050505] z-50 border-b border-white/5 flex items-center justify-between px-4">
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
-                                    <button
-                                        onClick={handleZoomOut}
-                                        disabled={zoom === null}
-                                        className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
-                                    >
-                                        <Minus size={14} />
-                                    </button>
-                                    <button
-                                        onClick={resetZoom}
-                                        className="text-[10px] font-mono font-bold text-zinc-300 w-12 text-center hover:bg-white/5 rounded py-0.5 transition-colors"
-                                        title="Reset to Fit"
-                                    >
-                                        {zoom ? `${zoom}%` : 'FIT'}
-                                    </button>
-                                    <button onClick={handleZoomIn} className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400">
-                                        <Plus size={14} />
-                                    </button>
-                                </div>
+                            {/* Left Side: Zoom Controls */}
+                            <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
+                                <button
+                                    onClick={handleZoomOut}
+                                    disabled={zoom === null}
+                                    className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
+                                >
+                                    <Minus size={14} />
+                                </button>
+                                <button
+                                    onClick={resetZoom}
+                                    className="text-[10px] font-mono font-bold text-zinc-300 w-12 text-center hover:bg-white/5 rounded py-0.5 transition-colors"
+                                    title="Reset to Fit"
+                                >
+                                    {zoom ? `${zoom}%` : 'FIT'}
+                                </button>
+                                <button onClick={handleZoomIn} className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400">
+                                    <Plus size={14} />
+                                </button>
+                            </div>
 
-                                <form onSubmit={handlePageSubmit} className="flex items-center gap-2 bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
+                            {/* Right Side: Integrated Page Navigation */}
+                            <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
+                                <button
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage <= 1 || isLoading}
+                                    className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
+                                    title="Previous Slide"
+                                >
+                                    <ChevronRight className="rotate-180" size={14} />
+                                </button>
+                                <div className="h-4 w-[1px] bg-white/10 mx-1" />
+                                <form onSubmit={handlePageSubmit} className="flex items-center gap-1.5 px-2">
                                     <input
                                         type="text"
                                         value={pageInputValue}
                                         onChange={(e) => setPageInputValue(e.target.value)}
-                                        className="w-8 h-6 bg-transparent text-[10px] text-center font-bold text-white outline-none"
+                                        className="w-6 bg-transparent text-[10px] text-center font-bold text-white outline-none"
                                     />
                                     <span className="text-[10px] text-zinc-500 font-bold">/ {totalPages}</span>
                                 </form>
+                                <div className="h-4 w-[1px] bg-white/10 mx-1" />
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage >= totalPages || isLoading}
+                                    className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
+                                    title="Next Slide"
+                                >
+                                    <ChevronRight size={14} />
+                                </button>
                             </div>
                         </div>
 
-                        {/* 1. Scrollable Viewport */}
+                        {/* Scrollable Viewport */}
                         <div className={`absolute inset-0 pt-0 w-full h-full ${zoom ? 'overflow-auto' : 'overflow-hidden'} scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent select-none`}>
-                            {/* 2. Resizable Content Wrapper */}
                             <div
                                 style={{
                                     width: zoom ? `${zoom}%` : '100%',
@@ -157,7 +173,7 @@ export default function PresentationViewer({
                                 className="relative transition-all duration-200 ease-out"
                             >
                                 <iframe
-                                    key={`${currentPage}-${orientation}`} // Only reload on page/orientation change
+                                    key={`${currentPage}-${orientation}`}
                                     src={getIframeSrc()}
                                     className="w-full h-full border-none pointer-events-none"
                                     title="Presentation Preview"
@@ -179,36 +195,6 @@ export default function PresentationViewer({
                                 </motion.div>
                             )}
                         </AnimatePresence>
-
-                        {/* Navigation Footer */}
-                        {showControls && (
-                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-2xl scale-90 md:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 hover:border-primary/30">
-                                <button
-                                    onClick={handlePrevPage}
-                                    disabled={currentPage <= 1 || isLoading}
-                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 active:scale-90"
-                                >
-                                    <ChevronRight className="rotate-180" size={22} />
-                                </button>
-
-                                <div className="px-6 flex flex-col items-center justify-center min-w-[120px]">
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5">Slide</span>
-                                    <div className="flex items-center gap-2 font-mono text-sm font-bold">
-                                        <span className="text-primary">{currentPage.toString().padStart(2, '0')}</span>
-                                        <span className="text-zinc-700">/</span>
-                                        <span className="text-zinc-400">{totalPages.toString().padStart(2, '0')}</span>
-                                    </div>
-                                </div>
-
-                                <button
-                                    onClick={handleNextPage}
-                                    disabled={currentPage >= totalPages || isLoading}
-                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 active:scale-90"
-                                >
-                                    <ChevronRight size={22} />
-                                </button>
-                            </div>
-                        )}
                     </div>
                 ) : (
                     <div className="relative z-10 w-full max-w-3xl aspect-[16/9] bg-white rounded-sm shadow-2xl overflow-hidden">
