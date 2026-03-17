@@ -16,6 +16,8 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import client from "../../api/client";
+import PresentationViewer from "../../components/PresentationViewer";
+
 
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
 
@@ -87,7 +89,9 @@ export default function RealTimePresentationPage() {
 
     const [presentationTitle, setPresentationTitle] = useState("Loading...");
     const [presentationFile, setPresentationFile] = useState<string | null>(null);
+    const [fileType, setFileType] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
+
     const [totalPages, setTotalPages] = useState(1);
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState("");
@@ -121,10 +125,12 @@ export default function RealTimePresentationPage() {
                 console.log("[API] Presentation metadata received:", data);
                 setPresentationTitle(data.title);
                 setPresentationFile(data.file_path);
+                setFileType(data.file_type);
                 // Handle both naming conventions for robustness
                 const count = data.total_pages || data.slide_count || 1;
                 console.log(`[API] Total pages set to: ${count}`);
                 setTotalPages(count);
+
             } catch (error) {
                 console.error("Failed to fetch presentation:", error);
             }
@@ -379,11 +385,10 @@ export default function RealTimePresentationPage() {
                             }
                         }}
                         disabled={isListening}
-                        className={`w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all border ${
-                            isListening
-                                ? 'border-white/5 bg-white/[0.02] text-zinc-600 cursor-not-allowed'
-                                : 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white'
-                        }`}
+                        className={`w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all border ${isListening
+                            ? 'border-white/5 bg-white/[0.02] text-zinc-600 cursor-not-allowed'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white'
+                            }`}
                     >
                         <Globe size={16} />
                         <span className="text-sm">{sttLanguage === 'tr-TR' ? '🇹🇷 Türkçe' : '🇺🇸 English'}</span>
@@ -449,49 +454,48 @@ export default function RealTimePresentationPage() {
 
             {/* Main Slide Viewer */}
             <main className="flex-1 relative flex flex-col bg-[#050505] z-10">
-                <div className="flex-1 p-8 flex items-center justify-center relative">
-                    <div className="w-full h-full max-w-5xl aspect-[16/9] bg-zinc-900 rounded-3xl overflow-hidden border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)] relative group">
-                        {presentationFile ? (
-                            <iframe
-                                key={currentPage}
-                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${presentationFile}#page=${currentPage}&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                                className="w-full h-full border-none"
-                                title="Live Preview"
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <FileText size={48} className="text-zinc-800 animate-pulse" />
-                            </div>
-                        )}
+                <div className="flex-1 p-4 md:p-8 flex items-center justify-center relative overflow-hidden">
+                    <div className="w-full h-full max-w-[95vw] relative shadow-[0_0_100px_rgba(0,0,0,0.8)] flex items-center justify-center">
 
-                        {/* Page loading overlay */}
-                        <AnimatePresence>
-                            {isPageLoading && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="absolute inset-0 bg-black flex flex-col items-center justify-center gap-4 z-40"
-                                >
-                                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Syncing Slide {currentPage}</p>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
 
-                    {/* Navigation Overlays */}
-                    <div className="absolute inset-y-0 left-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <button onClick={handlePrevPage} className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white">
-                            <ChevronLeft size={48} />
-                        </button>
-                    </div>
-                    <div className="absolute inset-y-0 right-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <button onClick={handleNextPage} className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white">
-                            <ChevronRight size={48} />
-                        </button>
+                        <PresentationViewer
+                            fileUrl={presentationFile}
+                            fileType={fileType}
+                            title={presentationTitle}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            isLoading={isPageLoading}
+                            onPageChange={(page) => {
+                                setIsPageLoading(true);
+                                setTimeout(() => {
+                                    setCurrentPage(page);
+                                }, 200);
+                            }}
+                            isFullScreen={isFullScreen}
+                        />
+
+                        {/* Navigation Overlays (Side buttons) */}
+                        <div className="absolute inset-y-0 left-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10">
+                            <button
+                                onClick={handlePrevPage}
+                                className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white"
+                                disabled={currentPage <= 1 || isPageLoading}
+                            >
+                                <ChevronLeft size={48} />
+                            </button>
+                        </div>
+                        <div className="absolute inset-y-0 right-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10">
+                            <button
+                                onClick={handleNextPage}
+                                className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white"
+                                disabled={currentPage >= totalPages || isPageLoading}
+                            >
+                                <ChevronRight size={48} />
+                            </button>
+                        </div>
                     </div>
                 </div>
+
 
                 {/* Status Bar */}
                 <div className="h-20 border-t border-white/5 px-12 flex items-center justify-between bg-black/40 backdrop-blur-md">
