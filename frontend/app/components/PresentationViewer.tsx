@@ -32,7 +32,6 @@ export default function PresentationViewer({
     totalPages,
     isLoading,
     onPageChange,
-    showControls = true,
     isFullScreen = false,
     initialOrientation = 'landscape',
     aspectRatio = null

@@ -13,7 +13,6 @@ import {
     Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import client from "../../api/client";
 import PresentationViewer from "../../components/PresentationViewer";
 
