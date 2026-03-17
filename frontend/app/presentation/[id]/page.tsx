@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
     ArrowLeft,
     Mic,
@@ -84,6 +84,7 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
 
 export default function RealTimePresentationPage() {
     const params = useParams();
+    const router = useRouter();
     const presentationId = params.id as string;
 
     const [presentationTitle, setPresentationTitle] = useState("Loading...");
@@ -106,6 +107,7 @@ export default function RealTimePresentationPage() {
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+    const viewerContainerRef = useRef<HTMLDivElement>(null);
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(totalPages);
 
@@ -169,6 +171,20 @@ export default function RealTimePresentationPage() {
             return prev;
         });
     }, []);
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "ArrowLeft") {
+                handlePrevPage();
+            } else if (e.key === "ArrowRight") {
+                handleNextPage();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [handlePrevPage, handleNextPage]);
 
     const goToPage = useCallback((page: number) => {
         const total = totalPagesRef.current;
@@ -268,6 +284,29 @@ export default function RealTimePresentationPage() {
         };
     }, [presentationId, handleCommand]);
 
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement && viewerContainerRef.current) {
+            viewerContainerRef.current.requestFullscreen().catch((err) => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+            setIsFullScreen(true);
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+                setIsFullScreen(false);
+            }
+        }
+    };
+
+    // Listen for Escape or manual exit from fullscreen to sync state
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullScreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
     useEffect(() => {
         if (isPageLoading) {
             const timer = setTimeout(() => setIsPageLoading(false), 800);
@@ -364,9 +403,12 @@ export default function RealTimePresentationPage() {
             <aside className="w-80 border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl flex flex-col relative z-20">
                 <header className="p-6 border-b border-white/5">
                     <div className="flex items-center gap-3 mb-6">
-                        <Link href="/dashboard" className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400">
+                        <button
+                            onClick={() => router.back()}
+                            className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400"
+                        >
                             <ArrowLeft size={18} />
-                        </Link>
+                        </button>
                         <h1 className="text-sm font-bold tracking-tight uppercase italic truncate">{presentationTitle}</h1>
                     </div>
 
@@ -464,7 +506,7 @@ export default function RealTimePresentationPage() {
             {/* Main Slide Viewer */}
             <main className="flex-1 relative flex flex-col bg-[#050505] z-10">
                 <div className="flex-1 p-4 md:p-8 flex items-center justify-center relative overflow-hidden">
-                    <div className="w-full h-full max-w-[95vw] relative shadow-[0_0_100px_rgba(0,0,0,0.8)] flex items-center justify-center">
+                    <div ref={viewerContainerRef} className="w-full h-full max-w-[95vw] relative shadow-[0_0_100px_rgba(0,0,0,0.8)] flex items-center justify-center bg-[#050505]">
 
 
                         <PresentationViewer
@@ -533,7 +575,7 @@ export default function RealTimePresentationPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setIsFullScreen(!isFullScreen)} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-zinc-400 hover:text-white">
+                        <button onClick={toggleFullScreen} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-zinc-400 hover:text-white">
                             {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
                         </button>
                     </div>
