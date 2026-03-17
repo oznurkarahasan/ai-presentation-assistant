@@ -38,7 +38,7 @@ export default function PresentationViewer({
     aspectRatio = null
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
-    const [zoom, setZoom] = useState<number | null>(null); // null means "Fit Entire Page"
+    const [zoom, setZoom] = useState<number | null>(null); // null means "Fit (100%)"
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
 
     useEffect(() => {
@@ -50,13 +50,13 @@ export default function PresentationViewer({
     }, [currentPage]);
 
     const handleZoomIn = () => {
-        if (zoom === null) setZoom(110);
-        else setZoom(prev => Math.min((prev || 100) + 10, 200));
+        if (zoom === null) setZoom(120);
+        else setZoom(prev => Math.min((prev || 100) + 20, 300));
     };
 
     const handleZoomOut = () => {
         if (zoom === null) return;
-        const nextZoom = (zoom || 100) - 10;
+        const nextZoom = (zoom || 100) - 20;
         if (nextZoom <= 100) setZoom(null);
         else setZoom(nextZoom);
     };
@@ -87,18 +87,13 @@ export default function PresentationViewer({
 
     const getIframeSrc = () => {
         const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
-        let fragments = `#page=${currentPage}`;
-
-        if (zoom) {
-            fragments += `&zoom=${zoom}`;
-        } else {
-            fragments += `&view=Fit`;
-        }
-
-        fragments += `&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0`;
+        // We always use view=Fit on the iframe itself. 
+        // We handle zooming by resizing the iframe element within an overflow-auto container.
+        const fragments = `#page=${currentPage}&view=Fit&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0`;
         return `${baseUrl}${fragments}`;
     };
 
+    // Calculate the orientation class if aspectRatio is not provided
     const orientationClass = orientation === 'landscape' ? 'w-full aspect-[16/9]' : 'h-full aspect-[0.707] mx-auto';
 
     return (
@@ -113,19 +108,10 @@ export default function PresentationViewer({
         >
             {fileUrl ? (
                 fileType === 'pdf' ? (
-                    <div className="absolute inset-0 w-full h-full overflow-hidden">
-                        {/* 1. PDF Frame (Fill Exactly) */}
-                        <iframe
-                            key={`${currentPage}-${orientation}-${zoom}`}
-                            src={getIframeSrc()}
-                            className="w-full h-full border-none pointer-events-none"
-                            title="Presentation Preview"
-                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                        />
+                    <div className="absolute inset-0 w-full h-full overflow-hidden flex flex-col">
 
-                        {/* 2. Custom UI Toolbar (Zoom & Page Only) */}
-                        <div className="absolute top-0 left-0 right-0 h-10 bg-[#050505] z-30 border-b border-white/5 flex items-center justify-between px-4 pointer-events-auto">
-                            {/* Left Side: Zoom & Page Jump */}
+                        {/* Custom UI Toolbar (High Z-Index) */}
+                        <div className="absolute top-0 left-0 right-0 h-10 bg-[#050505] z-50 border-b border-white/5 flex items-center justify-between px-4">
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
                                     <button
@@ -138,7 +124,7 @@ export default function PresentationViewer({
                                     <button
                                         onClick={resetZoom}
                                         className="text-[10px] font-mono font-bold text-zinc-300 w-12 text-center hover:bg-white/5 rounded py-0.5 transition-colors"
-                                        title="Click to reset (Fit Page)"
+                                        title="Reset to Fit"
                                     >
                                         {zoom ? `${zoom}%` : 'FIT'}
                                     </button>
@@ -157,10 +143,26 @@ export default function PresentationViewer({
                                     <span className="text-[10px] text-zinc-500 font-bold">/ {totalPages}</span>
                                 </form>
                             </div>
+                        </div>
 
-                            {/* Right Side Empty */}
-                            <div className="flex items-center">
-                                {/* Search removed as requested */}
+                        {/* 1. Scrollable Viewport */}
+                        <div className={`absolute inset-0 pt-0 w-full h-full ${zoom ? 'overflow-auto' : 'overflow-hidden'} scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent select-none`}>
+                            {/* 2. Resizable Content Wrapper */}
+                            <div
+                                style={{
+                                    width: zoom ? `${zoom}%` : '100%',
+                                    height: zoom ? `${zoom}%` : '100%',
+                                    margin: zoom ? '0 auto' : '0'
+                                }}
+                                className="relative transition-all duration-200 ease-out"
+                            >
+                                <iframe
+                                    key={`${currentPage}-${orientation}`} // Only reload on page/orientation change
+                                    src={getIframeSrc()}
+                                    className="w-full h-full border-none pointer-events-none"
+                                    title="Presentation Preview"
+                                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                />
                             </div>
                         </div>
 
@@ -178,9 +180,9 @@ export default function PresentationViewer({
                             )}
                         </AnimatePresence>
 
-                        {/* Hover-based Navigation Controls */}
+                        {/* Navigation Footer */}
                         {showControls && (
-                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-2xl scale-90 md:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 hover:border-primary/30">
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-2xl scale-90 md:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300 z-50 hover:border-primary/30">
                                 <button
                                     onClick={handlePrevPage}
                                     disabled={currentPage <= 1 || isLoading}
