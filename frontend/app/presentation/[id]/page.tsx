@@ -10,7 +10,6 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    FileText,
     Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -103,6 +102,7 @@ export default function RealTimePresentationPage() {
     const [sttError, setSttError] = useState<string | null>(null);
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
     const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
+    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -128,6 +128,9 @@ export default function RealTimePresentationPage() {
                 setPresentationTitle(data.title);
                 setPresentationFile(data.file_path);
                 setFileType(data.file_type);
+                if (data.aspect_ratio) {
+                    setAspectRatio(data.aspect_ratio);
+                }
                 if (data.orientation) {
                     setOrientation(data.orientation);
                 }
@@ -479,7 +482,9 @@ export default function RealTimePresentationPage() {
                             }}
                             isFullScreen={isFullScreen}
                             initialOrientation={orientation}
+                            aspectRatio={aspectRatio}
                         />
+
 
 
                         {/* Navigation Overlays (Side buttons) */}

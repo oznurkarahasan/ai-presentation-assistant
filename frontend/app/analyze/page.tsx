@@ -6,16 +6,15 @@ import {
     Send,
     ArrowLeft,
     MessageSquare,
-    FileText,
     Sparkles,
     Maximize2,
     User,
-    ChevronRight,
     X,
     Presentation,
     Sun,
     Moon,
-    Minimize2
+    Minimize2,
+    FileText
 } from "lucide-react";
 import PresentationViewer from "../components/PresentationViewer";
 import { motion, AnimatePresence } from "framer-motion";
@@ -60,6 +59,7 @@ export default function AnalyzePage() {
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [chatTheme, setChatTheme] = useState<'dark' | 'light'>('dark');
     const [isPageLoading, setIsPageLoading] = useState(false);
+    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
 
     useEffect(() => {
@@ -79,6 +79,10 @@ export default function AnalyzePage() {
                     setPresentationTitle(response.data.title);
                     setPresentationFile(response.data.file_path);
                     setFileType(response.data.file_type);
+                    if (response.data.aspect_ratio) {
+                        setAspectRatio(response.data.aspect_ratio);
+                    }
+
                     if (response.data.slide_count) {
                         setTotalPages(response.data.slide_count);
                     }
@@ -273,6 +277,7 @@ export default function AnalyzePage() {
                             }}
                             isFullScreen={isFullScreen}
                             initialOrientation={orientation}
+                            aspectRatio={aspectRatio}
                         />
 
                     </div>

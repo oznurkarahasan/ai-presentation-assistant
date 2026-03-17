@@ -1,10 +1,14 @@
 'use client';
 
-import { FileText, Presentation, ChevronRight, Layout } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCallback, useState, useEffect } from "react";
-
-
+import {
+    FileText,
+    Presentation,
+    ChevronRight,
+    Plus,
+    Minus
+} from "lucide-react";
 
 interface PresentationViewerProps {
     fileUrl: string | null;
@@ -17,6 +21,7 @@ interface PresentationViewerProps {
     showControls?: boolean;
     isFullScreen?: boolean;
     initialOrientation?: 'landscape' | 'portrait';
+    aspectRatio?: number | null;
 }
 
 export default function PresentationViewer({
@@ -29,15 +34,44 @@ export default function PresentationViewer({
     onPageChange,
     showControls = true,
     isFullScreen = false,
-    initialOrientation = 'landscape'
+    initialOrientation = 'landscape',
+    aspectRatio = null
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
+    const [zoom, setZoom] = useState<number | null>(null); // null means "Fit Entire Page"
+    const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
 
     useEffect(() => {
         setOrientation(initialOrientation);
     }, [initialOrientation]);
 
+    useEffect(() => {
+        setPageInputValue(currentPage.toString());
+    }, [currentPage]);
 
+    const handleZoomIn = () => {
+        if (zoom === null) setZoom(110);
+        else setZoom(prev => Math.min((prev || 100) + 10, 200));
+    };
+
+    const handleZoomOut = () => {
+        if (zoom === null) return;
+        const nextZoom = (zoom || 100) - 10;
+        if (nextZoom <= 100) setZoom(null);
+        else setZoom(nextZoom);
+    };
+
+    const resetZoom = () => setZoom(null);
+
+    const handlePageSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        const page = parseInt(pageInputValue);
+        if (!isNaN(page) && page >= 1 && page <= totalPages) {
+            onPageChange(page);
+        } else {
+            setPageInputValue(currentPage.toString());
+        }
+    };
 
     const handleNextPage = useCallback(() => {
         if (currentPage < totalPages) {
@@ -51,57 +85,106 @@ export default function PresentationViewer({
         }
     }, [currentPage, onPageChange]);
 
-    return (
-        <div className={`relative flex items-center justify-center group ${isFullScreen ? 'w-full h-full rounded-none' : 'rounded-2xl'} overflow-hidden border border-white/5 shadow-2xl bg-zinc-900/50 transition-all duration-500 ${orientation === 'landscape' ? 'w-full aspect-[16/9]' : 'h-full aspect-[0.707] mx-auto overflow-y-auto'
-            }`}>
+    const getIframeSrc = () => {
+        const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
+        let fragments = `#page=${currentPage}`;
 
+        if (zoom) {
+            fragments += `&zoom=${zoom}`;
+        } else {
+            fragments += `&view=Fit`;
+        }
+
+        fragments += `&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0`;
+        return `${baseUrl}${fragments}`;
+    };
+
+    const orientationClass = orientation === 'landscape' ? 'w-full aspect-[16/9]' : 'h-full aspect-[0.707] mx-auto';
+
+    return (
+        <div
+            style={aspectRatio ? {
+                aspectRatio: `${aspectRatio}`,
+                height: orientation === 'portrait' ? '100%' : 'auto',
+                width: orientation === 'landscape' ? '100%' : 'auto'
+            } : {}}
+            className={`relative flex items-center justify-center group ${isFullScreen ? 'w-full h-full rounded-none' : 'rounded-2xl'} overflow-hidden border border-white/5 shadow-2xl bg-[#0a0a0a] transition-all duration-500 ${!aspectRatio ? orientationClass : 'mx-auto max-h-full max-w-full'
+                }`}
+        >
             {fileUrl ? (
                 fileType === 'pdf' ? (
-                    <div className="w-full h-full relative flex items-center justify-center">
-                        <div className="relative w-full h-full max-w-full overflow-hidden">
-                            <iframe
-                                key={`${currentPage}-${orientation}`}
-                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}#page=${currentPage}&view=${orientation === 'landscape' ? 'FitH' : 'Fit'}&toolbar=0&navpanes=0&scrollbar=0`}
-                                className="w-full h-full border-none pointer-events-none scale-[1.01]"
-                                title="Presentation Preview"
-                                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                            />
+                    <div className="absolute inset-0 w-full h-full overflow-hidden">
+                        {/* 1. PDF Frame (Fill Exactly) */}
+                        <iframe
+                            key={`${currentPage}-${orientation}-${zoom}`}
+                            src={getIframeSrc()}
+                            className="w-full h-full border-none pointer-events-none"
+                            title="Presentation Preview"
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                        />
 
-                            {/* Mask built-in PDF toolbar area */}
-                            <div className="pointer-events-none absolute top-0 left-0 right-0 h-10 bg-[#050505]" />
+                        {/* 2. Custom UI Toolbar (Zoom & Page Only) */}
+                        <div className="absolute top-0 left-0 right-0 h-10 bg-[#050505] z-30 border-b border-white/5 flex items-center justify-between px-4 pointer-events-auto">
+                            {/* Left Side: Zoom & Page Jump */}
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
+                                    <button
+                                        onClick={handleZoomOut}
+                                        disabled={zoom === null}
+                                        className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
+                                    >
+                                        <Minus size={14} />
+                                    </button>
+                                    <button
+                                        onClick={resetZoom}
+                                        className="text-[10px] font-mono font-bold text-zinc-300 w-12 text-center hover:bg-white/5 rounded py-0.5 transition-colors"
+                                        title="Click to reset (Fit Page)"
+                                    >
+                                        {zoom ? `${zoom}%` : 'FIT'}
+                                    </button>
+                                    <button onClick={handleZoomIn} className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400">
+                                        <Plus size={14} />
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handlePageSubmit} className="flex items-center gap-2 bg-white/5 px-2 py-0.5 rounded-lg border border-white/10">
+                                    <input
+                                        type="text"
+                                        value={pageInputValue}
+                                        onChange={(e) => setPageInputValue(e.target.value)}
+                                        className="w-8 h-6 bg-transparent text-[10px] text-center font-bold text-white outline-none"
+                                    />
+                                    <span className="text-[10px] text-zinc-500 font-bold">/ {totalPages}</span>
+                                </form>
+                            </div>
+
+                            {/* Right Side Empty */}
+                            <div className="flex items-center">
+                                {/* Search removed as requested */}
+                            </div>
                         </div>
 
-                        {/* Solid Smooth Loading Overlay */}
+                        {/* Solid Loading Overlay */}
                         <AnimatePresence mode="wait">
                             {isLoading && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
-                                    className="absolute inset-0 bg-[#050505] flex flex-col items-center justify-center gap-4 z-50 px-8 text-center"
+                                    className="absolute inset-0 bg-[#050505] flex items-center justify-center z-40"
                                 >
-                                    <div className="relative">
-                                        <div className="w-12 h-12 border-2 border-white/5 rounded-full" />
-                                        <div className="absolute inset-0 w-12 h-12 border-t-2 border-primary rounded-full animate-spin" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em] animate-pulse">Synchronizing</p>
-                                        <p className="text-xs text-zinc-600 font-mono italic">Slide {currentPage} / {totalPages}</p>
-                                    </div>
+                                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
-                        <div className="absolute inset-0 pointer-events-none" />
-
-                        {/* Manual controls footer */}
+                        {/* Hover-based Navigation Controls */}
                         {showControls && (
-                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-90 md:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 hover:border-primary/30">
+                            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-2xl scale-90 md:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 hover:border-primary/30">
                                 <button
                                     onClick={handlePrevPage}
                                     disabled={currentPage <= 1 || isLoading}
-                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-zinc-400 active:scale-90"
-                                    title="Previous Slide (←)"
+                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 active:scale-90"
                                 >
                                     <ChevronRight className="rotate-180" size={22} />
                                 </button>
@@ -118,18 +201,15 @@ export default function PresentationViewer({
                                 <button
                                     onClick={handleNextPage}
                                     disabled={currentPage >= totalPages || isLoading}
-                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-zinc-400 active:scale-90"
-                                    title="Next Slide (→)"
+                                    className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 active:scale-90"
                                 >
                                     <ChevronRight size={22} />
                                 </button>
                             </div>
                         )}
                     </div>
-
-
                 ) : (
-                    <div className="relative z-10 w-full max-w-3xl aspect-[16/9] bg-white rounded-sm shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden">
+                    <div className="relative z-10 w-full max-w-3xl aspect-[16/9] bg-white rounded-sm shadow-2xl overflow-hidden">
                         <div className="p-12 h-full flex flex-col text-black font-sans">
                             <div className="flex justify-between items-start mb-12">
                                 <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">P</div>
