@@ -2,7 +2,8 @@
 
 import { FileText, Presentation, ChevronRight, Layout } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+
 
 
 interface PresentationViewerProps {
@@ -32,9 +33,10 @@ export default function PresentationViewer({
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
 
-    const toggleOrientation = useCallback(() => {
-        setOrientation((prev: 'landscape' | 'portrait') => prev === 'landscape' ? 'portrait' : 'landscape');
-    }, []);
+    useEffect(() => {
+        setOrientation(initialOrientation);
+    }, [initialOrientation]);
+
 
 
     const handleNextPage = useCallback(() => {
@@ -121,19 +123,10 @@ export default function PresentationViewer({
                                 >
                                     <ChevronRight size={22} />
                                 </button>
-
-                                <div className="h-8 w-[1px] bg-white/10 mx-1" />
-
-                                <button
-                                    onClick={toggleOrientation}
-                                    className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all ${orientation === 'portrait' ? 'bg-primary text-white' : 'bg-white/5 text-zinc-400 hover:bg-white/10'}`}
-                                    title={`Switch to ${orientation === 'landscape' ? 'Portrait' : 'Landscape'}`}
-                                >
-                                    <Layout size={18} className={orientation === 'landscape' ? 'rotate-90' : ''} />
-                                </button>
                             </div>
                         )}
                     </div>
+
 
                 ) : (
                     <div className="relative z-10 w-full max-w-3xl aspect-[16/9] bg-white rounded-sm shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden">

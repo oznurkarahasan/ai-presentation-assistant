@@ -60,6 +60,13 @@ async def get_presentation(
     if not presentation:
         raise ValidationError("Presentation not found")
         
+    # Detect orientation for frontend
+    orientation = "landscape"
+    if presentation.file_type == "pdf":
+        orientation = pdf_service.get_pdf_orientation(presentation.file_path)
+    elif presentation.file_type == "pptx":
+        orientation = pptx_service.get_pptx_orientation(presentation.file_path)
+
     return {
         "id": presentation.id,
         "title": presentation.title,
@@ -67,8 +74,10 @@ async def get_presentation(
         "file_type": presentation.file_type,
         "slide_count": presentation.slide_count,
         "total_pages": presentation.slide_count,  # Added for frontend compatibility
-        "status": presentation.status
+        "status": presentation.status,
+        "orientation": orientation
     }
+
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_presentation(
@@ -124,11 +133,12 @@ async def upload_presentation(
 
         # Extract text based on file type (with security validation)
         if file.filename.endswith(".pdf"):
-            slide_texts = await pdf_service.extract_text_from_pdf(file, file_size)
+            slide_texts, orientation = await pdf_service.extract_text_from_pdf(file, file_size)
             logger.info(f"Extracted {len(slide_texts)} slides from PDF")
         elif file.filename.endswith(".pptx"):
-            slide_texts = await pptx_service.extract_text_from_pptx(file, file_size)
+            slide_texts, orientation = await pptx_service.extract_text_from_pptx(file, file_size)
             logger.info(f"Extracted {len(slide_texts)} slides from PPTX")
+
         else:
             raise ValidationError("Unsupported file type")
 

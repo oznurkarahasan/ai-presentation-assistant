@@ -47,6 +47,8 @@ export default function AnalyzePage() {
     const [presentationTitle, setPresentationTitle] = useState("Loading Presentation...");
     const [presentationFile, setPresentationFile] = useState<string | null>(null);
     const [fileType, setFileType] = useState<string | null>(null);
+    const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
+
     const chatEndRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
     const presentationId = searchParams.get('id');
@@ -80,6 +82,10 @@ export default function AnalyzePage() {
                     if (response.data.slide_count) {
                         setTotalPages(response.data.slide_count);
                     }
+                    if (response.data.orientation) {
+                        setOrientation(response.data.orientation);
+                    }
+
                 } catch (error) {
                     console.error("Failed to fetch presentation:", error);
                     setPresentationTitle("Error loading presentation");
@@ -266,7 +272,9 @@ export default function AnalyzePage() {
                                 }, 200);
                             }}
                             isFullScreen={isFullScreen}
+                            initialOrientation={orientation}
                         />
+
                     </div>
 
                 </div>

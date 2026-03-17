@@ -90,7 +90,9 @@ export default function RealTimePresentationPage() {
     const [presentationTitle, setPresentationTitle] = useState("Loading...");
     const [presentationFile, setPresentationFile] = useState<string | null>(null);
     const [fileType, setFileType] = useState<string | null>(null);
+    const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
     const [currentPage, setCurrentPage] = useState(1);
+
 
     const [totalPages, setTotalPages] = useState(1);
     const [isListening, setIsListening] = useState(false);
@@ -126,7 +128,11 @@ export default function RealTimePresentationPage() {
                 setPresentationTitle(data.title);
                 setPresentationFile(data.file_path);
                 setFileType(data.file_type);
+                if (data.orientation) {
+                    setOrientation(data.orientation);
+                }
                 // Handle both naming conventions for robustness
+
                 const count = data.total_pages || data.slide_count || 1;
                 console.log(`[API] Total pages set to: ${count}`);
                 setTotalPages(count);
@@ -472,7 +478,9 @@ export default function RealTimePresentationPage() {
                                 }, 200);
                             }}
                             isFullScreen={isFullScreen}
+                            initialOrientation={orientation}
                         />
+
 
                         {/* Navigation Overlays (Side buttons) */}
                         <div className="absolute inset-y-0 left-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10">
