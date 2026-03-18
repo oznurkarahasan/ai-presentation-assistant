@@ -187,6 +187,40 @@ export default function AnalyzePage() {
         setIsFullScreen(!isFullScreen);
     };
 
+    const handlePageJump = useCallback((page: number) => {
+        if (page >= 1 && page <= totalPages && !isPageLoading) {
+            setIsPageLoading(true);
+            setTimeout(() => {
+                setCurrentPage(page);
+            }, 200);
+        }
+    }, [totalPages, isPageLoading]);
+
+    const renderMessageContent = (content: string) => {
+        // Regex to match [Sayfa X], [Page X], [S X], [X. Sayfa] etc.
+        const pageRegex = /(\[(?:Sayfa|Page|S)\s*\d+\])/gi;
+        const parts = content.split(pageRegex);
+
+        return parts.map((part, index) => {
+            const match = part.match(/\[(?:Sayfa|Page|S)\s*(\d+)\]/i);
+            if (match) {
+                const pageNum = parseInt(match[1], 10);
+                return (
+                    <button
+                        key={index}
+                        onClick={() => handlePageJump(pageNum)}
+                        className="mx-1 px-1.5 py-0.5 bg-primary/20 hover:bg-primary/40 border border-primary/30 rounded text-primary font-bold transition-all inline-flex items-center gap-1 hover:scale-105 active:scale-95 shadow-sm"
+                        title={`Go to page ${pageNum}`}
+                    >
+                        <FileText size={11} className="mb-0.5" />
+                        {part.replace(/[\[\]]/g, '')}
+                    </button>
+                );
+            }
+            return <span key={index}>{part}</span>;
+        });
+    };
+
     const toggleTheme = () => {
         setChatTheme(chatTheme === 'dark' ? 'light' : 'dark');
     };
@@ -350,7 +384,7 @@ export default function AnalyzePage() {
                                                         : chatTheme === 'dark'
                                                             ? 'bg-white/5 text-zinc-300 border border-white/5 rounded-tl-none'
                                                             : 'bg-zinc-100 text-zinc-800 border border-zinc-200 rounded-tl-none'}`}>
-                                                    {message.content}
+                                                    {message.role === 'assistant' ? renderMessageContent(message.content) : message.content}
                                                 </div>
                                                 <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-1">
                                                     {message.role === 'assistant' ? 'AI Assistant' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
