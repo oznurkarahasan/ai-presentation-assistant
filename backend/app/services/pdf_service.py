@@ -50,14 +50,20 @@ def validate_pdf_security(pdf_reader: pypdf.PdfReader, file_size: int) -> None:
     
     logger.debug(f"PDF security validation passed: {num_pages} pages, {file_size/1024:.2f}KB")
 
-async def extract_text_from_pdf(file: UploadFile, file_size: int = 0) -> list[str]:
+async def extract_text_from_pdf(file: UploadFile, file_size: int = 0) -> tuple[list[str], str, float]:
     """
-    Reads the PDF and returns each page as an element of the list.
-    Example: ['Page 1 text', 'Page 2 text']
+    Reads the PDF and returns slide text with layout metadata.
+    Example: (['Page 1 text', 'Page 2 text'], 'landscape', 1.777)
     
     Args:
         file: Uploaded PDF file
         file_size: File size in bytes (for security validation)
+
+    Returns:
+        tuple[list[str], str, float]:
+            - Slide texts extracted per page
+            - Orientation ('portrait' or 'landscape')
+            - Aspect ratio (width / height)
     """
     try:
         pdf_reader = pypdf.PdfReader(file.file)

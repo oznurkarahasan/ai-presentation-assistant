@@ -49,9 +49,9 @@ def validate_pptx_security(prs: Presentation, file_size: int) -> None:
     
     logger.debug(f"PPTX security validation passed: {num_slides} slides, {file_size/1024:.2f}KB")
 
-async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> list[str]:
+async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> tuple[list[str], str, float]:
     """
-    Reads the PPTX and returns each slide as an element of the list.
+    Reads the PPTX and returns slide text with layout metadata.
     Extracts both slide text and speaker notes.
     
     Args:
@@ -59,7 +59,10 @@ async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> list[s
         file_size: File size in bytes (for security validation)
         
     Returns:
-        List of text strings, one per slide
+        tuple[list[str], str, float]:
+            - Slide texts extracted per slide
+            - Orientation ('portrait' or 'landscape')
+            - Aspect ratio (width / height)
     """
     try:
         # Read file content into memory
