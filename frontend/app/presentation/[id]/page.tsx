@@ -287,12 +287,13 @@ export default function RealTimePresentationPage() {
         if (!document.fullscreenElement && viewerContainerRef.current) {
             viewerContainerRef.current.requestFullscreen().catch((err) => {
                 console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                setIsFullScreen(false);
             });
-            setIsFullScreen(true);
         } else {
             if (document.exitFullscreen) {
-                document.exitFullscreen();
-                setIsFullScreen(false);
+                document.exitFullscreen().catch((err) => {
+                    console.error(`Error attempting to exit full-screen mode: ${err.message}`);
+                });
             }
         }
     };
