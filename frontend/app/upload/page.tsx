@@ -401,20 +401,21 @@ export default function UploadPage() {
                                         <span className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500">{file?.name}</span>
                                         <Eye size={14} className="text-zinc-600" />
                                     </div>
-                                    <div className="flex-1 bg-black relative">
+                                    <div className="flex-1 bg-black relative overflow-hidden">
                                         {filePreview ? (
                                             isPdf ? (
                                                 <iframe
-                                                    src={`${filePreview}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                    className="w-full h-full border-none opacity-90"
+                                                    src={`${filePreview}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                                                    className="border-none opacity-90 absolute"
                                                     title="Full Preview"
+                                                    style={{ top: '-56px', left: 0, width: 'calc(100% + 20px)', height: 'calc(100% + 76px)', display: 'block' } as React.CSSProperties}
                                                 />
                                             ) : pptxPreviewUrl ? (
                                                 <iframe
                                                     src={pptxPreviewUrl}
-                                                    className="w-full h-full border-none"
+                                                    className="border-none absolute"
                                                     title="PPTX Preview"
-                                                    style={{ display: 'block' }}
+                                                    style={{ top: '-56px', left: 0, width: 'calc(100% + 20px)', height: 'calc(100% + 76px)', display: 'block' } as React.CSSProperties}
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-zinc-900 to-black">

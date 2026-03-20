@@ -5,6 +5,7 @@ from pptx import Presentation
 from fastapi import UploadFile
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.core.logger import logger
+from pypdf import PdfWriter, PdfReader
 import re
 import io
 import os
@@ -126,6 +127,19 @@ async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> tuple[
             details=str(e)
         )
 
+def _strip_pdf_bookmarks(pdf_path: str) -> None:
+    """Remove outline/bookmarks from PDF so the browser navpane doesn't auto-open."""
+    try:
+        reader = PdfReader(pdf_path)
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        with open(pdf_path, "wb") as f:
+            writer.write(f)
+    except Exception as e:
+        logger.warning(f"Failed to strip PDF bookmarks from {pdf_path}: {e}")
+
+
 async def convert_to_pdf_preview(pptx_path: str) -> str | None:
     """
     Converts a PPTX file to a PDF preview using LibreOffice headless.
@@ -174,6 +188,8 @@ async def convert_to_pdf_preview(pptx_path: str) -> str | None:
 
         if os.path.exists(libreoffice_output):
             os.rename(libreoffice_output, preview_path)
+            # Strip bookmarks/outline so the browser navpane doesn't open
+            _strip_pdf_bookmarks(preview_path)
             logger.info(f"PPTX preview PDF created: {preview_path}")
             return preview_path
 

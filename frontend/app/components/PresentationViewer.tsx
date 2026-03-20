@@ -37,7 +37,7 @@ export default function PresentationViewer({
     aspectRatio = null
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
-    const [zoom, setZoom] = useState<number | null>(null); // null means "Fit (100%)"
+    const [zoom, setZoom] = useState<number | null>(null); // null means "Fit"
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
 
     useEffect(() => {
@@ -90,14 +90,30 @@ export default function PresentationViewer({
         return `${baseUrl}${fragments}`;
     };
 
+    // When portrait is zoomed: fill all available space (no aspect ratio constraint).
+    // This prevents the container becoming short/wide (16/9) while the content is still portrait,
+    // which was cutting off the bottom of the page.
     const isZoomedPortrait = orientation === 'portrait' && zoom !== null;
-    const orientationClass = orientation === 'landscape' ? 'w-full aspect-[16/9]' : isZoomedPortrait ? 'w-full aspect-[16/9]' : 'h-full aspect-[0.707] mx-auto';
 
-    const containerStyle = aspectRatio ? {
-        aspectRatio: isZoomedPortrait ? `${16 / 9}` : `${aspectRatio}`,
-        height: isZoomedPortrait ? 'auto' : orientation === 'portrait' ? '100%' : 'auto',
-        width: isZoomedPortrait || orientation === 'landscape' ? '100%' : 'auto',
-    } : {};
+    // orientationClass is used when no aspectRatio prop is passed
+    const orientationClass = orientation === 'landscape'
+        ? 'w-full aspect-[16/9]'
+        : isZoomedPortrait
+            ? 'w-full h-full'
+            : 'h-full aspect-[0.707] mx-auto';
+
+    // containerStyle is used when aspectRatio prop is passed from the parent
+    const containerStyle: React.CSSProperties = aspectRatio ? (
+        isZoomedPortrait ? {
+            // Portrait + zoomed: fill all available space so the user can scroll the full page
+            width: '100%',
+            height: '100%',
+        } : {
+            aspectRatio: `${aspectRatio}`,
+            height: orientation === 'portrait' ? '100%' : 'auto',
+            width: orientation === 'landscape' ? '100%' : 'auto',
+        }
+    ) : {};
 
     return (
         <div
@@ -109,9 +125,9 @@ export default function PresentationViewer({
                 fileType === 'pdf' ? (
                     <div className="absolute inset-0 w-full h-full flex flex-col overflow-hidden">
 
-                        {/* Toolbar */}
+                        {/* Custom toolbar */}
                         <div className="flex-none h-10 bg-[#050505] z-50 border-b border-white/5 flex items-center justify-between px-4">
-                            {/* Left Side: Zoom Controls */}
+                            {/* Left: Zoom Controls */}
                             <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
                                 <button
                                     onClick={handleZoomOut}
@@ -132,7 +148,7 @@ export default function PresentationViewer({
                                 </button>
                             </div>
 
-                            {/* Right Side: Integrated Page Navigation */}
+                            {/* Right: Page Navigation */}
                             <div className="flex items-center bg-white/5 rounded-lg p-0.5 border border-white/10">
                                 <button
                                     onClick={handlePrevPage}
@@ -166,9 +182,24 @@ export default function PresentationViewer({
 
                         {/* Page Viewport */}
                         <div
-                            className={`flex-1 relative select-none ${zoom ? 'overflow-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent' : 'overflow-hidden'}`}
-                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties} // Hide scrollbar in Container scrollbar (zoom mode) 
+                            className={`flex-1 relative select-none ${zoom ? 'overflow-auto' : 'overflow-hidden'}`}
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                         >
+                            {/*
+                              Overlay that covers the browser's built-in PDF toolbar.
+                              Chrome/Firefox no longer reliably respect #toolbar=0 in embedded iframes.
+                              This #0a0a0a div sits on top of the iframe's top area where the browser
+                              PDF toolbar renders (~40px), masking it with the viewer's background color.
+                              Only shown in fit mode (zoom=null) — in zoom mode the user scrolls freely.
+                            */}
+                            {!zoom && (
+                                <div
+                                    className="absolute top-0 left-0 right-0 z-10 pointer-events-none"
+                                    style={{ height: '44px', background: '#0a0a0a' }}
+                                />
+                            )}
+
+                            {/* Scale container */}
                             <div
                                 style={{
                                     width: zoom ? `${zoom}%` : '100%',
@@ -176,7 +207,7 @@ export default function PresentationViewer({
                                 }}
                                 className="transition-all duration-200 ease-out overflow-hidden"
                             >
-                                {/* iframe is extended slightly to clip PDF viewer's internal scrollbar */}
+                                {/* iframe extends 20px right to clip browser PDF scrollbar */}
                                 <iframe
                                     key={`${currentPage}-${orientation}`}
                                     src={getIframeSrc()}
@@ -186,15 +217,15 @@ export default function PresentationViewer({
                                         width: 'calc(100% + 20px)',
                                         height: 'calc(100% + 20px)',
                                         display: 'block',
-                                        scrollbarWidth: 'none',
                                         marginRight: '-20px',
                                         marginBottom: '-20px',
-                                    }}
+                                        scrollbarWidth: 'none',
+                                    } as React.CSSProperties}
                                 />
                             </div>
                         </div>
 
-                        {/* Solid Loading Overlay */}
+                        {/* Loading overlay */}
                         <AnimatePresence mode="wait">
                             {isLoading && (
                                 <motion.div
