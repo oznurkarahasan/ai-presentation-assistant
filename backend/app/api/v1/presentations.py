@@ -14,9 +14,9 @@ router = APIRouter()
 # File size limit: 50MB
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from app.models.presentation import Presentation, PresentationSession, SessionType
+from app.models.presentation import Presentation
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -149,10 +149,10 @@ async def upload_presentation(
 
         # Extract text based on file type (with security validation)
         if file.filename.endswith(".pdf"):
-            slide_texts, orientation, aspect_ratio = await pdf_service.extract_text_from_pdf(file, file_size)
+            slide_texts, _orientation, _aspect_ratio = await pdf_service.extract_text_from_pdf(file, file_size)
             logger.info(f"Extracted {len(slide_texts)} slides from PDF")
         elif file.filename.endswith(".pptx"):
-            slide_texts, orientation, aspect_ratio = await pptx_service.extract_text_from_pptx(file, file_size)
+            slide_texts, _orientation, _aspect_ratio = await pptx_service.extract_text_from_pptx(file, file_size)
             logger.info(f"Extracted {len(slide_texts)} slides from PPTX")
 
         else:
