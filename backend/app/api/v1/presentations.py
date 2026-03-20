@@ -74,11 +74,22 @@ async def get_presentation(
     elif presentation.file_type == "pptx":
         orientation, aspect_ratio = pptx_service.get_pptx_orientation(presentation.file_path)
 
+    # Include PDF preview path for PPTX files
+    pdf_preview_path = None
+    if presentation.file_type == "pptx":
+        preview = presentation.file_path + ".preview.pdf"
+        if not os.path.exists(preview) and os.path.exists(presentation.file_path):
+            # On-demand conversion for files uploaded before this feature was added
+            await pptx_service.convert_to_pdf_preview(presentation.file_path)
+        if os.path.exists(preview):
+            pdf_preview_path = preview
+
     response = {
         "id": presentation.id,
         "title": presentation.title,
         "file_path": presentation.file_path,
         "file_type": presentation.file_type,
+        "pdf_preview_path": pdf_preview_path,
         "slide_count": presentation.slide_count,
         "total_pages": presentation.slide_count,  # Added for frontend compatibility
         "status": presentation.status,
@@ -154,6 +165,8 @@ async def upload_presentation(
         elif file.filename.endswith(".pptx"):
             slide_texts, _orientation, _aspect_ratio = await pptx_service.extract_text_from_pptx(file, file_size)
             logger.info(f"Extracted {len(slide_texts)} slides from PPTX")
+            # Convert to PDF preview for browser display (non-breaking — failure is logged only)
+            await pptx_service.convert_to_pdf_preview(file_path)
 
         else:
             raise ValidationError("Unsupported file type")
@@ -173,12 +186,16 @@ async def upload_presentation(
         )
         
         logger.info(f"Presentation uploaded successfully: ID={new_presentation.id}, User={current_user.id}")
-        
+
+        preview_path = file_path + ".preview.pdf"
+        pdf_preview_path = preview_path if os.path.exists(preview_path) else None
+
         return {
             "id": new_presentation.id,
             "title": new_presentation.title,
             "pages": len(slide_texts),
-            "status": "success"
+            "status": "success",
+            "pdf_preview_path": pdf_preview_path,
         }
 
     except Exception as e:
@@ -224,6 +241,15 @@ async def delete_presentation(
             logger.info(f"Deleted file: {presentation.file_path}")
         except Exception as e:
             logger.warning(f"Failed to delete file: {presentation.file_path}. Error: {e}")
+
+    # Also delete PDF preview if it exists (PPTX uploads)
+    preview_path = presentation.file_path + ".preview.pdf"
+    if os.path.exists(preview_path):
+        try:
+            os.remove(preview_path)
+            logger.info(f"Deleted PDF preview: {preview_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete PDF preview: {preview_path}. Error: {e}")
     
     # Delete from database (cascade will handle related records)
     await db.delete(presentation)
