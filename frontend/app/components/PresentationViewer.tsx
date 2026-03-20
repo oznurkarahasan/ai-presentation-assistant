@@ -90,15 +90,18 @@ export default function PresentationViewer({
         return `${baseUrl}${fragments}`;
     };
 
-    const orientationClass = orientation === 'landscape' ? 'w-full aspect-[16/9]' : 'h-full aspect-[0.707] mx-auto';
+    const isZoomedPortrait = orientation === 'portrait' && zoom !== null;
+    const orientationClass = orientation === 'landscape' ? 'w-full aspect-[16/9]' : isZoomedPortrait ? 'w-full aspect-[16/9]' : 'h-full aspect-[0.707] mx-auto';
+
+    const containerStyle = aspectRatio ? {
+        aspectRatio: isZoomedPortrait ? `${16 / 9}` : `${aspectRatio}`,
+        height: isZoomedPortrait ? 'auto' : orientation === 'portrait' ? '100%' : 'auto',
+        width: isZoomedPortrait || orientation === 'landscape' ? '100%' : 'auto',
+    } : {};
 
     return (
         <div
-            style={aspectRatio ? {
-                aspectRatio: `${aspectRatio}`,
-                height: orientation === 'portrait' ? '100%' : 'auto',
-                width: orientation === 'landscape' ? '100%' : 'auto'
-            } : {}}
+            style={containerStyle}
             className={`relative flex items-center justify-center group ${isFullScreen ? 'w-full h-full rounded-none' : 'rounded-2xl'} overflow-hidden border border-white/5 shadow-2xl bg-[#0a0a0a] transition-all duration-500 ${!aspectRatio ? orientationClass : 'mx-auto max-h-full max-w-full'
                 }`}
         >
