@@ -198,13 +198,13 @@ export default function AnalyzePage() {
 
     const renderMessageContent = (content: string) => {
         // Regex to match [Sayfa X], [Page X], [S X], [X. Sayfa] etc.
-        const pageRegex = /(\[(?:Sayfa|Page|S)\s*\d+\])/gi;
+        const pageRegex = /(\[(?:(?:Sayfa|Page|S)\s*\d+|\d+\.\s*Sayfa)\])/gi;
         const parts = content.split(pageRegex);
 
         return parts.map((part, index) => {
-            const match = part.match(/\[(?:Sayfa|Page|S)\s*(\d+)\]/i);
+            const match = part.match(/\[(?:(?:Sayfa|Page|S)\s*(\d+)|(\d+)\.\s*Sayfa)\]/i);
             if (match) {
-                const pageNum = parseInt(match[1], 10);
+                const pageNum = parseInt(match[1] || match[2], 10);
                 return (
                     <button
                         key={index}
