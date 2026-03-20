@@ -186,40 +186,32 @@ export default function PresentationViewer({
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                         >
                             {/*
-                              Overlay that covers the browser's built-in PDF toolbar.
-                              Chrome/Firefox no longer reliably respect #toolbar=0 in embedded iframes.
-                              This #0a0a0a div sits on top of the iframe's top area where the browser
-                              PDF toolbar renders (~40px), masking it with the viewer's background color.
-                              Only shown in fit mode (zoom=null) — in zoom mode the user scrolls freely.
+                              Scale container: overflow:hidden clips the browser PDF toolbar.
+                              The iframe sits at top:-56px so the ~40px browser toolbar is pushed
+                              above the container boundary and hidden. height:calc(100%+76px)
+                              fills the gap (56px top + 20px bottom). width:calc(100%+20px)
+                              clips the right scrollbar.
                             */}
-                            {!zoom && (
-                                <div
-                                    className="absolute top-0 left-0 right-0 z-10 pointer-events-none"
-                                    style={{ height: '44px', background: '#0a0a0a' }}
-                                />
-                            )}
-
-                            {/* Scale container */}
                             <div
                                 style={{
+                                    position: 'relative',
                                     width: zoom ? `${zoom}%` : '100%',
                                     height: zoom ? `${zoom}%` : '100%',
+                                    overflow: 'hidden',
                                 }}
-                                className="transition-all duration-200 ease-out overflow-hidden"
+                                className="transition-all duration-200 ease-out"
                             >
-                                {/* iframe extends 20px right to clip browser PDF scrollbar */}
                                 <iframe
                                     key={`${currentPage}-${orientation}`}
                                     src={getIframeSrc()}
-                                    className="border-none pointer-events-none"
+                                    className="border-none pointer-events-none absolute"
                                     title="Presentation Preview"
                                     style={{
+                                        top: '-56px',
+                                        left: 0,
                                         width: 'calc(100% + 20px)',
-                                        height: 'calc(100% + 20px)',
+                                        height: 'calc(100% + 76px)',
                                         display: 'block',
-                                        marginRight: '-20px',
-                                        marginBottom: '-20px',
-                                        scrollbarWidth: 'none',
                                     } as React.CSSProperties}
                                 />
                             </div>
