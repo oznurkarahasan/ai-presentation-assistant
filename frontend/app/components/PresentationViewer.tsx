@@ -90,36 +90,22 @@ export default function PresentationViewer({
         return `${baseUrl}${fragments}`;
     };
 
-    // When portrait is zoomed: fill all available space (no aspect ratio constraint).
-    // This prevents the container becoming short/wide (16/9) while the content is still portrait,
-    // which was cutting off the bottom of the page.
-    const isZoomedPortrait = orientation === 'portrait' && zoom !== null;
+    // Use provided aspectRatio or fallback based on orientation
+    const effectiveRatio = aspectRatio || (orientation === 'landscape' ? 1.777 : 0.707);
 
-    // orientationClass is used when no aspectRatio prop is passed
-    const orientationClass = orientation === 'landscape'
-        ? 'w-full aspect-[16/9]'
-        : isZoomedPortrait
-            ? 'w-full h-full'
-            : 'h-full aspect-[0.707] mx-auto';
-
-    // containerStyle is used when aspectRatio prop is passed from the parent
-    const containerStyle: React.CSSProperties = aspectRatio ? (
-        isZoomedPortrait ? {
-            // Portrait + zoomed: fill all available space so the user can scroll the full page
-            width: '100%',
-            height: '100%',
-        } : {
-            aspectRatio: `${aspectRatio}`,
-            height: orientation === 'portrait' ? '100%' : 'auto',
-            width: orientation === 'landscape' ? '100%' : 'auto',
-        }
-    ) : {};
+    // containerStyle ensures the viewer maintains its aspect ratio while fitting within its parent
+    const containerStyle: React.CSSProperties = {
+        aspectRatio: `${effectiveRatio}`,
+        height: (orientation === 'portrait' || (aspectRatio && aspectRatio < 1)) ? '100%' : 'auto',
+        width: (orientation === 'landscape' || (aspectRatio && aspectRatio >= 1)) ? '100%' : 'auto',
+        maxWidth: '100%',
+        maxHeight: '100%',
+    };
 
     return (
         <div
             style={containerStyle}
-            className={`relative flex items-center justify-center group ${isFullScreen ? 'w-full h-full rounded-none' : 'rounded-2xl'} overflow-hidden border border-white/5 shadow-2xl bg-[#0a0a0a] transition-all duration-500 ${!aspectRatio ? orientationClass : 'mx-auto max-h-full max-w-full'
-                }`}
+            className={`relative flex items-center justify-center group ${isFullScreen ? 'rounded-none' : 'rounded-2xl'} overflow-hidden border border-white/5 shadow-2xl bg-[#0a0a0a] transition-all duration-300 mx-auto`}
         >
             {fileUrl ? (
                 fileType === 'pdf' ? (
@@ -182,7 +168,7 @@ export default function PresentationViewer({
 
                         {/* Page Viewport */}
                         <div
-                            className={`flex-1 relative select-none ${zoom ? 'overflow-auto' : 'overflow-hidden'}`}
+                            className="flex-1 relative select-none overflow-auto"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                         >
                             {/*
@@ -210,7 +196,7 @@ export default function PresentationViewer({
                                         top: '-56px',
                                         left: 0,
                                         width: 'calc(100% + 20px)',
-                                        height: 'calc(100% + 76px)',
+                                        height: 'calc(100% + 56px)', // Adjusted to exactly match top offset, prevents bottom clipping
                                         display: 'block',
                                     } as React.CSSProperties}
                                 />

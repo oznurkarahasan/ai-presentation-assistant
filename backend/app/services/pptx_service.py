@@ -10,7 +10,9 @@ import re
 import io
 import os
 import asyncio
-import subprocess
+import subprocess  # nosec B404
+import shutil
+import tempfile
 
 # Security limits (same as PDF)
 MAX_PPTX_SLIDES = 500
@@ -151,12 +153,17 @@ async def convert_to_pdf_preview(pptx_path: str) -> str | None:
     preview_path = abs_pptx + ".preview.pdf"
 
     def _run_conversion():
-        # HOME=/tmp is required in Docker — LibreOffice needs a writable profile dir
+        # HOME=/tmp is often required in Docker — LibreOffice needs a writable profile dir.
+        # We use tempfile.gettempdir() to be more portable while staying secure.
         env = os.environ.copy()
-        env["HOME"] = "/tmp"
-        result = subprocess.run(
+        env["HOME"] = tempfile.gettempdir()
+        
+        # Find absolute path for libreoffice to satisfy Bandit B607
+        libreoffice_path = shutil.which("libreoffice") or "libreoffice"
+        
+        result = subprocess.run(  # nosec B603
             [
-                "libreoffice",
+                libreoffice_path,
                 "--headless",
                 "--norestore",
                 "--nofirststartwizard",

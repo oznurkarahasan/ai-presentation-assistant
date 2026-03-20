@@ -143,9 +143,13 @@ async def upload_presentation(
     os.makedirs(upload_dir, exist_ok=True)
     
     # Generate unique filename to prevent overwrite
+    import re
     unique_id = uuid.uuid4().hex
-    safe_filename = f"{current_user.id}_{unique_id}_{file.filename}"
-    file_path = f"{upload_dir}/{safe_filename}"
+    # Sanitize the filename: remove path traversal characters and keep only safe ones
+    filename_from_user = os.path.basename(file.filename)
+    filename_sanitized = re.sub(r'[^a-zA-Z0-9._-]', '_', filename_from_user)
+    safe_filename = f"{current_user.id}_{unique_id}_{filename_sanitized}"
+    file_path = os.path.join(upload_dir, safe_filename)
     
     try:
         # Save file
