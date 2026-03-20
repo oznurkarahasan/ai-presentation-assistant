@@ -104,10 +104,10 @@ export default function PresentationViewer({
         >
             {fileUrl ? (
                 fileType === 'pdf' ? (
-                    <div className="absolute inset-0 w-full h-full overflow-hidden flex flex-col">
+                    <div className="absolute inset-0 w-full h-full flex flex-col overflow-hidden">
 
-                        {/* Custom UI Header Toolbar */}
-                        <div className="absolute top-0 left-0 right-0 h-10 bg-[#050505] z-50 border-b border-white/5 flex items-center justify-between px-4">
+                        {/* Toolbar */}
+                        <div className="flex-none h-10 bg-[#050505] z-50 border-b border-white/5 flex items-center justify-between px-4">
                             {/* Left Side: Zoom Controls */}
                             <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
                                 <button
@@ -161,22 +161,32 @@ export default function PresentationViewer({
                             </div>
                         </div>
 
-                        {/* Scrollable Viewport */}
-                        <div className={`absolute inset-0 pt-0 w-full h-full ${zoom ? 'overflow-auto' : 'overflow-hidden'} scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent select-none`}>
+                        {/* Page Viewport */}
+                        <div
+                            className={`flex-1 relative select-none ${zoom ? 'overflow-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent' : 'overflow-hidden'}`}
+                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties} // Hide scrollbar in Container scrollbar (zoom mode) 
+                        >
                             <div
                                 style={{
                                     width: zoom ? `${zoom}%` : '100%',
                                     height: zoom ? `${zoom}%` : '100%',
-                                    margin: zoom ? '0 auto' : '0'
                                 }}
-                                className="relative transition-all duration-200 ease-out"
+                                className="transition-all duration-200 ease-out overflow-hidden"
                             >
+                                {/* iframe is extended slightly to clip PDF viewer's internal scrollbar */}
                                 <iframe
                                     key={`${currentPage}-${orientation}`}
                                     src={getIframeSrc()}
-                                    className="w-full h-full border-none pointer-events-none"
+                                    className="border-none pointer-events-none"
                                     title="Presentation Preview"
-                                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                                    style={{
+                                        width: 'calc(100% + 20px)',
+                                        height: 'calc(100% + 20px)',
+                                        display: 'block',
+                                        scrollbarWidth: 'none',
+                                        marginRight: '-20px',
+                                        marginBottom: '-20px',
+                                    }}
                                 />
                             </div>
                         </div>
