@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, status
+from fastapi import APIRouter, Depends, UploadFile, File, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
@@ -48,13 +48,18 @@ async def list_presentations(
 @router.get("/{presentation_id}")
 async def get_presentation(
     presentation_id: int,
+    include_slides: bool = Query(False, description="Include slide text content in response"),
     db: AsyncSession = Depends(get_db),
     current_user = Depends(auth.get_current_user)
 ):
-    stmt = select(Presentation).options(selectinload(Presentation.slides)).where(
+    stmt = select(Presentation).where(
         Presentation.id == presentation_id,
         Presentation.user_id == current_user.id
     )
+
+    if include_slides:
+        stmt = stmt.options(selectinload(Presentation.slides))
+
     result = await db.execute(stmt)
     presentation = result.scalar_one_or_none()
     
@@ -69,7 +74,7 @@ async def get_presentation(
     elif presentation.file_type == "pptx":
         orientation, aspect_ratio = pptx_service.get_pptx_orientation(presentation.file_path)
 
-    return {
+    response = {
         "id": presentation.id,
         "title": presentation.title,
         "file_path": presentation.file_path,
@@ -79,11 +84,15 @@ async def get_presentation(
         "status": presentation.status,
         "orientation": orientation,
         "aspect_ratio": aspect_ratio,
-        "slides": [
+    }
+
+    if include_slides:
+        response["slides"] = [
             {"page_number": s.page_number, "content_text": s.content_text}
             for s in presentation.slides
         ]
-    }
+
+    return response
 
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
