@@ -70,6 +70,12 @@ async def extract_text_from_pdf(file: UploadFile, file_size: int = 0) -> list[st
         
         slides_text = []
         
+        # Get orientation from first page
+        first_page = pdf_reader.pages[0]
+        width = float(first_page.mediabox.width)
+        height = float(first_page.mediabox.height)
+        orientation = "portrait" if height > width else "landscape"
+        
         for i, page in enumerate(pdf_reader.pages, 1):
             try:
                 text = page.extract_text() or "" # if no text, return empty string
@@ -80,7 +86,8 @@ async def extract_text_from_pdf(file: UploadFile, file_size: int = 0) -> list[st
                 logger.warning(f"Failed to extract page {i}: {str(e)}")
                 slides_text.append("")  # Add empty string for failed pages
             
-        return slides_text
+        aspect_ratio = width / height if height > 0 else 1.777
+        return slides_text, orientation, aspect_ratio
 
     except pypdf.errors.PdfReadError as e:
         logger.error(f"PDF Read Error: {str(e)}")
@@ -94,3 +101,20 @@ async def extract_text_from_pdf(file: UploadFile, file_size: int = 0) -> list[st
             message="Failed to extract text from PDF",
             details=str(e)
         )
+
+def get_pdf_orientation(file_path: str) -> tuple[str, float]:
+    """
+    Quickly detects the orientation of a PDF file by looking at the first page.
+    """
+    try:
+        with open(file_path, "rb") as f:
+            pdf_reader = pypdf.PdfReader(f)
+            if len(pdf_reader.pages) > 0:
+                first_page = pdf_reader.pages[0]
+                width = float(first_page.mediabox.width)
+                height = float(first_page.mediabox.height)
+                aspect_ratio = width / height if height > 0 else 1.777
+                return "portrait" if height > width else "landscape", aspect_ratio
+    except Exception as e:
+        logger.warning(f"Failed to detect PDF orientation: {e}")
+    return "landscape", 1.777

@@ -104,7 +104,14 @@ async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> list[s
                 slides_text.append("")  # Add empty string for failed slides
         
         logger.info(f"Successfully extracted {len(slides_text)} slides from PPTX")
-        return slides_text
+        
+        # Get orientation
+        width = prs.slide_width
+        height = prs.slide_height
+        orientation = "portrait" if height > width else "landscape"
+        
+        aspect_ratio = width / height if height > 0 else 1.777
+        return slides_text, orientation, aspect_ratio
 
     except Exception as e:
         logger.error(f"PPTX extraction error: {str(e)}", exc_info=True)
@@ -112,3 +119,17 @@ async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> list[s
             message="Failed to extract text from PPTX",
             details=str(e)
         )
+
+def get_pptx_orientation(file_path: str) -> tuple[str, float]:
+    """
+    Quickly detects the orientation of a PPTX file.
+    """
+    try:
+        prs = Presentation(file_path)
+        width = prs.slide_width
+        height = prs.slide_height
+        aspect_ratio = width / height if height > 0 else 1.777
+        return "portrait" if height > width else "landscape", aspect_ratio
+    except Exception as e:
+        logger.warning(f"Failed to detect PPTX orientation: {e}")
+    return "landscape", 1.777
