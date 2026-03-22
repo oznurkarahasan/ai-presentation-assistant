@@ -98,3 +98,9 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 - [ ] Increase test coverage for forgot/reset flow (backend + frontend).
 - [ ] Add stronger integration tests for upload flow (PDF/PPTX + failure scenarios).
 - [ ] Define baseline metrics for real-time intent accuracy.
+
+## Notes
+
+- [ ] Implement Ctrl+F in-document search for PDF viewer — Option A: Replace iframe with react-pdf (full renderer swap, requires re-implementing zoom/fit/layout but gives native text layer + real highlight support) or Option B: Keep iframe, add pdfjs-dist overlay layer for text coordinate extraction and draw highlight rectangles on top (no layout change, riskier coordinate mapping)
+
+- [ ] Add PPTX browser preview via LibreOffice conversion — On upload, convert PPTX to a _preview.pdf using LibreOffice headless; delete endpoint also removes the preview PDF; frontend PresentationViewer loads the converted PDF instead of showing 'coming soon'. No DB migration needed, text extraction unchanged, failure is non-breaking.

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
     ArrowLeft,
     Mic,
@@ -10,12 +10,12 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    FileText,
     Globe
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import client from "../../api/client";
+import PresentationViewer from "../../components/PresentationViewer";
+
 
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
 
@@ -83,11 +83,16 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
 
 export default function RealTimePresentationPage() {
     const params = useParams();
+    const router = useRouter();
     const presentationId = params.id as string;
 
     const [presentationTitle, setPresentationTitle] = useState("Loading...");
     const [presentationFile, setPresentationFile] = useState<string | null>(null);
+    const [fileType, setFileType] = useState<string | null>(null);
+    const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
     const [currentPage, setCurrentPage] = useState(1);
+
+
     const [totalPages, setTotalPages] = useState(1);
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState("");
@@ -97,9 +102,11 @@ export default function RealTimePresentationPage() {
     const [sttError, setSttError] = useState<string | null>(null);
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
     const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
+    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+    const viewerContainerRef = useRef<HTMLDivElement>(null);
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(totalPages);
 
@@ -121,10 +128,19 @@ export default function RealTimePresentationPage() {
                 console.log("[API] Presentation metadata received:", data);
                 setPresentationTitle(data.title);
                 setPresentationFile(data.file_path);
+                setFileType(data.file_type);
+                if (data.aspect_ratio) {
+                    setAspectRatio(data.aspect_ratio);
+                }
+                if (data.orientation) {
+                    setOrientation(data.orientation);
+                }
                 // Handle both naming conventions for robustness
+
                 const count = data.total_pages || data.slide_count || 1;
                 console.log(`[API] Total pages set to: ${count}`);
                 setTotalPages(count);
+
             } catch (error) {
                 console.error("Failed to fetch presentation:", error);
             }
@@ -154,6 +170,20 @@ export default function RealTimePresentationPage() {
             return prev;
         });
     }, []);
+
+    // Keyboard navigation
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "ArrowLeft") {
+                handlePrevPage();
+            } else if (e.key === "ArrowRight") {
+                handleNextPage();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [handlePrevPage, handleNextPage]);
 
     const goToPage = useCallback((page: number) => {
         const total = totalPagesRef.current;
@@ -253,6 +283,30 @@ export default function RealTimePresentationPage() {
         };
     }, [presentationId, handleCommand]);
 
+    const toggleFullScreen = () => {
+        if (!document.fullscreenElement && viewerContainerRef.current) {
+            viewerContainerRef.current.requestFullscreen().catch((err) => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                setIsFullScreen(false);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen().catch((err) => {
+                    console.error(`Error attempting to exit full-screen mode: ${err.message}`);
+                });
+            }
+        }
+    };
+
+    // Listen for Escape or manual exit from fullscreen to sync state
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullScreen(!!document.fullscreenElement);
+        };
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
     useEffect(() => {
         if (isPageLoading) {
             const timer = setTimeout(() => setIsPageLoading(false), 800);
@@ -349,9 +403,12 @@ export default function RealTimePresentationPage() {
             <aside className="w-80 border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl flex flex-col relative z-20">
                 <header className="p-6 border-b border-white/5">
                     <div className="flex items-center gap-3 mb-6">
-                        <Link href="/dashboard" className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400">
+                        <button
+                            onClick={() => router.back()}
+                            className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400"
+                        >
                             <ArrowLeft size={18} />
-                        </Link>
+                        </button>
                         <h1 className="text-sm font-bold tracking-tight uppercase italic truncate">{presentationTitle}</h1>
                     </div>
 
@@ -379,11 +436,10 @@ export default function RealTimePresentationPage() {
                             }
                         }}
                         disabled={isListening}
-                        className={`w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all border ${
-                            isListening
-                                ? 'border-white/5 bg-white/[0.02] text-zinc-600 cursor-not-allowed'
-                                : 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white'
-                        }`}
+                        className={`w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all border ${isListening
+                            ? 'border-white/5 bg-white/[0.02] text-zinc-600 cursor-not-allowed'
+                            : 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white'
+                            }`}
                     >
                         <Globe size={16} />
                         <span className="text-sm">{sttLanguage === 'tr-TR' ? '🇹🇷 Türkçe' : '🇺🇸 English'}</span>
@@ -449,49 +505,52 @@ export default function RealTimePresentationPage() {
 
             {/* Main Slide Viewer */}
             <main className="flex-1 relative flex flex-col bg-[#050505] z-10">
-                <div className="flex-1 p-8 flex items-center justify-center relative">
-                    <div className="w-full h-full max-w-5xl aspect-[16/9] bg-zinc-900 rounded-3xl overflow-hidden border border-white/5 shadow-[0_0_100px_rgba(0,0,0,0.5)] relative group">
-                        {presentationFile ? (
-                            <iframe
-                                key={currentPage}
-                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${presentationFile}#page=${currentPage}&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                                className="w-full h-full border-none"
-                                title="Live Preview"
-                            />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                                <FileText size={48} className="text-zinc-800 animate-pulse" />
-                            </div>
-                        )}
+                <div className="flex-1 p-4 md:p-8 flex items-center justify-center relative overflow-hidden">
+                    <div ref={viewerContainerRef} className="w-full h-full max-w-[95vw] relative shadow-[0_0_100px_rgba(0,0,0,0.8)] flex items-center justify-center bg-[#050505]">
 
-                        {/* Page loading overlay */}
-                        <AnimatePresence>
-                            {isPageLoading && (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    className="absolute inset-0 bg-black flex flex-col items-center justify-center gap-4 z-40"
-                                >
-                                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Syncing Slide {currentPage}</p>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
 
-                    {/* Navigation Overlays */}
-                    <div className="absolute inset-y-0 left-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <button onClick={handlePrevPage} className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white">
-                            <ChevronLeft size={48} />
-                        </button>
-                    </div>
-                    <div className="absolute inset-y-0 right-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <button onClick={handleNextPage} className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white">
-                            <ChevronRight size={48} />
-                        </button>
+                        <PresentationViewer
+                            fileUrl={presentationFile}
+                            fileType={fileType}
+                            title={presentationTitle}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            isLoading={isPageLoading}
+                            onPageChange={(page) => {
+                                setIsPageLoading(true);
+                                setTimeout(() => {
+                                    setCurrentPage(page);
+                                }, 200);
+                            }}
+                            isFullScreen={isFullScreen}
+                            initialOrientation={orientation}
+                            aspectRatio={aspectRatio}
+                        />
+
+
+
+                        {/* Navigation Overlays (Side buttons) */}
+                        <div className="absolute inset-y-0 left-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10">
+                            <button
+                                onClick={handlePrevPage}
+                                className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white"
+                                disabled={currentPage <= 1 || isPageLoading}
+                            >
+                                <ChevronLeft size={48} />
+                            </button>
+                        </div>
+                        <div className="absolute inset-y-0 right-0 w-32 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity z-10">
+                            <button
+                                onClick={handleNextPage}
+                                className="p-6 bg-white/5 hover:bg-white/10 rounded-full transition-all text-white/20 hover:text-white"
+                                disabled={currentPage >= totalPages || isPageLoading}
+                            >
+                                <ChevronRight size={48} />
+                            </button>
+                        </div>
                     </div>
                 </div>
+
 
                 {/* Status Bar */}
                 <div className="h-20 border-t border-white/5 px-12 flex items-center justify-between bg-black/40 backdrop-blur-md">
@@ -516,7 +575,7 @@ export default function RealTimePresentationPage() {
                     </div>
 
                     <div className="flex items-center gap-4">
-                        <button onClick={() => setIsFullScreen(!isFullScreen)} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-zinc-400 hover:text-white">
+                        <button onClick={toggleFullScreen} className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-all text-zinc-400 hover:text-white">
                             {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
                         </button>
                     </div>

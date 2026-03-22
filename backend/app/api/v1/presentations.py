@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, status
+from fastapi import APIRouter, Depends, UploadFile, File, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
@@ -14,8 +14,9 @@ router = APIRouter()
 # File size limit: 50MB
 MAX_FILE_SIZE = 50 * 1024 * 1024
 
-from sqlalchemy import select, func, desc
-from app.models.presentation import Presentation, PresentationSession, SessionType
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from app.models.presentation import Presentation
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -47,6 +48,7 @@ async def list_presentations(
 @router.get("/{presentation_id}")
 async def get_presentation(
     presentation_id: int,
+    include_slides: bool = Query(False, description="Include slide text content in response"),
     db: AsyncSession = Depends(get_db),
     current_user = Depends(auth.get_current_user)
 ):
@@ -54,21 +56,44 @@ async def get_presentation(
         Presentation.id == presentation_id,
         Presentation.user_id == current_user.id
     )
+
+    if include_slides:
+        stmt = stmt.options(selectinload(Presentation.slides))
+
     result = await db.execute(stmt)
     presentation = result.scalar_one_or_none()
     
     if not presentation:
         raise ValidationError("Presentation not found")
         
-    return {
+    # Detect orientation and aspect ratio for frontend
+    orientation = "landscape"
+    aspect_ratio = 1.777
+    if presentation.file_type == "pdf":
+        orientation, aspect_ratio = pdf_service.get_pdf_orientation(presentation.file_path)
+    elif presentation.file_type == "pptx":
+        orientation, aspect_ratio = pptx_service.get_pptx_orientation(presentation.file_path)
+
+    response = {
         "id": presentation.id,
         "title": presentation.title,
         "file_path": presentation.file_path,
         "file_type": presentation.file_type,
         "slide_count": presentation.slide_count,
         "total_pages": presentation.slide_count,  # Added for frontend compatibility
-        "status": presentation.status
+        "status": presentation.status,
+        "orientation": orientation,
+        "aspect_ratio": aspect_ratio,
     }
+
+    if include_slides:
+        response["slides"] = [
+            {"page_number": s.page_number, "content_text": s.content_text}
+            for s in presentation.slides
+        ]
+
+    return response
+
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_presentation(
@@ -124,11 +149,12 @@ async def upload_presentation(
 
         # Extract text based on file type (with security validation)
         if file.filename.endswith(".pdf"):
-            slide_texts = await pdf_service.extract_text_from_pdf(file, file_size)
+            slide_texts, _orientation, _aspect_ratio = await pdf_service.extract_text_from_pdf(file, file_size)
             logger.info(f"Extracted {len(slide_texts)} slides from PDF")
         elif file.filename.endswith(".pptx"):
-            slide_texts = await pptx_service.extract_text_from_pptx(file, file_size)
+            slide_texts, _orientation, _aspect_ratio = await pptx_service.extract_text_from_pptx(file, file_size)
             logger.info(f"Extracted {len(slide_texts)} slides from PPTX")
+
         else:
             raise ValidationError("Unsupported file type")
 

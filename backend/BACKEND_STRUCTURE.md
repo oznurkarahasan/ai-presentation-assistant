@@ -4,45 +4,56 @@ Terminal-style ASCII tree showing the `backend/` folder structure with one-line 
 
 ```bash
 backend/
-├── Dockerfile ..................... Docker build instructions for the backend service image
-├── main.py ........................ FastAPI application entrypoint; mounts routers and configures startup
-├── requirements.txt ............... Python dependencies installed into the container or venv
-├── logs/ .......................... Runtime log output directory (local/dev logging files)
-├── uploaded_files/ ................ Persisted user uploads (PDF/PPTX) before/while processing
-└── venv/ .......................... Local virtual environment (development only; excluded from builds)
-
-backend/app/
-├── __init__.py .................... Package marker for the application
-│
-├── api/
-│   └── v1/
-│       ├── auth.py ................ Authentication endpoints (register/login/me + forgot/reset password)
-│       ├── chat.py ................ Chat and RAG endpoints handling conversational requests
-│       └── presentations.py ....... Upload endpoints and ingestion orchestration for PDF/PPTX
-│
-├── core/
-│   ├── config.py .................. Pydantic Settings (ENV, logging, JWT, DB, CORS, SMTP, password-reset settings)
-│   ├── database.py ................ Async SQLAlchemy engine/session creation and helpers
-│   ├── exceptions.py .............. Custom application exceptions and global exception handlers
-│   ├── logger.py .................. Central loguru setup and formatting wrappers
-│   └── security.py ................ Password hashing and JWT token utilities
-│
-├── models/
-│   └── presentation.py ............ ORM models for Presentation and Slide stored in Postgres/pgvector
-│
-├── schemas/
-│   ├── auth.py .................... Pydantic schemas for auth requests/responses
-│   └── chat.py .................... Pydantic schemas for chat/RAG payload validation
-│
-└── services/
-    ├── email_service.py ........... SMTP email sender for password-reset messages and reset-link generation
-    ├── embedding_service.py ....... OpenAI embedding wrapper with batching and concurrency limits
-    ├── file_validator.py .......... Magic-bytes, size, page-count and basic file sanity checks
-    ├── pdf_service.py ............. PDF text extraction, cleaning (null-bytes), and PDF-specific checks
-    ├── pptx_service.py ............ PPTX slide and speaker-note extraction and security checks
-    ├── rag_service.py ............. High-level RAG orchestration (retrieval + generation helpers)
-    ├── vector_db.py ............... Persists embeddings and slide metadata to Postgres + pgvector
-    └── file_cleanup.py ............ Cleanup policies for failed/expired guest uploads
+├── Dockerfile ..................... Docker build instructions for backend service image
+├── main.py ........................ FastAPI application entrypoint and startup hooks
+├── requirements.txt ............... Python dependency list
+├── pytest.ini ..................... Pytest configuration
+├── BACKEND_STRUCTURE.md ........... Backend structure + test notes
+├── app/ ........................... Main backend application package
+│   ├── __init__.py ................ Package marker
+│   ├── api/
+│   │   ├── __init__.py ............ API package marker
+│   │   └── v1/
+│   │       ├── __init__.py ........ API v1 package marker
+│   │       ├── auth.py ............ Authentication endpoints (register/login/me + password reset)
+│   │       ├── chat.py ............ Chat endpoints
+│   │       ├── orchestration.py ... Presentation session/orchestration endpoints
+│   │       └── presentations.py ... Presentation upload/list/detail/delete endpoints
+│   ├── core/
+│   │   ├── __init__.py ............ Core package marker
+│   │   ├── config.py .............. Settings management
+│   │   ├── database.py ............ Async SQLAlchemy engine/session setup
+│   │   ├── exceptions.py .......... Custom exception classes/handlers
+│   │   ├── logger.py .............. Logging setup
+│   │   └── security.py ............ Password hashing and JWT helpers
+│   ├── models/
+│   │   ├── __init__.py ............ Models package marker
+│   │   └── presentation.py ........ ORM models (User, Presentation, Slide, sessions)
+│   ├── schemas/
+│   │   ├── __init__.py ............ Schemas package marker
+│   │   ├── auth.py ................ Auth request/response schemas
+│   │   └── chat.py ................ Chat request schemas
+│   └── services/
+│       ├── __init__.py ............ Services package marker
+│       ├── email_service.py ....... SMTP email sender
+│       ├── embedding_service.py ... Embedding generation wrapper
+│       ├── file_cleanup.py ........ Upload cleanup helpers
+│       ├── file_validator.py ...... File type/size/security checks
+│       ├── intent_service.py ...... Intent parsing/classification
+│       ├── pdf_service.py ......... PDF extraction + orientation/aspect ratio
+│       ├── pptx_service.py ........ PPTX extraction + orientation/aspect ratio
+│       ├── rag_service.py ......... RAG orchestration helpers
+│       └── vector_db.py ........... Vector/metadata persistence operations
+├── scripts/
+│   └── test_smtp.py ............... SMTP connectivity test script
+├── tests/
+│   ├── conftest.py ................ Shared test fixtures
+│   ├── test_auth.py ............... Auth endpoint tests
+│   ├── test_intent_service.py ..... Intent service tests
+│   └── test_orchestration.py ...... Orchestration tests
+├── logs/ .......................... Runtime log files (local/dev)
+├── uploaded_files/ ................ Persisted uploaded presentation files
+└── venv/ .......................... Local virtual environment (development only)
 ```
 
 ## Environment Requirements
@@ -85,7 +96,7 @@ backend/app/
 - All file paths use forward slashes (`/`) for cross-platform compatibility
 
 # How to test backend
-İf you have some changes in backend, you need to run these commands:
+If you have some changes in backend, you need to run these commands:
 
 ```bash
 cd backend

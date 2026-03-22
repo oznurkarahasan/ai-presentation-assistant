@@ -6,18 +6,19 @@ import {
     Send,
     ArrowLeft,
     MessageSquare,
-    FileText,
     Sparkles,
     Maximize2,
     User,
-    ChevronRight,
     X,
     Presentation,
     Sun,
     Moon,
-    Minimize2
+    Minimize2,
+    FileText
 } from "lucide-react";
+import PresentationViewer from "../components/PresentationViewer";
 import { motion, AnimatePresence } from "framer-motion";
+
 import Link from "next/link";
 import Image from "next/image";
 import client from "../api/client";
@@ -45,6 +46,8 @@ export default function AnalyzePage() {
     const [presentationTitle, setPresentationTitle] = useState("Loading Presentation...");
     const [presentationFile, setPresentationFile] = useState<string | null>(null);
     const [fileType, setFileType] = useState<string | null>(null);
+    const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
+
     const chatEndRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
     const presentationId = searchParams.get('id');
@@ -56,6 +59,7 @@ export default function AnalyzePage() {
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [chatTheme, setChatTheme] = useState<'dark' | 'light'>('dark');
     const [isPageLoading, setIsPageLoading] = useState(false);
+    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
 
     useEffect(() => {
@@ -75,9 +79,17 @@ export default function AnalyzePage() {
                     setPresentationTitle(response.data.title);
                     setPresentationFile(response.data.file_path);
                     setFileType(response.data.file_type);
+                    if (response.data.aspect_ratio) {
+                        setAspectRatio(response.data.aspect_ratio);
+                    }
+
                     if (response.data.slide_count) {
                         setTotalPages(response.data.slide_count);
                     }
+                    if (response.data.orientation) {
+                        setOrientation(response.data.orientation);
+                    }
+
                 } catch (error) {
                     console.error("Failed to fetch presentation:", error);
                     setPresentationTitle("Error loading presentation");
@@ -175,6 +187,40 @@ export default function AnalyzePage() {
         setIsFullScreen(!isFullScreen);
     };
 
+    const handlePageJump = useCallback((page: number) => {
+        if (page >= 1 && page <= totalPages && !isPageLoading) {
+            setIsPageLoading(true);
+            setTimeout(() => {
+                setCurrentPage(page);
+            }, 200);
+        }
+    }, [totalPages, isPageLoading]);
+
+    const renderMessageContent = (content: string) => {
+        // Regex to match [Sayfa X], [Page X], [S X], [X. Sayfa] etc.
+        const pageRegex = /(\[(?:(?:Sayfa|Page|S)\s*\d+|\d+\.\s*Sayfa)\])/gi;
+        const parts = content.split(pageRegex);
+
+        return parts.map((part, index) => {
+            const match = part.match(/\[(?:(?:Sayfa|Page|S)\s*(\d+)|(\d+)\.\s*Sayfa)\]/i);
+            if (match) {
+                const pageNum = parseInt(match[1] || match[2], 10);
+                return (
+                    <button
+                        key={index}
+                        onClick={() => handlePageJump(pageNum)}
+                        className="mx-1 px-1.5 py-0.5 bg-primary/20 hover:bg-primary/40 border border-primary/30 rounded text-primary font-bold transition-all inline-flex items-center gap-1 hover:scale-105 active:scale-95 shadow-sm"
+                        title={`Go to page ${pageNum}`}
+                    >
+                        <FileText size={11} className="mb-0.5" />
+                        {part.replace(/[\[\]]/g, '')}
+                    </button>
+                );
+            }
+            return <span key={index}>{part}</span>;
+        });
+    };
+
     const toggleTheme = () => {
         setChatTheme(chatTheme === 'dark' ? 'light' : 'dark');
     };
@@ -249,99 +295,27 @@ export default function AnalyzePage() {
                     </header>
 
                     {/* PDF / Slides View Area */}
-                    <div className="flex-1 overflow-hidden relative p-4 md:p-8 bg-[#050505]">
-                        <div className="w-full h-full rounded-2xl overflow-hidden border border-white/5 shadow-2xl bg-zinc-900/50 flex items-center justify-center relative group">
-                            {presentationFile ? (
-                                fileType === 'pdf' ? (
-                                    <div className="w-full h-full relative">
-                                        <iframe
-                                            key={currentPage}
-                                            src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${presentationFile}#page=${currentPage}&view=FitH&toolbar=0&navpanes=0&scrollbar=0`}
-                                            className="w-full h-full border-none rounded-xl"
-                                            title="Presentation Preview"
-                                            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-                                        />
+                    <div className="flex-1 overflow-hidden relative px-0 md:px-4 pt-4 pb-8 md:pt-6 md:pb-10 bg-[#050505]">
+                        <PresentationViewer
+                            fileUrl={presentationFile}
+                            fileType={fileType}
+                            title={presentationTitle}
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            isLoading={isPageLoading}
+                            onPageChange={(page) => {
+                                setIsPageLoading(true);
+                                setTimeout(() => {
+                                    setCurrentPage(page);
+                                }, 200);
+                            }}
+                            isFullScreen={isFullScreen}
+                            initialOrientation={orientation}
+                            aspectRatio={aspectRatio}
+                        />
 
-                                        {/* Solid Smooth Loading Overlay */}
-                                        <AnimatePresence mode="wait">
-                                            {isPageLoading && (
-                                                <motion.div
-                                                    initial={{ opacity: 0 }}
-                                                    animate={{ opacity: 1 }}
-                                                    exit={{ opacity: 0 }}
-                                                    className="absolute inset-0 bg-[#050505] flex flex-col items-center justify-center gap-4 z-50 px-8 text-center"
-                                                >
-                                                    <div className="relative">
-                                                        <div className="w-12 h-12 border-2 border-white/5 rounded-full" />
-                                                        <div className="absolute inset-0 w-12 h-12 border-t-2 border-primary rounded-full animate-spin" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.3em] animate-pulse">Synchronizing</p>
-                                                        <p className="text-xs text-zinc-600 font-mono italic">Slide {currentPage} / {totalPages}</p>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-
-                                        <div className="absolute inset-0 pointer-events-none" />
-                                    </div>
-                                ) : (
-                                    <div className="relative z-10 w-full max-w-3xl aspect-[16/9] bg-white rounded-sm shadow-[0_0_100px_rgba(255,255,255,0.05)] overflow-hidden">
-                                        <div className="p-12 h-full flex flex-col text-black font-sans">
-                                            <div className="flex justify-between items-start mb-12">
-                                                <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">P</div>
-                                                <div className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">PowerPoint Preview</div>
-                                            </div>
-                                            <h3 className="text-5xl font-black italic uppercase tracking-tighter leading-none mb-6">{presentationTitle}</h3>
-                                            <div className="h-1 w-24 bg-primary mb-8" />
-                                            <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-zinc-100 rounded-2xl bg-zinc-50/50">
-                                                <Presentation size={64} className="text-zinc-200 mb-4" />
-                                                <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs text-center px-8">
-                                                    PPTX Viewer is coming soon. Use &quot;Real-Time&quot; mode for live presentation controls.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            ) : (
-                                <div className="absolute inset-0 bg-zinc-800 animate-pulse flex items-center justify-center opacity-10">
-                                    <FileText size={120} />
-                                </div>
-                            )}
-
-                            {/* Optimized Manual controls footer */}
-                            {fileType === 'pdf' && (
-                                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/40 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] scale-90 md:scale-100 opacity-0 group-hover:opacity-100 transition-all duration-300 z-20 hover:border-primary/30">
-                                    <button
-                                        onClick={handlePrevPage}
-                                        disabled={currentPage <= 1}
-                                        className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-zinc-400 active:scale-90"
-                                        title="Previous Slide (←)"
-                                    >
-                                        <ChevronRight className="rotate-180" size={22} />
-                                    </button>
-
-                                    <div className="px-6 flex flex-col items-center justify-center min-w-[120px]">
-                                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5">Slide</span>
-                                        <div className="flex items-center gap-2 font-mono text-sm font-bold">
-                                            <span className="text-primary">{currentPage.toString().padStart(2, '0')}</span>
-                                            <span className="text-zinc-700">/</span>
-                                            <span className="text-zinc-400">{totalPages.toString().padStart(2, '0')}</span>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={handleNextPage}
-                                        disabled={currentPage >= totalPages}
-                                        className="w-12 h-12 flex items-center justify-center rounded-xl bg-white/5 hover:bg-primary hover:text-white transition-all text-zinc-400 disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-zinc-400 active:scale-90"
-                                        title="Next Slide (→)"
-                                    >
-                                        <ChevronRight size={22} />
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     </div>
+
                 </div>
 
                 {/* Right Panel: AI Chat Section */}
@@ -410,7 +384,7 @@ export default function AnalyzePage() {
                                                         : chatTheme === 'dark'
                                                             ? 'bg-white/5 text-zinc-300 border border-white/5 rounded-tl-none'
                                                             : 'bg-zinc-100 text-zinc-800 border border-zinc-200 rounded-tl-none'}`}>
-                                                    {message.content}
+                                                    {message.role === 'assistant' ? renderMessageContent(message.content) : message.content}
                                                 </div>
                                                 <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-1">
                                                     {message.role === 'assistant' ? 'AI Assistant' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
