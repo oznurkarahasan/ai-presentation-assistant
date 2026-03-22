@@ -90,14 +90,19 @@ export default function PresentationViewer({
         return `${baseUrl}${fragments}`;
     };
 
-    // Use provided aspectRatio or fallback based on orientation
-    const effectiveRatio = aspectRatio || (orientation === 'landscape' ? 1.777 : 0.707);
+    // Portrait + zoomed → switch to landscape display for better viewing
+    const displayAsLandscape = orientation === 'landscape' || (orientation === 'portrait' && zoom !== null);
+
+    // Use provided aspectRatio or fallback based on effective orientation
+    const effectiveRatio = displayAsLandscape
+        ? (aspectRatio && aspectRatio >= 1 ? aspectRatio : 1.777)
+        : (aspectRatio || 0.707);
 
     // containerStyle ensures the viewer maintains its aspect ratio while fitting within its parent
     const containerStyle: React.CSSProperties = {
         aspectRatio: `${effectiveRatio}`,
-        height: (orientation === 'portrait' || (aspectRatio && aspectRatio < 1)) ? '100%' : 'auto',
-        width: (orientation === 'landscape' || (aspectRatio && aspectRatio >= 1)) ? '100%' : 'auto',
+        height: !displayAsLandscape ? '100%' : 'auto',
+        width: displayAsLandscape ? '100%' : 'auto',
         maxWidth: '100%',
         maxHeight: '100%',
     };
@@ -188,7 +193,7 @@ export default function PresentationViewer({
                                 className="transition-all duration-200 ease-out"
                             >
                                 <iframe
-                                    key={`${currentPage}-${orientation}`}
+                                    key={`${currentPage}-${displayAsLandscape ? 'landscape' : 'portrait'}`}
                                     src={getIframeSrc()}
                                     className="border-none pointer-events-none absolute"
                                     title="Presentation Preview"
