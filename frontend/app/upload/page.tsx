@@ -25,6 +25,7 @@ export default function UploadPage() {
     const [file, setFile] = useState<File | null>(null);
     const [filePreview, setFilePreview] = useState<string | null>(null);
     const [isPdf, setIsPdf] = useState(false);
+    const [pptxPreviewUrl, setPptxPreviewUrl] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
@@ -136,6 +137,12 @@ export default function UploadPage() {
                 const presentationId = response.data.id || response.data.presentation_id;
                 const presentationTitle = response.data.title || response.data.presentation_title || file.name;
 
+                // Show PPTX preview if conversion succeeded
+                if (response.data.pdf_preview_path) {
+                    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+                    setPptxPreviewUrl(`${apiBase}/${response.data.pdf_preview_path}#toolbar=0&navpanes=0&scrollbar=0`);
+                }
+
                 localStorage.setItem('last_presentation_id', presentationId);
                 localStorage.setItem('last_presentation_title', presentationTitle);
 
@@ -165,6 +172,7 @@ export default function UploadPage() {
         setUploadProgress(0);
         setUploadStatus('idle');
         setFilePreview(null);
+        setPptxPreviewUrl(null);
         setError(null);
     };
 
@@ -393,13 +401,21 @@ export default function UploadPage() {
                                         <span className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500">{file?.name}</span>
                                         <Eye size={14} className="text-zinc-600" />
                                     </div>
-                                    <div className="flex-1 bg-black relative">
+                                    <div className="flex-1 bg-black relative overflow-hidden">
                                         {filePreview ? (
                                             isPdf ? (
                                                 <iframe
-                                                    src={`${filePreview}#toolbar=0&navpanes=0&scrollbar=0`}
-                                                    className="w-full h-full border-none opacity-90"
+                                                    src={`${filePreview}#toolbar=0&navpanes=0&scrollbar=0&view=Fit`}
+                                                    className="border-none opacity-90 absolute"
                                                     title="Full Preview"
+                                                    style={{ top: '-56px', left: 0, width: 'calc(100% + 20px)', height: 'calc(100% + 76px)', display: 'block' } as React.CSSProperties}
+                                                />
+                                            ) : pptxPreviewUrl ? (
+                                                <iframe
+                                                    src={pptxPreviewUrl}
+                                                    className="border-none absolute"
+                                                    title="PPTX Preview"
+                                                    style={{ top: '-56px', left: 0, width: 'calc(100% + 20px)', height: 'calc(100% + 76px)', display: 'block' } as React.CSSProperties}
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex flex-col items-center justify-center p-12 text-center bg-gradient-to-br from-zinc-900 to-black">

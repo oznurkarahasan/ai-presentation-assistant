@@ -127,8 +127,9 @@ export default function RealTimePresentationPage() {
                 const data = response.data;
                 console.log("[API] Presentation metadata received:", data);
                 setPresentationTitle(data.title);
-                setPresentationFile(data.file_path);
-                setFileType(data.file_type);
+                // Use PDF preview for PPTX files when available
+                setPresentationFile(data.pdf_preview_path || data.file_path);
+                setFileType(data.pdf_preview_path ? 'pdf' : data.file_type);
                 if (data.aspect_ratio) {
                     setAspectRatio(data.aspect_ratio);
                 }

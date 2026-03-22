@@ -5,8 +5,14 @@ from pptx import Presentation
 from fastapi import UploadFile
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.core.logger import logger
+from pypdf import PdfWriter, PdfReader
 import re
 import io
+import os
+import asyncio
+import subprocess  # nosec B404
+import shutil
+import tempfile
 
 # Security limits (same as PDF)
 MAX_PPTX_SLIDES = 500
@@ -122,6 +128,88 @@ async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> tuple[
             message="Failed to extract text from PPTX",
             details=str(e)
         )
+
+def _strip_pdf_bookmarks(pdf_path: str) -> None:
+    """Remove outline/bookmarks from PDF so the browser navpane doesn't auto-open."""
+    try:
+        reader = PdfReader(pdf_path)
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        with open(pdf_path, "wb") as f:
+            writer.write(f)
+    except Exception as e:
+        logger.warning(f"Failed to strip PDF bookmarks from {pdf_path}: {e}")
+
+
+async def convert_to_pdf_preview(pptx_path: str) -> str | None:
+    """
+    Converts a PPTX file to a PDF preview using LibreOffice headless.
+    Output is saved as {pptx_path}.preview.pdf next to the original file.
+    Returns the preview path on success, None on failure (non-breaking).
+    """
+    abs_pptx = os.path.abspath(pptx_path)
+    abs_outdir = os.path.dirname(abs_pptx)
+    preview_path = abs_pptx + ".preview.pdf"
+
+    def _run_conversion():
+        # HOME=/tmp is often required in Docker — LibreOffice needs a writable profile dir.
+        # We use tempfile.gettempdir() to be more portable while staying secure.
+        env = os.environ.copy()
+        env["HOME"] = tempfile.gettempdir()
+        
+        # Find absolute path for libreoffice to satisfy Bandit B607
+        libreoffice_path = shutil.which("libreoffice") or "libreoffice"
+        
+        result = subprocess.run(  # nosec B603
+            [
+                libreoffice_path,
+                "--headless",
+                "--norestore",
+                "--nofirststartwizard",
+                "--convert-to", "pdf",
+                "--outdir", abs_outdir,
+                abs_pptx,
+            ],
+            capture_output=True,
+            timeout=120,
+            env=env,
+        )
+        return result.returncode, result.stdout.decode(errors="replace"), result.stderr.decode(errors="replace")
+
+    try:
+        loop = asyncio.get_event_loop()
+        returncode, stdout, stderr = await loop.run_in_executor(None, _run_conversion)
+
+        logger.debug(f"LibreOffice stdout: {stdout}")
+        if stderr:
+            logger.debug(f"LibreOffice stderr: {stderr}")
+
+        if returncode != 0:
+            logger.warning(f"LibreOffice exited with code {returncode} for {abs_pptx}. stderr: {stderr}")
+            return None
+
+        # LibreOffice creates {abs_outdir}/{basename_without_ext}.pdf — rename to preview path
+        basename_no_ext = os.path.splitext(os.path.basename(abs_pptx))[0]
+        libreoffice_output = os.path.join(abs_outdir, basename_no_ext + ".pdf")
+
+        if os.path.exists(libreoffice_output):
+            os.rename(libreoffice_output, preview_path)
+            # Strip bookmarks/outline so the browser navpane doesn't open
+            _strip_pdf_bookmarks(preview_path)
+            logger.info(f"PPTX preview PDF created: {preview_path}")
+            return preview_path
+
+        logger.warning(f"LibreOffice output not found at: {libreoffice_output}. stdout: {stdout}")
+    except subprocess.TimeoutExpired:
+        logger.warning(f"LibreOffice conversion timed out for {abs_pptx}")
+    except FileNotFoundError:
+        logger.warning("LibreOffice not found. Install it to enable PPTX preview.")
+    except Exception as e:
+        logger.warning(f"PPTX to PDF conversion failed for {abs_pptx}: {e}")
+
+    return None
+
 
 def get_pptx_orientation(file_path: str) -> tuple[str, float]:
     """
