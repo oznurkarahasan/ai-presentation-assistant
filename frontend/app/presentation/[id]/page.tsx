@@ -103,12 +103,14 @@ export default function RealTimePresentationPage() {
     const [isPageLoading, setIsPageLoading] = useState(false);
     const [sttError, setSttError] = useState<string | null>(null);
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
-    const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
+    const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("en-US");
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
     const viewerContainerRef = useRef<HTMLDivElement>(null);
+    const transcriptContainerRef = useRef<HTMLDivElement>(null);
+    const translateContainerRef = useRef<HTMLDivElement>(null);
     const translationDebounceRef = useRef<NodeJS.Timeout | null>(null);
     const interimTranslationRequestIdRef = useRef(0);
     const finalTranslationRequestIdRef = useRef(0);
@@ -131,6 +133,18 @@ export default function RealTimePresentationPage() {
             }
         };
     }, []);
+
+    useEffect(() => {
+        if (transcriptContainerRef.current) {
+            transcriptContainerRef.current.scrollTop = transcriptContainerRef.current.scrollHeight;
+        }
+    }, [transcript, liveFeedback]);
+
+    useEffect(() => {
+        if (translateContainerRef.current) {
+            translateContainerRef.current.scrollTop = translateContainerRef.current.scrollHeight;
+        }
+    }, [translatedTranscript]);
 
     // Fetch presentation details
     useEffect(() => {
@@ -444,7 +458,7 @@ export default function RealTimePresentationPage() {
                 }));
             }
             if (finalTranscript) {
-                setTranscript(prev => (prev + " " + finalTranscript).slice(-200));
+                setTranscript(prev => (prev ? `${prev} ${finalTranscript}` : finalTranscript).trim());
                 if (!shouldShowInterim) {
                     setLiveFeedback("");
                     setTranslatedLiveFeedback("");
@@ -556,7 +570,7 @@ export default function RealTimePresentationPage() {
                 <div className="flex-1 p-6 space-y-6 overflow-y-auto no-scrollbar">
                     <div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Live Transcript</h3>
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 h-[260px] text-sm leading-relaxed relative overflow-hidden overflow-y-auto no-scrollbar">
+                        <div ref={transcriptContainerRef} className="p-4 rounded-2xl bg-white/5 border border-white/5 h-[260px] text-sm leading-relaxed relative overflow-hidden overflow-y-auto no-scrollbar">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                             <p className="text-zinc-400 opacity-60 italic">{transcript}</p>
                             <p className="text-primary font-medium mt-2 animate-pulse">{liveFeedback}</p>
@@ -565,7 +579,7 @@ export default function RealTimePresentationPage() {
 
                     <div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Turkish Translate</h3>
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 h-[260px] text-sm leading-relaxed relative overflow-hidden overflow-y-auto no-scrollbar">
+                        <div ref={translateContainerRef} className="p-4 rounded-2xl bg-white/5 border border-white/5 h-[260px] text-sm leading-relaxed relative overflow-hidden overflow-y-auto no-scrollbar">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                             <p className="text-zinc-300">{translatedTranscript}</p>
                             {sttLanguage !== 'en-US' && !translatedTranscript && !translatedLiveFeedback && (
