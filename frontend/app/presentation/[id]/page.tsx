@@ -360,6 +360,9 @@ export default function RealTimePresentationPage() {
             return;
         }
 
+        const sourceLanguage = sttLanguage === "en-US" ? "English" : "Turkish";
+        const targetLanguage = sttLanguage === "en-US" ? "Turkish" : "English";
+
         const recognition = new SpeechRecognitionCtor();
         recognition.continuous = true;
         recognition.interimResults = true;
@@ -370,7 +373,7 @@ export default function RealTimePresentationPage() {
             mode: "interim" | "final"
         ) => {
             const cleaned = text.trim();
-            if (!cleaned || sttLanguage !== "en-US") {
+            if (!cleaned) {
                 if (mode === "interim") setTranslatedLiveFeedback("");
                 return;
             }
@@ -382,8 +385,8 @@ export default function RealTimePresentationPage() {
             try {
                 const response = await client.post("/api/v1/orchestration/translate", {
                     text: cleaned,
-                    source_language: "English",
-                    target_language: "Turkish"
+                    source_language: sourceLanguage,
+                    target_language: targetLanguage
                 });
 
                 const translated = (response.data?.translation || "").trim();
@@ -426,8 +429,8 @@ export default function RealTimePresentationPage() {
                             is_final: true,
                             current_page: currentPageRef.current,
                             total_pages: totalPages,
-                            source_language: sttLanguage === "en-US" ? "English" : "Turkish",
-                            target_language: "Turkish"
+                            source_language: sourceLanguage,
+                            target_language: targetLanguage
                         }));
                     }
                 } else {
@@ -440,7 +443,7 @@ export default function RealTimePresentationPage() {
             const shouldShowInterim = !!normalizedInterim && normalizedInterim !== normalizedFinal;
 
             setLiveFeedback(shouldShowInterim ? interimTranscript : '');
-            if (shouldShowInterim && sttLanguage === "en-US") {
+            if (shouldShowInterim) {
                 scheduleInterimTranslation(interimTranscript);
             } else {
                 setTranslatedLiveFeedback("");
@@ -453,8 +456,8 @@ export default function RealTimePresentationPage() {
                     is_final: false,
                     current_page: currentPageRef.current,
                     total_pages: totalPages,
-                    source_language: sttLanguage === "en-US" ? "English" : "Turkish",
-                    target_language: "Turkish"
+                    source_language: sourceLanguage,
+                    target_language: targetLanguage
                 }));
             }
             if (finalTranscript) {
@@ -463,9 +466,7 @@ export default function RealTimePresentationPage() {
                     setLiveFeedback("");
                     setTranslatedLiveFeedback("");
                 }
-                if (sttLanguage === "en-US") {
-                    void translateToTurkish(finalTranscript, "final");
-                }
+                void translateToTurkish(finalTranscript, "final");
             }
         };
 
@@ -578,11 +579,14 @@ export default function RealTimePresentationPage() {
                     </div>
 
                     <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Turkish Translate</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">{sttLanguage === 'en-US' ? 'Turkish Translate' : 'English Translate'}</h3>
                         <div ref={translateContainerRef} className="p-4 rounded-2xl bg-white/5 border border-white/5 h-[260px] text-sm leading-relaxed relative overflow-hidden overflow-y-auto no-scrollbar">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                             <p className="text-zinc-300">{translatedTranscript}</p>
                             {sttLanguage !== 'en-US' && !translatedTranscript && !translatedLiveFeedback && (
+                                <p className="text-zinc-500 text-xs mt-3">Türkçe konuşma açıkken canlı İngilizce çeviri burada gösterilir.</p>
+                            )}
+                            {sttLanguage === 'en-US' && !translatedTranscript && !translatedLiveFeedback && (
                                 <p className="text-zinc-500 text-xs mt-3">İngilizce konuşma açıkken canlı Türkçe çeviri burada gösterilir.</p>
                             )}
                         </div>
