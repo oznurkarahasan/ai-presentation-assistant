@@ -96,7 +96,9 @@ export default function RealTimePresentationPage() {
     const [totalPages, setTotalPages] = useState(1);
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState("");
+    const [translatedTranscript, setTranslatedTranscript] = useState("");
     const [liveFeedback, setLiveFeedback] = useState("");
+    const [translatedLiveFeedback, setTranslatedLiveFeedback] = useState("");
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [isPageLoading, setIsPageLoading] = useState(false);
     const [sttError, setSttError] = useState<string | null>(null);
@@ -107,6 +109,9 @@ export default function RealTimePresentationPage() {
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
     const viewerContainerRef = useRef<HTMLDivElement>(null);
+    const translationDebounceRef = useRef<NodeJS.Timeout | null>(null);
+    const interimTranslationRequestIdRef = useRef(0);
+    const finalTranslationRequestIdRef = useRef(0);
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(totalPages);
 
@@ -118,6 +123,19 @@ export default function RealTimePresentationPage() {
     useEffect(() => {
         totalPagesRef.current = totalPages;
     }, [totalPages]);
+
+    useEffect(() => {
+        return () => {
+            if (translationDebounceRef.current) {
+                clearTimeout(translationDebounceRef.current);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        setTranslatedTranscript("");
+        setTranslatedLiveFeedback("");
+    }, [sttLanguage]);
 
     // Fetch presentation details
     useEffect(() => {
@@ -338,6 +356,52 @@ export default function RealTimePresentationPage() {
         recognition.interimResults = true;
         recognition.lang = sttLanguage;
 
+        const translateToTurkish = async (
+            text: string,
+            mode: "interim" | "final"
+        ) => {
+            const cleaned = text.trim();
+            if (!cleaned || sttLanguage !== "en-US") {
+                if (mode === "interim") setTranslatedLiveFeedback("");
+                return;
+            }
+
+            const requestId = mode === "interim"
+                ? ++interimTranslationRequestIdRef.current
+                : ++finalTranslationRequestIdRef.current;
+
+            try {
+                const response = await client.post("/api/v1/orchestration/translate", {
+                    text: cleaned,
+                    source_language: "English",
+                    target_language: "Turkish"
+                });
+
+                const translated = (response.data?.translation || "").trim();
+                if (!translated) return;
+
+                if (mode === "interim") {
+                    if (requestId === interimTranslationRequestIdRef.current) {
+                        setTranslatedLiveFeedback(translated);
+                    }
+                } else if (requestId === finalTranslationRequestIdRef.current) {
+                    setTranslatedTranscript(prev => (prev + " " + translated).trim().slice(-400));
+                }
+            } catch (error) {
+                console.error("Translation error:", error);
+            }
+        };
+
+        const scheduleInterimTranslation = (text: string) => {
+            if (translationDebounceRef.current) {
+                clearTimeout(translationDebounceRef.current);
+            }
+
+            translationDebounceRef.current = setTimeout(() => {
+                void translateToTurkish(text, "interim");
+            }, 250);
+        };
+
         recognition.onstart = () => setIsListening(true);
         recognition.onresult = (event: SpeechRecognitionEventLike) => {
             let interimTranscript = '';
@@ -359,7 +423,17 @@ export default function RealTimePresentationPage() {
                     interimTranscript += event.results[i][0].transcript;
                 }
             }
-            setLiveFeedback(interimTranscript);
+
+            const normalizedInterim = interimTranscript.trim().toLowerCase();
+            const normalizedFinal = finalTranscript.trim().toLowerCase();
+            const shouldShowInterim = !!normalizedInterim && normalizedInterim !== normalizedFinal;
+
+            setLiveFeedback(shouldShowInterim ? interimTranscript : '');
+            if (shouldShowInterim && sttLanguage === "en-US") {
+                scheduleInterimTranslation(interimTranscript);
+            } else {
+                setTranslatedLiveFeedback("");
+            }
 
             // Send interim transcripts for live analysis if needed
             if (interimTranscript && socketRef.current?.readyState === WebSocket.OPEN) {
@@ -370,7 +444,16 @@ export default function RealTimePresentationPage() {
                     total_pages: totalPages
                 }));
             }
-            if (finalTranscript) setTranscript(prev => (prev + " " + finalTranscript).slice(-200));
+            if (finalTranscript) {
+                setTranscript(prev => (prev + " " + finalTranscript).slice(-200));
+                if (!shouldShowInterim) {
+                    setLiveFeedback("");
+                    setTranslatedLiveFeedback("");
+                }
+                if (sttLanguage === "en-US") {
+                    void translateToTurkish(finalTranscript, "final");
+                }
+            }
         };
 
         recognition.onerror = (event: SpeechRecognitionErrorEventLike) => {
@@ -476,6 +559,18 @@ export default function RealTimePresentationPage() {
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                             <p className="text-zinc-400 opacity-60 italic">{transcript}</p>
                             <p className="text-primary font-medium mt-2 animate-pulse">{liveFeedback}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Türkçe Çeviri</h3>
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 min-h-[150px] text-sm leading-relaxed relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
+                            <p className="text-zinc-300">{translatedTranscript}</p>
+                            <p className="text-primary font-medium mt-2 animate-pulse">{translatedLiveFeedback}</p>
+                            {sttLanguage !== 'en-US' && !translatedTranscript && !translatedLiveFeedback && (
+                                <p className="text-zinc-500 text-xs mt-3">İngilizce konuşma açıkken canlı Türkçe çeviri burada gösterilir.</p>
+                            )}
                         </div>
                     </div>
 

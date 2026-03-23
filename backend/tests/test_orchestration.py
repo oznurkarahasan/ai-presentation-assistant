@@ -129,3 +129,20 @@ async def test_websocket_jump_intent(sync_client, test_presentation, test_sessio
             assert data["type"] == "COMMAND"
             assert data["payload"]["intent"] == "JUMP_TO_SLIDE"
             assert data["payload"]["slide_number"] == 4
+
+
+@pytest.mark.asyncio
+async def test_translate_endpoint_returns_translation(client):
+    """Test that translate endpoint returns translated text payload"""
+    with patch("app.services.translation_service.translate_text", AsyncMock(return_value="Merhaba dünya")):
+        response = await client.post(
+            "/api/v1/orchestration/translate",
+            json={
+                "text": "Hello world",
+                "source_language": "English",
+                "target_language": "Turkish",
+            },
+        )
+
+    assert response.status_code == 200
+    assert response.json()["translation"] == "Merhaba dünya"

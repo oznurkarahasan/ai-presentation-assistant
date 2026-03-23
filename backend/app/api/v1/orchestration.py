@@ -1,13 +1,24 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
 from typing import Dict, List
 import json
-from app.services import intent_service
+from pydantic import BaseModel, Field
+from app.services import intent_service, translation_service
 from app.core.logger import logger
 from app.core.database import AsyncSessionLocal
 from app.models.presentation import PresentationSession, Base
 from sqlalchemy import select, update, text
 
 router = APIRouter()
+
+
+class TranslationRequest(BaseModel):
+    text: str = Field(..., min_length=1, description="Text to translate")
+    source_language: str = Field(default="English", description="Source language")
+    target_language: str = Field(default="Turkish", description="Target language")
+
+
+class TranslationResponse(BaseModel):
+    translation: str
 
 class ConnectionManager:
     def __init__(self):
@@ -46,6 +57,16 @@ class ConnectionManager:
                         self.active_connections[presentation_id].remove(connection)
 
 manager = ConnectionManager()
+
+
+@router.post("/translate", response_model=TranslationResponse)
+async def translate_transcript(payload: TranslationRequest):
+    translated_text = await translation_service.translate_text(
+        text=payload.text,
+        source_language=payload.source_language,
+        target_language=payload.target_language,
+    )
+    return TranslationResponse(translation=translated_text)
 
 @router.websocket("/ws/presentation/{presentation_id}")
 async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
