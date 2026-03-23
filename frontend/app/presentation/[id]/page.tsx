@@ -132,11 +132,6 @@ export default function RealTimePresentationPage() {
         };
     }, []);
 
-    useEffect(() => {
-        setTranslatedTranscript("");
-        setTranslatedLiveFeedback("");
-    }, [sttLanguage]);
-
     // Fetch presentation details
     useEffect(() => {
         const fetchPresentation = async () => {
@@ -416,7 +411,9 @@ export default function RealTimePresentationPage() {
                             transcript: event.results[i][0].transcript,
                             is_final: true,
                             current_page: currentPageRef.current,
-                            total_pages: totalPages
+                            total_pages: totalPages,
+                            source_language: sttLanguage === "en-US" ? "English" : "Turkish",
+                            target_language: "Turkish"
                         }));
                     }
                 } else {
@@ -441,7 +438,9 @@ export default function RealTimePresentationPage() {
                     transcript: interimTranscript,
                     is_final: false,
                     current_page: currentPageRef.current,
-                    total_pages: totalPages
+                    total_pages: totalPages,
+                    source_language: sttLanguage === "en-US" ? "English" : "Turkish",
+                    target_language: "Turkish"
                 }));
             }
             if (finalTranscript) {
@@ -484,7 +483,7 @@ export default function RealTimePresentationPage() {
             <div className="bg-grid" />
 
             {/* Sidebar / Controls */}
-            <aside className="w-80 border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl flex flex-col relative z-20">
+            <aside className="w-[24rem] border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl flex flex-col relative z-20">
                 <header className="p-6 border-b border-white/5">
                     <div className="flex items-center gap-3 mb-6">
                         <button
@@ -512,6 +511,8 @@ export default function RealTimePresentationPage() {
                     <button
                         onClick={() => {
                             const newLang = sttLanguage === 'en-US' ? 'tr-TR' : 'en-US';
+                            setTranslatedTranscript("");
+                            setTranslatedLiveFeedback("");
                             setSttLanguage(newLang);
                             // If currently listening, restart recognition with new language
                             if (isListening) {
@@ -555,7 +556,7 @@ export default function RealTimePresentationPage() {
                 <div className="flex-1 p-6 space-y-6 overflow-y-auto">
                     <div>
                         <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Live Transcript</h3>
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 min-h-[150px] text-sm leading-relaxed relative overflow-hidden">
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 min-h-[220px] text-sm leading-relaxed relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                             <p className="text-zinc-400 opacity-60 italic">{transcript}</p>
                             <p className="text-primary font-medium mt-2 animate-pulse">{liveFeedback}</p>
@@ -563,8 +564,8 @@ export default function RealTimePresentationPage() {
                     </div>
 
                     <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Türkçe Çeviri</h3>
-                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 min-h-[150px] text-sm leading-relaxed relative overflow-hidden">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Turkish Translate</h3>
+                        <div className="p-4 rounded-2xl bg-white/5 border border-white/5 min-h-[220px] text-sm leading-relaxed relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                             <p className="text-zinc-300">{translatedTranscript}</p>
                             <p className="text-primary font-medium mt-2 animate-pulse">{translatedLiveFeedback}</p>

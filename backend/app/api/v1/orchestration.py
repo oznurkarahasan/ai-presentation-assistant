@@ -3,6 +3,7 @@ from typing import Dict, List
 import json
 from pydantic import BaseModel, Field
 from app.services import intent_service, translation_service
+from app.services import subtitle_store_service
 from app.core.logger import logger
 from app.core.database import AsyncSessionLocal
 from app.models.presentation import PresentationSession, Base
@@ -90,8 +91,44 @@ async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
                 is_final = payload.get("is_final", False)
                 current_slide = payload.get("current_page", 1)
                 total_slides = payload.get("total_pages", 1)
+                source_language = payload.get("source_language")
+                target_language = payload.get("target_language")
+                translated_transcript = payload.get("translated_transcript", "")
                 
                 if is_final:
+                    subtitle_translation = translated_transcript.strip()
+                    if (
+                        not subtitle_translation
+                        and source_language
+                        and target_language
+                        and source_language.strip().lower() != target_language.strip().lower()
+                        and transcript.strip()
+                    ):
+                        try:
+                            subtitle_translation = await translation_service.translate_text(
+                                text=transcript,
+                                source_language=source_language,
+                                target_language=target_language,
+                            )
+                        except Exception as tr_err:
+                            logger.warning(
+                                f"Subtitle translation failed for presentation {presentation_id}: {tr_err}"
+                            )
+
+                    if not subtitle_translation and source_language and target_language and source_language.strip().lower() == target_language.strip().lower():
+                        subtitle_translation = transcript
+
+                    try:
+                        await subtitle_store_service.append_subtitle(
+                            presentation_id=presentation_id,
+                            original_text=transcript,
+                            translated_text=subtitle_translation,
+                            source_language=source_language,
+                            target_language=target_language,
+                        )
+                    except Exception as file_err:
+                        logger.error(f"Subtitle save failed for presentation {presentation_id}: {file_err}")
+
                     # Perform intent analysis with context
                     logger.info(f"Analyzing intent for presentation {presentation_id} (Slide {current_slide}/{total_slides}): {transcript}")
                     result = await intent_service.analyze_intent(transcript, current_slide, total_slides)
