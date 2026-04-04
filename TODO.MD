@@ -107,14 +107,14 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 
 ## Zoom Voice Control Roadmap (Planned)
 
-- [ ] Define MVP command vocabulary for zoom in both English and Turkish (`ZOOM_IN`, `ZOOM_OUT`, `RESET_ZOOM`) and document payload schema.
-- [ ] Extend backend intent detection with zoom intents in [backend/app/services/intent_service.py](backend/app/services/intent_service.py).
-- [ ] Extend orchestration command broadcasting for zoom intents in [backend/app/api/v1/orchestration.py](backend/app/api/v1/orchestration.py).
-- [ ] Extend realtime command handler for zoom actions in [frontend/app/presentation/[id]/page.tsx](frontend/app/presentation/[id]/page.tsx).
-- [ ] Expose controlled zoom actions in [frontend/app/components/PresentationViewer.tsx](frontend/app/components/PresentationViewer.tsx) so commands can trigger `zoom in/out/reset` programmatically.
-- [ ] Add backend tests for zoom intent classification and command payload validity.
-- [ ] Add frontend tests for zoom command handling and zoom state transitions.
-- [ ] Add confidence threshold + safe fallback behavior for ambiguous voice commands.
+- [x] Define MVP command vocabulary for zoom in both English and Turkish (`ZOOM_IN`, `ZOOM_OUT`, `RESET_ZOOM`) and document payload schema.
+- [x] Extend backend intent detection with zoom intents in [backend/app/services/intent_service.py](backend/app/services/intent_service.py).
+- [x] Extend orchestration command broadcasting for zoom intents in [backend/app/api/v1/orchestration.py](backend/app/api/v1/orchestration.py).
+- [x] Extend realtime command handler for zoom actions in [frontend/app/presentation/[id]/page.tsx](frontend/app/presentation/[id]/page.tsx).
+- [x] Expose controlled zoom actions in [frontend/app/components/PresentationViewer.tsx](frontend/app/components/PresentationViewer.tsx) so commands can trigger `zoom in/out/reset` programmatically.
+- [x] Add backend tests for zoom intent classification and command payload validity.
+- [x] Add frontend tests for zoom command handling and zoom state transitions.
+- [x] Add confidence threshold + safe fallback behavior for ambiguous voice commands.
 
 ## Region/Point Zoom Evolution (Future)
 

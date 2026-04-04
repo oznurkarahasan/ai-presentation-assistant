@@ -30,6 +30,18 @@ interface WsCommandMessage {
     payload: CommandPayload;
 }
 
+interface FeedbackPayload {
+    message: string;
+    intent?: string;
+    confidence?: number;
+    executed?: boolean;
+}
+
+interface WsFeedbackMessage {
+    type: "FEEDBACK";
+    payload: FeedbackPayload;
+}
+
 interface SpeechRecognitionAlternativeLike {
     transcript: string;
 }
@@ -86,6 +98,15 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
         payload.intent === "RESET_ZOOM";
     const validSlide = payload.slide_number === undefined || payload.slide_number === null || typeof payload.slide_number === "number";
     return validIntent && validSlide;
+}
+
+function isWsFeedbackMessage(value: unknown): value is WsFeedbackMessage {
+    if (typeof value !== "object" || value === null) return false;
+    const maybe = value as Partial<WsFeedbackMessage>;
+    if (maybe.type !== "FEEDBACK") return false;
+    if (typeof maybe.payload !== "object" || maybe.payload === null) return false;
+    const payload = maybe.payload as Partial<FeedbackPayload>;
+    return typeof payload.message === "string";
 }
 
 export default function RealTimePresentationPage() {
@@ -260,6 +281,9 @@ export default function RealTimePresentationPage() {
                     if (isWsCommandMessage(data)) {
                         console.log(`[WebSocket] [${socketId}] Message:`, data.type);
                         handleCommand(data.payload);
+                    } else if (isWsFeedbackMessage(data)) {
+                        console.warn(`[WebSocket] [${socketId}] Feedback:`, data.payload);
+                        setLiveFeedback(data.payload.message);
                     }
                 } catch (err) {
                     console.error(`[WebSocket] [${socketId}] Parse error:`, err);
