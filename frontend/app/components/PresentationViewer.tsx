@@ -22,6 +22,10 @@ interface PresentationViewerProps {
     isFullScreen?: boolean;
     initialOrientation?: 'landscape' | 'portrait';
     aspectRatio?: number | null;
+    zoomCommand?: {
+        action: 'ZOOM_IN' | 'ZOOM_OUT' | 'RESET_ZOOM';
+        sequence: number;
+    } | null;
 }
 
 export default function PresentationViewer({
@@ -34,7 +38,8 @@ export default function PresentationViewer({
     onPageChange,
     isFullScreen = false,
     initialOrientation = 'landscape',
-    aspectRatio = null
+    aspectRatio = null,
+    zoomCommand = null
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
     const [zoom, setZoom] = useState<number | null>(null); // null means "Fit"
@@ -48,19 +53,34 @@ export default function PresentationViewer({
         setPageInputValue(currentPage.toString());
     }, [currentPage]);
 
-    const handleZoomIn = () => {
-        if (zoom === null) setZoom(120);
-        else setZoom(prev => Math.min((prev || 100) + 20, 300));
-    };
+    const handleZoomIn = useCallback(() => {
+        setZoom(prev => {
+            if (prev === null) return 120;
+            return Math.min(prev + 20, 300);
+        });
+    }, []);
 
-    const handleZoomOut = () => {
-        if (zoom === null) return;
-        const nextZoom = (zoom || 100) - 20;
-        if (nextZoom <= 100) setZoom(null);
-        else setZoom(nextZoom);
-    };
+    const handleZoomOut = useCallback(() => {
+        setZoom(prev => {
+            if (prev === null) return null;
+            const nextZoom = prev - 20;
+            return nextZoom <= 100 ? null : nextZoom;
+        });
+    }, []);
 
-    const resetZoom = () => setZoom(null);
+    const resetZoom = useCallback(() => setZoom(null), []);
+
+    useEffect(() => {
+        if (!zoomCommand) return;
+
+        if (zoomCommand.action === 'ZOOM_IN') {
+            handleZoomIn();
+        } else if (zoomCommand.action === 'ZOOM_OUT') {
+            handleZoomOut();
+        } else if (zoomCommand.action === 'RESET_ZOOM') {
+            resetZoom();
+        }
+    }, [zoomCommand?.sequence, zoomCommand?.action, handleZoomIn, handleZoomOut, resetZoom]);
 
     const handlePageSubmit = (e: React.FormEvent) => {
         e.preventDefault();

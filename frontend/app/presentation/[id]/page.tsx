@@ -17,11 +17,12 @@ import client from "../../api/client";
 import PresentationViewer from "../../components/PresentationViewer";
 
 
-type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
+type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE" | "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM";
+type ZoomCommandIntent = "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM";
 
 interface CommandPayload {
     intent: CommandIntent;
-    slide_number?: number;
+    slide_number?: number | null;
 }
 
 interface WsCommandMessage {
@@ -76,8 +77,14 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
     if (maybe.type !== "COMMAND") return false;
     if (typeof maybe.payload !== "object" || maybe.payload === null) return false;
     const payload = maybe.payload as Partial<CommandPayload>;
-    const validIntent = payload.intent === "NEXT_SLIDE" || payload.intent === "PREVIOUS_SLIDE" || payload.intent === "JUMP_TO_SLIDE";
-    const validSlide = payload.slide_number === undefined || typeof payload.slide_number === "number";
+    const validIntent =
+        payload.intent === "NEXT_SLIDE" ||
+        payload.intent === "PREVIOUS_SLIDE" ||
+        payload.intent === "JUMP_TO_SLIDE" ||
+        payload.intent === "ZOOM_IN" ||
+        payload.intent === "ZOOM_OUT" ||
+        payload.intent === "RESET_ZOOM";
+    const validSlide = payload.slide_number === undefined || payload.slide_number === null || typeof payload.slide_number === "number";
     return validIntent && validSlide;
 }
 
@@ -103,6 +110,8 @@ export default function RealTimePresentationPage() {
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
     const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+    const [zoomCommand, setZoomCommand] = useState<ZoomCommandIntent | null>(null);
+    const [zoomCommandSequence, setZoomCommandSequence] = useState(0);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -216,6 +225,9 @@ export default function RealTimePresentationPage() {
             }
         } else if (intent === "JUMP_TO_SLIDE" && slide_number) {
             goToPage(slide_number);
+        } else if (intent === "ZOOM_IN" || intent === "ZOOM_OUT" || intent === "RESET_ZOOM") {
+            setZoomCommand(intent);
+            setZoomCommandSequence(prev => prev + 1);
         }
     }, [goToPage, handleNextPage, handlePrevPage]);
 
@@ -487,12 +499,14 @@ export default function RealTimePresentationPage() {
                                     <CommandTip label="Sonraki Slayt" example="'Sonraki slayt', 'Devam edelim'" />
                                     <CommandTip label="Önceki Slayt" example="'Geri dön', 'Önceki slayt'" />
                                     <CommandTip label="Sayfaya Atla" example="'Slayt beşe git'" />
+                                    <CommandTip label="Zoom" example="'Yakınlaştır', 'Uzaklaştır', 'Ekrana sığdır'" />
                                 </>
                             ) : (
                                 <>
                                     <CommandTip label="Next Slide" example="'Next slide', 'Moving on'" />
                                     <CommandTip label="Previous Slide" example="'Go back', 'Last slide'" />
                                     <CommandTip label="Jump to Page" example="'Go to slide five'" />
+                                    <CommandTip label="Zoom" example="'Zoom in', 'Zoom out', 'Reset zoom'" />
                                 </>
                             )}
                         </div>
@@ -526,6 +540,7 @@ export default function RealTimePresentationPage() {
                             isFullScreen={isFullScreen}
                             initialOrientation={orientation}
                             aspectRatio={aspectRatio}
+                            zoomCommand={zoomCommand ? { action: zoomCommand, sequence: zoomCommandSequence } : null}
                         />
 
 
