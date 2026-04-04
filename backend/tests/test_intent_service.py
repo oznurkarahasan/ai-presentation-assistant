@@ -10,6 +10,9 @@ from app.services.intent_service import analyze_intent, IntentType
     ("Go back to the previous slide", IntentType.PREVIOUS_SLIDE),
     ("Can we see that last part again?", IntentType.PREVIOUS_SLIDE),
     ("Let's jump to slide five", IntentType.JUMP_TO_SLIDE),
+    ("Zoom in a bit", IntentType.ZOOM_IN),
+    ("Please zoom out", IntentType.ZOOM_OUT),
+    ("Reset zoom to fit", IntentType.RESET_ZOOM),
     ("What is the revenue for this year?", IntentType.GENERAL_QUERY),
     ("Hello everyone, welcome to the talk", IntentType.UNKNOWN),
     # Turkish commands
@@ -18,6 +21,9 @@ from app.services.intent_service import analyze_intent, IntentType
     ("Önceki slayta dön", IntentType.PREVIOUS_SLIDE),
     ("Geri dön", IntentType.PREVIOUS_SLIDE),
     ("Slayt beşe git", IntentType.JUMP_TO_SLIDE),
+    ("Biraz yakınlaştır", IntentType.ZOOM_IN),
+    ("Uzaklaştır", IntentType.ZOOM_OUT),
+    ("Ekrana sığdır", IntentType.RESET_ZOOM),
 ])
 async def test_analyze_intent_logic(text, expected):
     """Verify that the intent service correctly identifies various user intents."""

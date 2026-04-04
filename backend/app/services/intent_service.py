@@ -9,6 +9,9 @@ class IntentType(str, Enum):
     NEXT_SLIDE = "NEXT_SLIDE"
     PREVIOUS_SLIDE = "PREVIOUS_SLIDE"
     JUMP_TO_SLIDE = "JUMP_TO_SLIDE"
+    ZOOM_IN = "ZOOM_IN"
+    ZOOM_OUT = "ZOOM_OUT"
+    RESET_ZOOM = "RESET_ZOOM"
     GENERAL_QUERY = "GENERAL_QUERY"
     UNKNOWN = "UNKNOWN"
 
@@ -55,9 +58,9 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - Total Slides: {total_slides}
 
     Respond in JSON format with the following fields:
-    - intent: One of [NEXT_SLIDE, PREVIOUS_SLIDE, JUMP_TO_SLIDE, GENERAL_QUERY, UNKNOWN]
+    - intent: One of [NEXT_SLIDE, PREVIOUS_SLIDE, JUMP_TO_SLIDE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM, GENERAL_QUERY, UNKNOWN]
     - confidence: A float between 0 and 1
-    - slide_number: The TARGET slide number (int) if the intent is navigation (NEXT, PREV, or JUMP). 
+    - slide_number: The TARGET slide number (int) if the intent is slide navigation (NEXT, PREV, or JUMP).
       * For NEXT_SLIDE: Provide {current_slide + 1} (if <= {total_slides}).
       * For PREVIOUS_SLIDE: Provide {max(1, current_slide - 1)}.
       * For JUMP_TO_SLIDE: Extract the mentioned slide number. If the user says "beginning"/"başa"/"ilk" → slide_number=1. If "end"/"sona"/"son" → slide_number={total_slides}.
@@ -67,6 +70,9 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - NEXT_SLIDE: Triggered by phrases like "next slide", "let's move on", "forward", "following slide", "continue".
     - PREVIOUS_SLIDE: Triggered by "go back", "previous slide", "let's look at that again", "return to the last part".
     - JUMP_TO_SLIDE: Triggered by "go to slide 5", "jump to page 10", "go to the beginning" (slide_number=1), "go to the end" (slide_number={total_slides}), "first slide" (slide_number=1), "last slide" (slide_number={total_slides}), etc.
+    - ZOOM_IN: Triggered by "zoom in", "make it bigger", "closer", "enlarge this".
+    - ZOOM_OUT: Triggered by "zoom out", "make it smaller", "show more", "step back".
+    - RESET_ZOOM: Triggered by "reset zoom", "fit to screen", "normal size", "back to fit".
     - GENERAL_QUERY: If the user is asking a question about the content.
     - UNKNOWN: If it's just general speech with no navigation intent.
 
@@ -74,6 +80,9 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - NEXT_SLIDE: Triggered by phrases like "sonraki slayt", "devam edelim", "ileri geçelim", "bir sonraki slayt".
     - PREVIOUS_SLIDE: Triggered by "geri dön", "önceki slayt", "tekrar bakalım", "bir önceki kısma dön".
     - JUMP_TO_SLIDE: Triggered by "slayt 5'e git", "sayfa 10'a atla", "başa dön" (slide_number=1), "sona git" (slide_number={total_slides}), "slaytın başına gidelim" (slide_number=1), "slaytın sonuna gidelim" (slide_number={total_slides}), "ilk slayta git" (slide_number=1), "son slayta git" (slide_number={total_slides}), etc.
+    - ZOOM_IN: Triggered by "yakınlaştır", "biraz büyüt", "yakından göster", "zoom in".
+    - ZOOM_OUT: Triggered by "uzaklaştır", "küçült", "biraz geri al", "zoom out".
+    - RESET_ZOOM: Triggered by "zoomu sıfırla", "ekrana sığdır", "normal boyut", "fit".
     - GENERAL_QUERY: If the user is asking a question about the content in Turkish.
     - UNKNOWN: If it's just general speech with no navigation intent.
 

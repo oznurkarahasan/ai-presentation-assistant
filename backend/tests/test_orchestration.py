@@ -129,3 +129,28 @@ async def test_websocket_jump_intent(sync_client, test_presentation, test_sessio
             assert data["type"] == "COMMAND"
             assert data["payload"]["intent"] == "JUMP_TO_SLIDE"
             assert data["payload"]["slide_number"] == 4
+
+
+@pytest.mark.asyncio
+async def test_websocket_zoom_intent(sync_client, test_presentation):
+    """Test zoom command broadcast payload."""
+    mock_result = IntentResult(
+        intent=IntentType.ZOOM_IN,
+        confidence=0.97,
+        slide_number=None,
+        original_text="zoom in"
+    )
+
+    with patch("app.services.intent_service.analyze_intent", AsyncMock(return_value=mock_result)):
+        with sync_client.websocket_connect(f"/api/v1/orchestration/ws/presentation/{test_presentation.id}") as websocket:
+            websocket.send_text(json.dumps({
+                "transcript": "zoom in",
+                "is_final": True,
+                "current_page": 1,
+                "total_pages": 5
+            }))
+
+            data = websocket.receive_json()
+            assert data["type"] == "COMMAND"
+            assert data["payload"]["intent"] == "ZOOM_IN"
+            assert data["payload"]["slide_number"] is None
