@@ -17,12 +17,14 @@ import client from "../../api/client";
 import PresentationViewer from "../../components/PresentationViewer";
 
 
-type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE" | "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM";
+type RegionType = "TOP_LEFT" | "TOP_RIGHT" | "CENTER" | "BOTTOM_LEFT" | "BOTTOM_RIGHT";
+type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE" | "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM" | "ZOOM_TO_REGION";
 type ZoomCommandIntent = "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM";
 
 interface CommandPayload {
     intent: CommandIntent;
     slide_number?: number | null;
+    region?: RegionType | null;
 }
 
 interface WsCommandMessage {
@@ -95,9 +97,18 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
         payload.intent === "JUMP_TO_SLIDE" ||
         payload.intent === "ZOOM_IN" ||
         payload.intent === "ZOOM_OUT" ||
-        payload.intent === "RESET_ZOOM";
+        payload.intent === "RESET_ZOOM" ||
+        payload.intent === "ZOOM_TO_REGION";
     const validSlide = payload.slide_number === undefined || payload.slide_number === null || typeof payload.slide_number === "number";
-    return validIntent && validSlide;
+    const validRegion =
+        payload.region === undefined ||
+        payload.region === null ||
+        payload.region === "TOP_LEFT" ||
+        payload.region === "TOP_RIGHT" ||
+        payload.region === "CENTER" ||
+        payload.region === "BOTTOM_LEFT" ||
+        payload.region === "BOTTOM_RIGHT";
+    return validIntent && validSlide && validRegion;
 }
 
 function isWsFeedbackMessage(value: unknown): value is WsFeedbackMessage {
@@ -133,6 +144,8 @@ export default function RealTimePresentationPage() {
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
     const [zoomCommand, setZoomCommand] = useState<ZoomCommandIntent | null>(null);
     const [zoomCommandSequence, setZoomCommandSequence] = useState(0);
+    const [regionCommand, setRegionCommand] = useState<RegionType | null>(null);
+    const [regionCommandSequence, setRegionCommandSequence] = useState(0);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -228,9 +241,9 @@ export default function RealTimePresentationPage() {
     }, []);
 
     const handleCommand = useCallback((payload: CommandPayload) => {
-        const { intent, slide_number } = payload;
+        const { intent, slide_number, region } = payload;
         const currentTotal = totalPagesRef.current;
-        console.log(`[WebSocket] Received COMMAND: ${intent} | Slide: ${slide_number} | Total: ${currentTotal}`);
+        console.log(`[WebSocket] Received COMMAND: ${intent} | Slide: ${slide_number} | Region: ${region} | Total: ${currentTotal}`);
 
         if (intent === "NEXT_SLIDE") {
             if (slide_number) {
@@ -249,6 +262,9 @@ export default function RealTimePresentationPage() {
         } else if (intent === "ZOOM_IN" || intent === "ZOOM_OUT" || intent === "RESET_ZOOM") {
             setZoomCommand(intent);
             setZoomCommandSequence(prev => prev + 1);
+        } else if (intent === "ZOOM_TO_REGION" && region) {
+            setRegionCommand(region);
+            setRegionCommandSequence(prev => prev + 1);
         }
     }, [goToPage, handleNextPage, handlePrevPage]);
 
@@ -524,6 +540,7 @@ export default function RealTimePresentationPage() {
                                     <CommandTip label="Önceki Slayt" example="'Geri dön', 'Önceki slayt'" />
                                     <CommandTip label="Sayfaya Atla" example="'Slayt beşe git'" />
                                     <CommandTip label="Zoom" example="'Yakınlaştır', 'Uzaklaştır', 'Ekrana sığdır'" />
+                                    <CommandTip label="Bölgesel Zoom" example="'Sağ üste yakınlaştır', 'Ortaya odaklan'" />
                                 </>
                             ) : (
                                 <>
@@ -531,6 +548,7 @@ export default function RealTimePresentationPage() {
                                     <CommandTip label="Previous Slide" example="'Go back', 'Last slide'" />
                                     <CommandTip label="Jump to Page" example="'Go to slide five'" />
                                     <CommandTip label="Zoom" example="'Zoom in', 'Zoom out', 'Reset zoom'" />
+                                    <CommandTip label="Region Zoom" example="'Zoom to top right', 'Focus center'" />
                                 </>
                             )}
                         </div>
@@ -565,6 +583,7 @@ export default function RealTimePresentationPage() {
                             initialOrientation={orientation}
                             aspectRatio={aspectRatio}
                             zoomCommand={zoomCommand ? { action: zoomCommand, sequence: zoomCommandSequence } : null}
+                            regionCommand={regionCommand ? { region: regionCommand, sequence: regionCommandSequence } : null}
                         />
 
 
