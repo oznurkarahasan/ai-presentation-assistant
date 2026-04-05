@@ -51,6 +51,10 @@ export default function PresentationViewer({
     const [panRatio, setPanRatio] = useState({ x: 0.5, y: 0.5 });
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
     const viewportRef = useRef<HTMLDivElement>(null);
+    const zoomAction = zoomCommand?.action;
+    const zoomSequence = zoomCommand?.sequence;
+    const region = regionCommand?.region;
+    const regionSequence = regionCommand?.sequence;
 
     useEffect(() => {
         setOrientation(initialOrientation);
@@ -118,16 +122,16 @@ export default function PresentationViewer({
     }, [applyPanByRatio]);
 
     useEffect(() => {
-        if (!zoomCommand) return;
+        if (!zoomAction) return;
 
-        if (zoomCommand.action === 'ZOOM_IN') {
+        if (zoomAction === 'ZOOM_IN') {
             handleZoomIn();
-        } else if (zoomCommand.action === 'ZOOM_OUT') {
+        } else if (zoomAction === 'ZOOM_OUT') {
             handleZoomOut();
-        } else if (zoomCommand.action === 'RESET_ZOOM') {
+        } else if (zoomAction === 'RESET_ZOOM') {
             resetZoom();
         }
-    }, [zoomCommand?.sequence, zoomCommand?.action, handleZoomIn, handleZoomOut, resetZoom]);
+    }, [zoomAction, zoomSequence, handleZoomIn, handleZoomOut, resetZoom]);
 
     const getRegionRatio = useCallback((region: 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT') => {
 
@@ -154,9 +158,9 @@ export default function PresentationViewer({
     }, []);
 
     useEffect(() => {
-        if (!regionCommand) return;
+        if (!region) return;
 
-        const regionRatio = getRegionRatio(regionCommand.region);
+        const regionRatio = getRegionRatio(region);
         setPanRatio(regionRatio);
         setZoom(prev => Math.max(prev, 180));
 
@@ -165,7 +169,7 @@ export default function PresentationViewer({
                 applyPanByRatio(regionRatio.x, regionRatio.y, 'smooth');
             });
         });
-    }, [regionCommand?.sequence, regionCommand?.region, getRegionRatio, applyPanByRatio]);
+    }, [region, regionSequence, getRegionRatio, applyPanByRatio]);
 
     useEffect(() => {
         if (zoom <= 100) {
