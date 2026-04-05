@@ -77,7 +77,7 @@ async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
                     result = await intent_service.analyze_intent(transcript, current_slide, total_slides)
                     logger.info(
                         f"Analysis result for {presentation_id}: "
-                        f"intent={result.intent}, confidence={result.confidence:.2f}, target={result.slide_number}"
+                        f"intent={result.intent}, confidence={result.confidence:.2f}, target={result.slide_number}, region={result.region}"
                     )
                     
                     if result.intent != intent_service.IntentType.UNKNOWN:

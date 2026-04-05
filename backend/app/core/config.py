@@ -45,6 +45,10 @@ class Settings(BaseSettings):
         default=0.70,
         description="Minimum confidence required to execute intent-driven presentation commands"
     )
+    INTENT_COMMAND_CONFIDENCE_THRESHOLD: float = Field(
+        default=0.70,
+        description="Minimum confidence required to execute intent-driven presentation commands"
+    )
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
