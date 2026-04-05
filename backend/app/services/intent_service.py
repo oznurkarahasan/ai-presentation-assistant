@@ -12,22 +12,32 @@ class IntentType(str, Enum):
     ZOOM_IN = "ZOOM_IN"
     ZOOM_OUT = "ZOOM_OUT"
     RESET_ZOOM = "RESET_ZOOM"
+    ZOOM_TO_REGION = "ZOOM_TO_REGION"
     GENERAL_QUERY = "GENERAL_QUERY"
     UNKNOWN = "UNKNOWN"
 
 class IntentResult:
-    def __init__(self, intent: IntentType, confidence: float, slide_number: Optional[int] = None, original_text: str = ""):
+    def __init__(
+        self,
+        intent: IntentType,
+        confidence: float,
+        slide_number: Optional[int] = None,
+        original_text: str = "",
+        region: Optional[str] = None
+    ):
         self.intent = intent
         self.confidence = confidence
         self.slide_number = slide_number
         self.original_text = original_text
+        self.region = region
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "intent": self.intent.value,
             "confidence": self.confidence,
             "slide_number": self.slide_number,
-            "original_text": self.original_text
+            "original_text": self.original_text,
+            "region": self.region
         }
 
 _client = None
@@ -58,13 +68,15 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - Total Slides: {total_slides}
 
     Respond in JSON format with the following fields:
-    - intent: One of [NEXT_SLIDE, PREVIOUS_SLIDE, JUMP_TO_SLIDE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM, GENERAL_QUERY, UNKNOWN]
+    - intent: One of [NEXT_SLIDE, PREVIOUS_SLIDE, JUMP_TO_SLIDE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM, ZOOM_TO_REGION, GENERAL_QUERY, UNKNOWN]
     - confidence: A float between 0 and 1
     - slide_number: The TARGET slide number (int) if the intent is slide navigation (NEXT, PREV, or JUMP).
       * For NEXT_SLIDE: Provide {current_slide + 1} (if <= {total_slides}).
       * For PREVIOUS_SLIDE: Provide {max(1, current_slide - 1)}.
       * For JUMP_TO_SLIDE: Extract the mentioned slide number. If the user says "beginning"/"başa"/"ilk" → slide_number=1. If "end"/"sona"/"son" → slide_number={total_slides}.
       * Otherwise null.
+        - region: One of [TOP_LEFT, TOP_RIGHT, CENTER, BOTTOM_LEFT, BOTTOM_RIGHT] only for ZOOM_TO_REGION.
+            * Otherwise null.
 
     Guidelines (English):
     - NEXT_SLIDE: Triggered by phrases like "next slide", "let's move on", "forward", "following slide", "continue".
@@ -73,6 +85,7 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - ZOOM_IN: Triggered by "zoom in", "make it bigger", "closer", "enlarge this".
     - ZOOM_OUT: Triggered by "zoom out", "make it smaller", "show more", "step back".
     - RESET_ZOOM: Triggered by "reset zoom", "fit to screen", "normal size", "back to fit".
+    - ZOOM_TO_REGION: Triggered by region-targeted commands like "zoom to top right", "focus on bottom left", "center the slide".
     - GENERAL_QUERY: If the user is asking a question about the content.
     - UNKNOWN: If it's just general speech with no navigation intent.
 
@@ -83,6 +96,7 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - ZOOM_IN: Triggered by "yakınlaştır", "biraz büyüt", "yakından göster", "zoom in".
     - ZOOM_OUT: Triggered by "uzaklaştır", "küçült", "biraz geri al", "zoom out".
     - RESET_ZOOM: Triggered by "zoomu sıfırla", "ekrana sığdır", "normal boyut", "fit".
+    - ZOOM_TO_REGION: Triggered by region-targeted commands like "sağ üste yakınlaştır", "sol alta odaklan", "ortayı göster".
     - GENERAL_QUERY: If the user is asking a question about the content in Turkish.
     - UNKNOWN: If it's just general speech with no navigation intent.
 
@@ -156,6 +170,7 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
         intent_str = result_data.get("intent", "UNKNOWN")
         confidence = result_data.get("confidence", 0.0)
         slide_number = result_data.get("slide_number")
+        region = result_data.get("region")
 
         try:
             intent_type = IntentType(intent_str)
@@ -166,7 +181,8 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
             intent=intent_type,
             confidence=confidence,
             slide_number=slide_number,
-            original_text=text
+            original_text=text,
+            region=region
         )
 
     except Exception as e:

@@ -157,6 +157,32 @@ async def test_websocket_zoom_intent(sync_client, test_presentation):
 
 
 @pytest.mark.asyncio
+async def test_websocket_region_zoom_intent(sync_client, test_presentation):
+    """Test region zoom command payload."""
+    mock_result = IntentResult(
+        intent=IntentType.ZOOM_TO_REGION,
+        confidence=0.93,
+        slide_number=None,
+        original_text="zoom to top right",
+        region="TOP_RIGHT"
+    )
+
+    with patch("app.services.intent_service.analyze_intent", AsyncMock(return_value=mock_result)):
+        with sync_client.websocket_connect(f"/api/v1/orchestration/ws/presentation/{test_presentation.id}") as websocket:
+            websocket.send_text(json.dumps({
+                "transcript": "zoom to top right",
+                "is_final": True,
+                "current_page": 1,
+                "total_pages": 5
+            }))
+
+            data = websocket.receive_json()
+            assert data["type"] == "COMMAND"
+            assert data["payload"]["intent"] == "ZOOM_TO_REGION"
+            assert data["payload"]["region"] == "TOP_RIGHT"
+
+
+@pytest.mark.asyncio
 async def test_websocket_low_confidence_returns_feedback(sync_client, test_presentation):
     """Low-confidence command should emit FEEDBACK and avoid command execution."""
     mock_result = IntentResult(
