@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Typewriter from "typewriter-effect";
-import { Mic, Presentation, Zap, Sparkles, Layers, ShieldCheck, ChevronRight, Play, Quote, Star, Users } from "lucide-react";
+import { Mic, Presentation, Zap, Sparkles, Layers, ShieldCheck, ChevronRight, Quote, Star, Users } from "lucide-react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 
@@ -22,11 +22,6 @@ export default function Home() {
             transition={{ duration: 0.8 }}
             className="space-y-8 max-w-4xl mx-auto"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-primary/30 bg-primary/10 rounded-full text-primary text-[11px] sm:text-[13px] mb-4 backdrop-blur-sm">
-              <Sparkles size={14} />
-              v1.0 Public Beta • Build for Professionals
-            </div>
-
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]">
               <span className="text-white">While Presenting</span>
               <br />
@@ -50,19 +45,12 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 px-6 sm:px-0">
               <Link
-                href="/upload"
-                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-8 py-4 rounded-xl font-bold text-sm sm:text-base transition-all active:scale-95 shadow-lg shadow-primary/20 group"
+                href="/login"
+                className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-10 py-4 rounded-xl font-bold text-sm sm:text-base transition-all active:scale-95 shadow-xl shadow-primary/30 group"
               >
-                <Presentation size={18} />
-                Try Demo (Guest)
+                <img src="/favicon.ico" alt="Icon" className="w-[18px] h-[18px]" />
+                Step Into the Spotlight
                 <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 text-white px-8 py-4 rounded-xl font-bold text-sm sm:text-base transition-all border border-white/10 backdrop-blur-md"
-              >
-                <Zap size={18} className="text-primary" />
-                Sign Up for Free
               </Link>
             </div>
           </motion.div>
@@ -144,21 +132,15 @@ export default function Home() {
               </div>
 
               <div className="flex-1 w-full max-w-2xl">
-                <div className="relative aspect-video bg-zinc-900 rounded-3xl border border-white/10 flex items-center justify-center overflow-hidden group shadow-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50" />
-                  <div className="relative z-10 flex flex-col items-center gap-4">
-                    <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 backdrop-blur-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500 cursor-pointer shadow-inner">
-                      <Play className="text-primary fill-primary ml-1" size={32} />
-                    </div>
-                    <span className="text-xs text-zinc-400 font-bold uppercase tracking-widest bg-black/40 px-3 py-1.5 rounded-full border border-white/5 backdrop-blur-md">Watch Demo Video</span>
-                  </div>
-
-                  {/* Decorative Elements */}
-                  <div className="absolute top-4 right-4 flex gap-1.5">
-                    <div className="w-2 h-2 rounded-full bg-white/10" />
-                    <div className="w-2 h-2 rounded-full bg-white/10" />
-                    <div className="w-2 h-2 rounded-full bg-white/20" />
-                  </div>
+                <div className="relative aspect-video bg-zinc-900 rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+                  <video
+                    className="h-full w-full object-cover"
+                    src="/videos/scenerio.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                  />
                 </div>
               </div>
             </div>
