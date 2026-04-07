@@ -14,6 +14,11 @@ from app.services.intent_service import analyze_intent, IntentType
     ("Please zoom out", IntentType.ZOOM_OUT),
     ("Reset zoom to fit", IntentType.RESET_ZOOM),
     ("Zoom to top right", IntentType.ZOOM_TO_REGION),
+    ("Focus on the graph", IntentType.ZOOM_TO_TARGET),
+    ("Focus on the map", IntentType.ZOOM_TO_TARGET),
+    ("Focus on the figure", IntentType.ZOOM_TO_TARGET),
+    ("Focus on the cycle", IntentType.ZOOM_TO_TARGET),
+    ("Focus on paragraph two", IntentType.ZOOM_TO_TARGET),
     ("What is the revenue for this year?", IntentType.GENERAL_QUERY),
     ("Hello everyone, welcome to the talk", IntentType.UNKNOWN),
     # Turkish commands
@@ -26,6 +31,11 @@ from app.services.intent_service import analyze_intent, IntentType
     ("Uzaklaştır", IntentType.ZOOM_OUT),
     ("Ekrana sığdır", IntentType.RESET_ZOOM),
     ("Sağ üste yakınlaştır", IntentType.ZOOM_TO_REGION),
+    ("Grafiğe odaklan", IntentType.ZOOM_TO_TARGET),
+    ("Haritaya odaklan", IntentType.ZOOM_TO_TARGET),
+    ("Şekile odaklan", IntentType.ZOOM_TO_TARGET),
+    ("Döngüye odaklan", IntentType.ZOOM_TO_TARGET),
+    ("İkinci paragrafa odaklan", IntentType.ZOOM_TO_TARGET),
 ])
 async def test_analyze_intent_logic(text, expected):
     """Verify that the intent service correctly identifies various user intents."""

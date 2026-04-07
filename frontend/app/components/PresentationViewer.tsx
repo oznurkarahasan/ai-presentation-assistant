@@ -30,6 +30,11 @@ interface PresentationViewerProps {
         region: 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
         sequence: number;
     } | null;
+    regionMapping?: Partial<Record<number, Partial<Record<'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT', {
+        x: number;
+        y: number;
+        minZoom?: number;
+    }>>>>;
 }
 
 export default function PresentationViewer({
@@ -44,7 +49,8 @@ export default function PresentationViewer({
     initialOrientation = 'landscape',
     aspectRatio = null,
     zoomCommand = null,
-    regionCommand = null
+    regionCommand = null,
+    regionMapping = {}
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
     const [zoom, setZoom] = useState<number>(100);
@@ -89,6 +95,10 @@ export default function PresentationViewer({
             x: maxScrollLeft > 0 ? viewport.scrollLeft / maxScrollLeft : 0.5,
             y: maxScrollTop > 0 ? viewport.scrollTop / maxScrollTop : 0.5,
         };
+    }, []);
+
+    const clampRatio = useCallback((value: number) => {
+        return Math.min(1, Math.max(0, value));
     }, []);
 
     const changeZoom = useCallback((delta: number) => {
@@ -160,16 +170,31 @@ export default function PresentationViewer({
     useEffect(() => {
         if (!region) return;
 
-        const regionRatio = getRegionRatio(region);
+        const slideMapping = regionMapping[currentPage]?.[region];
+        const regionRatio = slideMapping
+            ? { x: clampRatio(slideMapping.x), y: clampRatio(slideMapping.y) }
+            : getRegionRatio(region);
+        const targetMinZoom = slideMapping?.minZoom ?? 180;
+
         setPanRatio(regionRatio);
-        setZoom(prev => Math.max(prev, 180));
+        setZoom(prev => Math.max(prev, targetMinZoom));
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 applyPanByRatio(regionRatio.x, regionRatio.y, 'smooth');
             });
         });
-    }, [region, regionSequence, getRegionRatio, applyPanByRatio]);
+    }, [region, regionSequence, currentPage, regionMapping, getRegionRatio, applyPanByRatio, clampRatio]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (zoom <= 100) return;
+            applyPanByRatio(clampRatio(panRatio.x), clampRatio(panRatio.y));
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [zoom, panRatio, applyPanByRatio, clampRatio]);
 
     useEffect(() => {
         if (zoom <= 100) {

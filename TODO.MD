@@ -119,7 +119,7 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 ## Region/Point Zoom Evolution (Future)
 
 - [x] Implement region-based zoom (`ZOOM_TO_REGION`) first (e.g., top-right, bottom-left) as a pragmatic bridge before true point zoom.
-- [ ] Define region mapping strategy per slide (manual annotation first, optional automation later).
-- [ ] Add telemetry for command success rate, false positives, and command latency in live sessions.
-- [ ] Evaluate renderer migration from iframe to a coordinate-aware layer (e.g., PDF.js/canvas) to unlock `ZOOM_TO_POINT` with stable `(x, y, scale)` behavior.
-- [ ] Add cross-device validation (desktop/mobile viewport scaling consistency) for region/point zoom commands.
+- [x] Define region mapping strategy per slide (manual annotation first, optional automation later).
+- [x] Add telemetry for command success rate, false positives, and command latency in live sessions.
+- [x] Evaluate renderer migration from iframe to a coordinate-aware layer (e.g., PDF.js/canvas) to unlock `ZOOM_TO_POINT` with stable `(x, y, scale)` behavior.
+- [x] Add cross-device validation (desktop/mobile viewport scaling consistency) for region/point zoom commands.

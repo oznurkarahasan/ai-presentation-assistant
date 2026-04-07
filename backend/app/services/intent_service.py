@@ -13,6 +13,7 @@ class IntentType(str, Enum):
     ZOOM_OUT = "ZOOM_OUT"
     RESET_ZOOM = "RESET_ZOOM"
     ZOOM_TO_REGION = "ZOOM_TO_REGION"
+    ZOOM_TO_TARGET = "ZOOM_TO_TARGET"
     GENERAL_QUERY = "GENERAL_QUERY"
     UNKNOWN = "UNKNOWN"
 
@@ -23,13 +24,17 @@ class IntentResult:
         confidence: float,
         slide_number: Optional[int] = None,
         original_text: str = "",
-        region: Optional[str] = None
+        region: Optional[str] = None,
+        focus_target: Optional[str] = None,
+        focus_index: Optional[int] = None
     ):
         self.intent = intent
         self.confidence = confidence
         self.slide_number = slide_number
         self.original_text = original_text
         self.region = region
+        self.focus_target = focus_target
+        self.focus_index = focus_index
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -37,7 +42,9 @@ class IntentResult:
             "confidence": self.confidence,
             "slide_number": self.slide_number,
             "original_text": self.original_text,
-            "region": self.region
+            "region": self.region,
+            "focus_target": self.focus_target,
+            "focus_index": self.focus_index
         }
 
 _client = None
@@ -48,7 +55,12 @@ def get_client() -> AsyncOpenAI:
         _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
     return _client
 
-async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 1) -> IntentResult:
+async def analyze_intent(
+    text: str,
+    current_slide: int = 1,
+    total_slides: int = 1,
+    current_slide_text: str = ""
+) -> IntentResult:
     """
     Analyzes the user's speech transcript to detect presentation-related intents.
     Supports both English and Turkish voice commands.
@@ -66,9 +78,10 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     Current Presentation State:
     - Current Slide: {current_slide}
     - Total Slides: {total_slides}
+    - Current Slide Content (for semantic understanding): {current_slide_text[:2000] if current_slide_text else "Not available"}
 
     Respond in JSON format with the following fields:
-    - intent: One of [NEXT_SLIDE, PREVIOUS_SLIDE, JUMP_TO_SLIDE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM, ZOOM_TO_REGION, GENERAL_QUERY, UNKNOWN]
+    - intent: One of [NEXT_SLIDE, PREVIOUS_SLIDE, JUMP_TO_SLIDE, ZOOM_IN, ZOOM_OUT, RESET_ZOOM, ZOOM_TO_REGION, ZOOM_TO_TARGET, GENERAL_QUERY, UNKNOWN]
     - confidence: A float between 0 and 1
     - slide_number: The TARGET slide number (int) if the intent is slide navigation (NEXT, PREV, or JUMP).
       * For NEXT_SLIDE: Provide {current_slide + 1} (if <= {total_slides}).
@@ -76,6 +89,11 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
       * For JUMP_TO_SLIDE: Extract the mentioned slide number. If the user says "beginning"/"başa"/"ilk" → slide_number=1. If "end"/"sona"/"son" → slide_number={total_slides}.
       * Otherwise null.
         - region: One of [TOP_LEFT, TOP_RIGHT, CENTER, BOTTOM_LEFT, BOTTOM_RIGHT] only for ZOOM_TO_REGION.
+            * Otherwise null.
+        - focus_target: One of [GRAPH, TEXT, MAP, FIGURE, CYCLE, PARAGRAPH] only for ZOOM_TO_TARGET.
+            * Otherwise null.
+        - focus_index: Integer index for target detail when explicitly provided (e.g., 2nd paragraph).
+            * Use only when intent=ZOOM_TO_TARGET and the user gave an ordinal target (like "2nd paragraph").
             * Otherwise null.
 
     Guidelines (English):
@@ -86,6 +104,7 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - ZOOM_OUT: Triggered by "zoom out", "make it smaller", "show more", "step back".
     - RESET_ZOOM: Triggered by "reset zoom", "fit to screen", "normal size", "back to fit".
     - ZOOM_TO_REGION: Triggered by region-targeted commands like "zoom to top right", "focus on bottom left", "center the slide".
+    - ZOOM_TO_TARGET: Triggered by semantic target commands like "focus on the graph", "focus on the chart", "focus on the map", "focus on the figure", "focus on the cycle", "focus on paragraph".
     - GENERAL_QUERY: If the user is asking a question about the content.
     - UNKNOWN: If it's just general speech with no navigation intent.
 
@@ -97,6 +116,7 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
     - ZOOM_OUT: Triggered by "uzaklaştır", "küçült", "biraz geri al", "zoom out".
     - RESET_ZOOM: Triggered by "zoomu sıfırla", "ekrana sığdır", "normal boyut", "fit".
     - ZOOM_TO_REGION: Triggered by region-targeted commands like "sağ üste yakınlaştır", "sol alta odaklan", "ortayı göster".
+    - ZOOM_TO_TARGET: Triggered by semantic target commands like "grafiğe odaklan", "metne odaklan", "haritaya odaklan", "şekile odaklan", "döngüye odaklan", "ikinci paragrafa odaklan".
     - GENERAL_QUERY: If the user is asking a question about the content in Turkish.
     - UNKNOWN: If it's just general speech with no navigation intent.
 
@@ -171,6 +191,22 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
         confidence = result_data.get("confidence", 0.0)
         slide_number = result_data.get("slide_number")
         region = result_data.get("region")
+        focus_target = result_data.get("focus_target")
+        focus_index = result_data.get("focus_index")
+
+        if isinstance(focus_target, str):
+            focus_target = focus_target.upper()
+
+        if focus_target not in {"GRAPH", "TEXT", "MAP", "FIGURE", "CYCLE", "PARAGRAPH", None}:
+            focus_target = None
+
+        if focus_index is not None:
+            try:
+                focus_index = int(focus_index)
+                if focus_index < 1:
+                    focus_index = None
+            except (TypeError, ValueError):
+                focus_index = None
 
         try:
             intent_type = IntentType(intent_str)
@@ -182,7 +218,9 @@ async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 
             confidence=confidence,
             slide_number=slide_number,
             original_text=text,
-            region=region
+            region=region,
+            focus_target=focus_target,
+            focus_index=focus_index
         )
 
     except Exception as e:
