@@ -123,3 +123,31 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 - [x] Add telemetry for command success rate, false positives, and command latency in live sessions.
 - [x] Evaluate renderer migration from iframe to a coordinate-aware layer (e.g., PDF.js/canvas) to unlock `ZOOM_TO_POINT` with stable `(x, y, scale)` behavior.
 - [x] Add cross-device validation (desktop/mobile viewport scaling consistency) for region/point zoom commands.
+
+## Semantic Focus Detection Roadmap (MVP -> Advanced)
+
+- [] PDF page analysis pipeline is added for semantic focus extraction.
+- [] Native PDF text block extraction (no OCR-first) is added.
+- [] Paragraph ordering/indexing (`paragraph_1`, `paragraph_2`, ...) is added.
+- [] Visual-region heuristic extraction (images + vector drawings) is added.
+- [] Normalized geometry conversion is added (`x`, `y`, `w`, `h` in `[0,1]`).
+- [] Slide semantic index generation is added (`text_1`, `graph_1`, `figure_1`, `map_1`, `cycle_1`, `paragraph_n`).
+- [] Intent-to-focus mapping is added (`focus_target` + `focus_index` -> best semantic bbox center).
+- [] Low-confidence fallback is added (region fallback + user feedback broadcast).
+- [] JSON cache persistence is added (`.focus_index.json`), avoiding recomputation per command.
+
+### MVP Scope (Current)
+
+- [] PDF-only semantic focus support is active.
+- [] Paragraph focus works via native text blocks.
+- [] Graph/figure/map/cycle focus works via large non-text visual heuristics.
+- [] Runtime quality metrics for semantic focus precision/recall should be tracked.
+- [] Regression test set with annotated slides should be expanded.
+
+### Next Phase (Model-Assisted Detection)
+
+- [ ] Add optional OCR fallback for scanned/non-selectable PDFs (Tesseract or PaddleOCR).
+- [ ] Add layout/object detection module (LayoutParser+Detectron2 or YOLO-based model).
+- [ ] Add chart-specific ranking/fine-tuning for graph targeting quality.
+- [ ] Add confidence calibration and threshold tuning per target type.
+- [ ] Add benchmark suite and acceptance thresholds for semantic zoom accuracy.

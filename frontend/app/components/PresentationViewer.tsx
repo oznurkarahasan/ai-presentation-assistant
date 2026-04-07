@@ -80,7 +80,10 @@ export default function PresentationViewer({
     const [pdfDoc, setPdfDoc] = useState<any>(null);
     const [isRenderingPdf, setIsRenderingPdf] = useState(false);
     const [renderTrigger, setRenderTrigger] = useState(0);
+    const [renderedPageSize, setRenderedPageSize] = useState({ width: 0, height: 0 });
     const renderTaskRef = useRef<any>(null);
+    const panRatioRef = useRef({ x: 0.5, y: 0.5 });
+    const focusPointRef = useRef<{ x: number; y: number } | null>(null);
 
     const REGION_DEFAULTS: Record<RegionType, RegionCoord> = {
         TOP_LEFT: { x: 0.18, y: 0.18, minZoom: 180 },
@@ -132,6 +135,7 @@ export default function PresentationViewer({
     const changeZoom = useCallback((delta: number) => {
         const currentPan = getCurrentPanRatio();
         setPanRatio(currentPan);
+        panRatioRef.current = currentPan;
         setZoom(prev => Math.max(100, Math.min(300, prev + delta)));
 
         requestAnimationFrame(() => {
@@ -151,7 +155,10 @@ export default function PresentationViewer({
 
     const resetZoom = useCallback(() => {
         setZoom(100);
-        setPanRatio({ x: 0.5, y: 0.5 });
+        const defaultPan = { x: 0.5, y: 0.5 };
+        setPanRatio(defaultPan);
+        panRatioRef.current = defaultPan;
+        focusPointRef.current = null;
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 applyPanByRatio(0, 0, 'smooth');
@@ -196,6 +203,8 @@ export default function PresentationViewer({
         const minZoom = coord.minZoom ?? 180;
 
         setPanRatio({ x: nx, y: ny });
+        panRatioRef.current = { x: nx, y: ny };
+        focusPointRef.current = { x: nx, y: ny };
         setZoom(prev => Math.max(prev, minZoom));
 
         requestAnimationFrame(() => {
@@ -301,6 +310,7 @@ export default function PresentationViewer({
                 canvas.height = Math.floor(renderViewport.height);
                 canvas.style.width = `${displayViewport.width}px`;
                 canvas.style.height = `${displayViewport.height}px`;
+                setRenderedPageSize({ width: displayViewport.width, height: displayViewport.height });
 
                 const renderTask = page.render({
                     canvasContext: ctx,
@@ -312,6 +322,14 @@ export default function PresentationViewer({
 
                 if (renderTaskRef.current === renderTask) {
                     renderTaskRef.current = null;
+                }
+
+                if (focusPointRef.current) {
+                    const { x, y } = focusPointRef.current;
+                    requestAnimationFrame(() => {
+                        centerOnNormalizedPoint(x, y, 'auto');
+                    });
+                    focusPointRef.current = null;
                 }
             } catch (e) {
                 const errorName = (e as { name?: string } | null)?.name;
@@ -330,7 +348,7 @@ export default function PresentationViewer({
                 renderTaskRef.current.cancel();
             }
         };
-    }, [renderTrigger, pdfDoc, fileType, currentPage]);
+    }, [renderTrigger, pdfDoc, fileType, currentPage, centerOnNormalizedPoint]);
 
     useEffect(() => {
         return () => {
@@ -362,12 +380,13 @@ export default function PresentationViewer({
     useEffect(() => {
         const handleResize = () => {
             if (zoom <= 100) return;
-            applyPanByRatio(clampRatio(panRatio.x), clampRatio(panRatio.y));
+            const nextPan = panRatioRef.current;
+            applyPanByRatio(clampRatio(nextPan.x), clampRatio(nextPan.y));
         };
 
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [zoom, panRatio, applyPanByRatio, clampRatio]);
+    }, [zoom, applyPanByRatio, clampRatio]);
 
     useEffect(() => {
         if (zoom <= 100) {
@@ -376,13 +395,16 @@ export default function PresentationViewer({
         }
 
         requestAnimationFrame(() => {
-            applyPanByRatio(panRatio.x, panRatio.y);
+            const nextPan = panRatioRef.current;
+            applyPanByRatio(nextPan.x, nextPan.y);
         });
-    }, [zoom, panRatio, applyPanByRatio]);
+    }, [zoom, applyPanByRatio]);
 
     const handleViewportScroll = useCallback(() => {
         if (zoom <= 100) return;
-        setPanRatio(getCurrentPanRatio());
+        const currentPan = getCurrentPanRatio();
+        panRatioRef.current = currentPan;
+        setPanRatio(currentPan);
     }, [zoom, getCurrentPanRatio]);
 
     const handlePageSubmit = (e: React.FormEvent) => {
@@ -423,6 +445,10 @@ export default function PresentationViewer({
         maxWidth: '100%',
         maxHeight: '100%',
     };
+
+    const zoomScale = zoom / 100;
+    const scaledCanvasWidth = renderedPageSize.width > 0 ? renderedPageSize.width * zoomScale : 0;
+    const scaledCanvasHeight = renderedPageSize.height > 0 ? renderedPageSize.height * zoomScale : 0;
 
     return (
         <div
@@ -498,18 +524,25 @@ export default function PresentationViewer({
                             <div
                                 style={{
                                     position: 'relative',
-                                    width: zoom > 100 ? `${zoom}%` : '100%',
-                                    height: zoom > 100 ? `${zoom}%` : '100%',
+                                    width: scaledCanvasWidth > 0 ? `${scaledCanvasWidth}px` : '100%',
+                                    height: scaledCanvasHeight > 0 ? `${scaledCanvasHeight}px` : '100%',
                                     minWidth: '100%',
                                     minHeight: '100%',
                                 }}
-                                className="transition-all duration-200 ease-out flex items-center justify-center"
+                                className="transition-all duration-200 ease-out"
                             >
                                 <canvas
                                     ref={canvasRef}
                                     onClick={handleCanvasClick}
                                     className={enableCoordinatePick ? 'cursor-crosshair' : 'cursor-default'}
                                     title={enableCoordinatePick ? 'Click to capture normalized coordinates' : 'Presentation Preview'}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        transformOrigin: 'top left',
+                                        transform: `scale(${zoomScale})`,
+                                    }}
                                 />
                             </div>
                         </div>
