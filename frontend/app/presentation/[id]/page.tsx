@@ -21,14 +21,19 @@ type RegionType = "TOP_LEFT" | "TOP_RIGHT" | "CENTER" | "BOTTOM_LEFT" | "BOTTOM_
 type FocusTargetType = "GRAPH" | "TEXT" | "MAP" | "FIGURE" | "CYCLE" | "PARAGRAPH";
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE" | "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM" | "ZOOM_TO_REGION" | "ZOOM_TO_TARGET";
 type ZoomCommandIntent = "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM";
-type SlideRegionMapping = Partial<Record<number, Partial<Record<RegionType, { x: number; y: number; minZoom?: number }>>>>;
+type RegionCoord = { x: number; y: number; minZoom?: number };
+type SlideRegionMapping = Partial<Record<number, Partial<Record<RegionType, RegionCoord>>>>;
 type SlideTargetMapping = Partial<Record<number, Partial<Record<Exclude<FocusTargetType, "PARAGRAPH">, RegionType>>>>;
 type SlideParagraphMapping = Partial<Record<number, Partial<Record<number, RegionType>>> >;
+type SlideTargetCoordMapping = Partial<Record<number, Partial<Record<Exclude<FocusTargetType, "PARAGRAPH">, RegionCoord>>>>;
+type SlideParagraphCoordMapping = Partial<Record<number, Partial<Record<number, RegionCoord>>> >;
 
 // Manual per-slide region mapping scaffold. Keep empty for now and add entries incrementally.
 const REGION_MAPPING_BY_SLIDE: SlideRegionMapping = {};
 const TARGET_MAPPING_BY_SLIDE: SlideTargetMapping = {};
 const PARAGRAPH_MAPPING_BY_SLIDE: SlideParagraphMapping = {};
+const TARGET_COORD_MAPPING_BY_SLIDE: SlideTargetCoordMapping = {};
+const PARAGRAPH_COORD_MAPPING_BY_SLIDE: SlideParagraphCoordMapping = {};
 const TARGET_FALLBACK_REGION: Record<FocusTargetType, RegionType> = {
     GRAPH: "CENTER",
     TEXT: "TOP_LEFT",
@@ -179,6 +184,9 @@ export default function RealTimePresentationPage() {
     const [zoomCommandSequence, setZoomCommandSequence] = useState(0);
     const [regionCommand, setRegionCommand] = useState<RegionType | null>(null);
     const [regionCommandSequence, setRegionCommandSequence] = useState(0);
+    const [focusCommand, setFocusCommand] = useState<RegionCoord | null>(null);
+    const [focusCommandSequence, setFocusCommandSequence] = useState(0);
+    const [isCalibrationMode, setIsCalibrationMode] = useState(false);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -194,6 +202,12 @@ export default function RealTimePresentationPage() {
     useEffect(() => {
         totalPagesRef.current = totalPages;
     }, [totalPages]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        const params = new URLSearchParams(window.location.search);
+        setIsCalibrationMode(params.get("calibrate") === "1");
+    }, []);
 
     // Fetch presentation details
     useEffect(() => {
@@ -301,13 +315,22 @@ export default function RealTimePresentationPage() {
         } else if (intent === "ZOOM_TO_TARGET" && focus_target) {
             const currentSlide = currentPageRef.current;
             let resolvedRegion: RegionType | undefined;
+            let resolvedCoord: RegionCoord | undefined;
 
             if (focus_target === "PARAGRAPH" && focus_index) {
+                resolvedCoord = PARAGRAPH_COORD_MAPPING_BY_SLIDE[currentSlide]?.[focus_index];
                 resolvedRegion = PARAGRAPH_MAPPING_BY_SLIDE[currentSlide]?.[focus_index];
             }
 
             if (!resolvedRegion && focus_target !== "PARAGRAPH") {
+                resolvedCoord = TARGET_COORD_MAPPING_BY_SLIDE[currentSlide]?.[focus_target];
                 resolvedRegion = TARGET_MAPPING_BY_SLIDE[currentSlide]?.[focus_target];
+            }
+
+            if (resolvedCoord) {
+                setFocusCommand(resolvedCoord);
+                setFocusCommandSequence(prev => prev + 1);
+                return;
             }
 
             if (!resolvedRegion) {
@@ -318,6 +341,19 @@ export default function RealTimePresentationPage() {
             setRegionCommandSequence(prev => prev + 1);
         }
     }, [goToPage, handleNextPage, handlePrevPage]);
+
+    const handleCoordinatePick = useCallback((coord: RegionCoord) => {
+        const currentSlide = currentPageRef.current;
+        const snippet = `\n  ${currentSlide}: { x: ${coord.x.toFixed(4)}, y: ${coord.y.toFixed(4)}, minZoom: ${Math.round(coord.minZoom ?? 180)} },`;
+        console.info(`[Calibration] Add this mapping entry:${snippet}`);
+        setLiveFeedback(`Calibration: slide ${currentSlide} -> x=${coord.x.toFixed(4)}, y=${coord.y.toFixed(4)} (copied to clipboard)`);
+
+        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+            navigator.clipboard.writeText(snippet).catch(() => {
+                console.warn("[Calibration] Clipboard write failed.");
+            });
+        }
+    }, []);
 
     // WebSocket Initialization
     useEffect(() => {
@@ -637,7 +673,10 @@ export default function RealTimePresentationPage() {
                             aspectRatio={aspectRatio}
                             zoomCommand={zoomCommand ? { action: zoomCommand, sequence: zoomCommandSequence } : null}
                             regionCommand={regionCommand ? { region: regionCommand, sequence: regionCommandSequence } : null}
+                            focusCommand={focusCommand ? { coord: focusCommand, sequence: focusCommandSequence } : null}
                             regionMapping={REGION_MAPPING_BY_SLIDE}
+                            enableCoordinatePick={isCalibrationMode}
+                            onCoordinatePick={handleCoordinatePick}
                         />
 
 

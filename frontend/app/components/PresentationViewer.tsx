@@ -10,6 +10,14 @@ import {
     Minus
 } from "lucide-react";
 
+type RegionType = 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+
+type RegionCoord = {
+    x: number;
+    y: number;
+    minZoom?: number;
+};
+
 interface PresentationViewerProps {
     fileUrl: string | null;
     fileType: string | null;
@@ -27,14 +35,16 @@ interface PresentationViewerProps {
         sequence: number;
     } | null;
     regionCommand?: {
-        region: 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+        region: RegionType;
         sequence: number;
     } | null;
-    regionMapping?: Partial<Record<number, Partial<Record<'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT', {
-        x: number;
-        y: number;
-        minZoom?: number;
-    }>>>>;
+    focusCommand?: {
+        coord: RegionCoord;
+        sequence: number;
+    } | null;
+    regionMapping?: Partial<Record<number, Partial<Record<RegionType, RegionCoord>>>>;
+    enableCoordinatePick?: boolean;
+    onCoordinatePick?: (coord: RegionCoord) => void;
 }
 
 export default function PresentationViewer({
@@ -50,17 +60,35 @@ export default function PresentationViewer({
     aspectRatio = null,
     zoomCommand = null,
     regionCommand = null,
-    regionMapping = {}
+    focusCommand = null,
+    regionMapping = {},
+    enableCoordinatePick = false,
+    onCoordinatePick
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
     const [zoom, setZoom] = useState<number>(100);
     const [panRatio, setPanRatio] = useState({ x: 0.5, y: 0.5 });
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
     const viewportRef = useRef<HTMLDivElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const zoomAction = zoomCommand?.action;
     const zoomSequence = zoomCommand?.sequence;
     const region = regionCommand?.region;
     const regionSequence = regionCommand?.sequence;
+    const focusCoord = focusCommand?.coord;
+    const focusSequence = focusCommand?.sequence;
+    const [pdfDoc, setPdfDoc] = useState<any>(null);
+    const [isRenderingPdf, setIsRenderingPdf] = useState(false);
+    const [renderTrigger, setRenderTrigger] = useState(0);
+    const renderTaskRef = useRef<any>(null);
+
+    const REGION_DEFAULTS: Record<RegionType, RegionCoord> = {
+        TOP_LEFT: { x: 0.18, y: 0.18, minZoom: 180 },
+        TOP_RIGHT: { x: 0.82, y: 0.18, minZoom: 180 },
+        CENTER: { x: 0.5, y: 0.5, minZoom: 180 },
+        BOTTOM_LEFT: { x: 0.18, y: 0.82, minZoom: 180 },
+        BOTTOM_RIGHT: { x: 0.82, y: 0.82, minZoom: 180 },
+    };
 
     useEffect(() => {
         setOrientation(initialOrientation);
@@ -143,48 +171,193 @@ export default function PresentationViewer({
         }
     }, [zoomAction, zoomSequence, handleZoomIn, handleZoomOut, resetZoom]);
 
-    const getRegionRatio = useCallback((region: 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT') => {
+    const centerOnNormalizedPoint = useCallback((nx: number, ny: number, behavior: ScrollBehavior = 'smooth') => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
 
-        const xMap: Record<string, number> = {
-            TOP_LEFT: 0,
-            TOP_RIGHT: 1,
-            CENTER: 0.5,
-            BOTTOM_LEFT: 0,
-            BOTTOM_RIGHT: 1,
-        };
+        const clampedX = clampRatio(nx);
+        const clampedY = clampRatio(ny);
+        const targetLeft = clampedX * viewport.scrollWidth - viewport.clientWidth / 2;
+        const targetTop = clampedY * viewport.scrollHeight - viewport.clientHeight / 2;
 
-        const yMap: Record<string, number> = {
-            TOP_LEFT: 0,
-            TOP_RIGHT: 0,
-            CENTER: 0.5,
-            BOTTOM_LEFT: 1,
-            BOTTOM_RIGHT: 1,
-        };
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
 
-        return {
-            x: xMap[region],
-            y: yMap[region],
-        };
-    }, []);
+        viewport.scrollTo({
+            left: Math.max(0, Math.min(targetLeft, maxScrollLeft)),
+            top: Math.max(0, Math.min(targetTop, maxScrollTop)),
+            behavior,
+        });
+    }, [clampRatio]);
+
+    const zoomToPoint = useCallback((coord: RegionCoord) => {
+        const nx = clampRatio(coord.x);
+        const ny = clampRatio(coord.y);
+        const minZoom = coord.minZoom ?? 180;
+
+        setPanRatio({ x: nx, y: ny });
+        setZoom(prev => Math.max(prev, minZoom));
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                centerOnNormalizedPoint(nx, ny, 'smooth');
+            });
+        });
+    }, [centerOnNormalizedPoint, clampRatio]);
 
     useEffect(() => {
         if (!region) return;
 
         const slideMapping = regionMapping[currentPage]?.[region];
-        const regionRatio = slideMapping
-            ? { x: clampRatio(slideMapping.x), y: clampRatio(slideMapping.y) }
-            : getRegionRatio(region);
-        const targetMinZoom = slideMapping?.minZoom ?? 180;
+        const coords = slideMapping ?? REGION_DEFAULTS[region];
+        zoomToPoint(coords);
+    }, [region, regionSequence, currentPage, regionMapping, zoomToPoint]);
 
-        setPanRatio(regionRatio);
-        setZoom(prev => Math.max(prev, targetMinZoom));
+    useEffect(() => {
+        if (!focusCoord) return;
+        zoomToPoint(focusCoord);
+    }, [focusCoord, focusSequence, zoomToPoint]);
 
-        requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                applyPanByRatio(regionRatio.x, regionRatio.y, 'smooth');
-            });
-        });
-    }, [region, regionSequence, currentPage, regionMapping, getRegionRatio, applyPanByRatio, clampRatio]);
+    useEffect(() => {
+        if (!fileUrl || fileType !== 'pdf') return;
+
+        let cancelled = false;
+
+        const loadPdf = async () => {
+            try {
+                let pdfjsLib: any;
+                try {
+                    pdfjsLib = await import('pdfjs-dist');
+                } catch (importErr) {
+                    console.warn('[PDFViewer] Local pdfjs-dist not found, falling back to CDN import.', importErr);
+                    pdfjsLib = await import(
+                        /* webpackIgnore: true */
+                        'https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.min.mjs'
+                    );
+                }
+
+                if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+                }
+
+                const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
+                const doc = await pdfjsLib.getDocument(url).promise;
+                if (!cancelled) {
+                    setPdfDoc(doc);
+                    setRenderTrigger(t => t + 1);
+                }
+            } catch (e) {
+                console.error('[PDFViewer] Failed to load document:', e);
+            }
+        };
+
+        loadPdf();
+        return () => {
+            cancelled = true;
+            setPdfDoc(null);
+        };
+    }, [fileUrl, fileType]);
+
+    useEffect(() => {
+        if (pdfDoc) setRenderTrigger(t => t + 1);
+    }, [currentPage, pdfDoc]);
+
+    useEffect(() => {
+        if (!pdfDoc || fileType !== 'pdf') return;
+
+        let cancelled = false;
+
+        const renderPage = async () => {
+            const canvas = canvasRef.current;
+            const viewportEl = viewportRef.current;
+            if (!canvas || !viewportEl) return;
+
+            setIsRenderingPdf(true);
+            try {
+                if (renderTaskRef.current) {
+                    try {
+                        renderTaskRef.current.cancel();
+                        await renderTaskRef.current.promise.catch(() => undefined);
+                    } finally {
+                        renderTaskRef.current = null;
+                    }
+                }
+
+                const page = await pdfDoc.getPage(currentPage);
+                if (cancelled) return;
+
+                const baseViewport = page.getViewport({ scale: 1 });
+                const availableWidth = Math.max(320, viewportEl.clientWidth - 8);
+                const availableHeight = Math.max(180, viewportEl.clientHeight - 8);
+                const fitScale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
+                const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+
+                const displayViewport = page.getViewport({ scale: fitScale });
+                const renderViewport = page.getViewport({ scale: fitScale * dpr });
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                canvas.width = Math.floor(renderViewport.width);
+                canvas.height = Math.floor(renderViewport.height);
+                canvas.style.width = `${displayViewport.width}px`;
+                canvas.style.height = `${displayViewport.height}px`;
+
+                const renderTask = page.render({
+                    canvasContext: ctx,
+                    viewport: renderViewport,
+                });
+
+                renderTaskRef.current = renderTask;
+                await renderTask.promise;
+
+                if (renderTaskRef.current === renderTask) {
+                    renderTaskRef.current = null;
+                }
+            } catch (e) {
+                const errorName = (e as { name?: string } | null)?.name;
+                if (!cancelled && errorName !== 'RenderingCancelledException') {
+                    console.error('[PDFViewer] Render error:', e);
+                }
+            } finally {
+                if (!cancelled) setIsRenderingPdf(false);
+            }
+        };
+
+        renderPage();
+        return () => {
+            cancelled = true;
+            if (renderTaskRef.current) {
+                renderTaskRef.current.cancel();
+            }
+        };
+    }, [renderTrigger, pdfDoc, fileType, currentPage]);
+
+    useEffect(() => {
+        return () => {
+            if (renderTaskRef.current) {
+                renderTaskRef.current.cancel();
+                renderTaskRef.current = null;
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!pdfDoc) return;
+        const onResize = () => setRenderTrigger(t => t + 1);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [pdfDoc]);
+
+    const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!enableCoordinatePick || !onCoordinatePick) return;
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
+        const nx = clampRatio((event.clientX - rect.left) / rect.width);
+        const ny = clampRatio((event.clientY - rect.top) / rect.height);
+        onCoordinatePick({ x: nx, y: ny, minZoom: Math.max(zoom, 180) });
+    }, [enableCoordinatePick, onCoordinatePick, clampRatio, zoom]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -233,12 +406,6 @@ export default function PresentationViewer({
             onPageChange(currentPage - 1);
         }
     }, [currentPage, onPageChange]);
-
-    const getIframeSrc = () => {
-        const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
-        const fragments = `#page=${currentPage}&view=Fit&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0`;
-        return `${baseUrl}${fragments}`;
-    };
 
     // Portrait + zoomed -> switch to landscape display for better viewing
     const displayAsLandscape = orientation === 'landscape' || (orientation === 'portrait' && zoom > 100);
@@ -328,48 +495,40 @@ export default function PresentationViewer({
                             className="flex-1 relative select-none overflow-auto"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                         >
-                            {/*
-                              Scale container: overflow:hidden clips the browser PDF toolbar.
-                              The iframe sits at top:-56px so the ~40px browser toolbar is pushed
-                              above the container boundary and hidden. height:calc(100%+76px)
-                              fills the gap (56px top + 20px bottom). width:calc(100%+20px)
-                              clips the right scrollbar.
-                            */}
                             <div
                                 style={{
                                     position: 'relative',
                                     width: zoom > 100 ? `${zoom}%` : '100%',
                                     height: zoom > 100 ? `${zoom}%` : '100%',
-                                    overflow: 'hidden',
+                                    minWidth: '100%',
+                                    minHeight: '100%',
                                 }}
-                                className="transition-all duration-200 ease-out"
+                                className="transition-all duration-200 ease-out flex items-center justify-center"
                             >
-                                <iframe
-                                    key={`${currentPage}-${displayAsLandscape ? 'landscape' : 'portrait'}`}
-                                    src={getIframeSrc()}
-                                    className="border-none pointer-events-none absolute"
-                                    title="Presentation Preview"
-                                    style={{
-                                        top: '-56px',
-                                        left: 0,
-                                        width: 'calc(100% + 20px)',
-                                        height: 'calc(100% + 56px)', // Adjusted to exactly match top offset, prevents bottom clipping
-                                        display: 'block',
-                                    } as React.CSSProperties}
+                                <canvas
+                                    ref={canvasRef}
+                                    onClick={handleCanvasClick}
+                                    className={enableCoordinatePick ? 'cursor-crosshair' : 'cursor-default'}
+                                    title={enableCoordinatePick ? 'Click to capture normalized coordinates' : 'Presentation Preview'}
                                 />
                             </div>
                         </div>
 
                         {/* Loading overlay */}
                         <AnimatePresence mode="wait">
-                            {isLoading && (
+                            {(isLoading || isRenderingPdf) && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                     className="absolute inset-0 bg-[#050505] flex items-center justify-center z-40"
                                 >
-                                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    <div className="text-center">
+                                        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                                        <p className="mt-3 text-xs text-zinc-400 uppercase tracking-widest">
+                                            {isRenderingPdf ? 'Rendering...' : 'Loading...'}
+                                        </p>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
