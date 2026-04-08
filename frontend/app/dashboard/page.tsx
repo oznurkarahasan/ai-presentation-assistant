@@ -1,7 +1,8 @@
 'use client';
 
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
     Presentation,
     FileText,
@@ -17,6 +18,15 @@ import client from "../api/client";
 import axios from "axios";
 
 export default function DashboardPage() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        if (searchParams.get('tab') === 'planner') {
+            router.replace('/dashboard/planner');
+        }
+    }, [router, searchParams]);
+
     const {
         activeTab,
         presentations,
@@ -217,15 +227,6 @@ export default function DashboardPage() {
 
             {/* Ideas — placeholders */}
             {(activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals') && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="min-h-[40vh]"
-                />
-            )}
-
-            {/* Planner Tab — placeholder */}
-            {activeTab === 'planner' && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

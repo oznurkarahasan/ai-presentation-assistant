@@ -23,6 +23,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
     return (
@@ -49,7 +50,46 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
     );
 }
 
+function NavLinkItem({
+    href,
+    icon,
+    label,
+    active,
+    onNavigate,
+}: {
+    href: string;
+    icon: React.ReactNode;
+    label: string;
+    active: boolean;
+    onNavigate: () => void;
+}) {
+    return (
+        <Link
+            href={href}
+            onClick={onNavigate}
+            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 relative group overflow-hidden ${active
+                ? 'text-white'
+                : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+        >
+            {active && (
+                <motion.div
+                    layoutId="nav-bg"
+                    className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent border-l-4 border-primary z-0"
+                />
+            )}
+            <div className={`relative z-10 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
+                {icon}
+            </div>
+            <span className={`relative z-10 font-semibold text-sm tracking-tight transition-all duration-300 ${active ? 'ml-1' : ''}`}>
+                {label}
+            </span>
+        </Link>
+    );
+}
+
 function Sidebar() {
+    const pathname = usePathname();
     const { activeTab, setActiveTab, sidebarOpen, setSidebarOpen, handleLogout } = useDashboard();
 
     return (
@@ -124,11 +164,12 @@ function Sidebar() {
                         <div className="pt-4 pb-2 px-4">
                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Actions</span>
                         </div>
-                        <NavItem
+                        <NavLinkItem
+                            href="/dashboard/planner"
                             icon={<CalendarDays size={20} />}
                             label="Planner"
-                            active={activeTab === 'planner'}
-                            onClick={() => { setActiveTab('planner'); setSidebarOpen(false); }}
+                            active={pathname === '/dashboard/planner'}
+                            onNavigate={() => setSidebarOpen(false)}
                         />
                         <Link href="/upload" onClick={() => setSidebarOpen(false)}>
                             <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-zinc-500 hover:text-zinc-300 transition-all font-semibold text-sm h-[52px]">
