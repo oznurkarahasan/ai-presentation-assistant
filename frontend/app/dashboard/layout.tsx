@@ -91,6 +91,8 @@ function NavLinkItem({
 function Sidebar() {
     const pathname = usePathname();
     const { activeTab, setActiveTab, sidebarOpen, setSidebarOpen, handleLogout } = useDashboard();
+    /** Tab state only applies on the main dashboard page; sub-routes (e.g. planner) must not inherit a tab highlight. */
+    const onDashboardHome = pathname === '/dashboard';
 
     return (
         <AnimatePresence>
@@ -117,20 +119,20 @@ function Sidebar() {
                         <NavItem
                             icon={<LayoutDashboard size={20} />}
                             label="Overview"
-                            active={activeTab === 'overview'}
+                            active={onDashboardHome && activeTab === 'overview'}
                             onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<Presentation size={20} />}
                             label="My Presentations"
-                            active={activeTab === 'presentations'}
+                            active={onDashboardHome && activeTab === 'presentations'}
                             onClick={() => { setActiveTab('presentations'); setSidebarOpen(false); }}
                         />
                         
                         <NavItem
                             icon={<History size={20} />}
                             label="Sessions"
-                            active={activeTab === 'sessions'}
+                            active={onDashboardHome && activeTab === 'sessions'}
                             onClick={() => { setActiveTab('sessions'); setSidebarOpen(false); }}
                         />
  
@@ -140,25 +142,25 @@ function Sidebar() {
                         <NavItem
                             icon={<Lightbulb size={20} />}
                             label="Topic ideas"
-                            active={activeTab === 'ideas-topics'}
+                            active={onDashboardHome && activeTab === 'ideas-topics'}
                             onClick={() => { setActiveTab('ideas-topics'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<MessageSquareQuote size={20} />}
                             label="Hooks & openings"
-                            active={activeTab === 'ideas-hooks'}
+                            active={onDashboardHome && activeTab === 'ideas-hooks'}
                             onClick={() => { setActiveTab('ideas-hooks'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<Palette size={20} />}
                             label="Visual direction"
-                            active={activeTab === 'ideas-visuals'}
+                            active={onDashboardHome && activeTab === 'ideas-visuals'}
                             onClick={() => { setActiveTab('ideas-visuals'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<Sparkles size={20} />}
                             label="AI Presentation"
-                            active={activeTab === 'ai-presentation'}
+                            active={onDashboardHome && activeTab === 'ai-presentation'}
                             onClick={() => { setActiveTab('ai-presentation'); setSidebarOpen(false); }}
                         />
                         <div className="pt-4 pb-2 px-4">
@@ -257,6 +259,8 @@ function Header() {
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const { loading, sidebarOpen, setSidebarOpen } = useDashboard();
+    const pathname = usePathname();
+    const showDashboardHeader = pathname !== '/dashboard/planner';
 
     if (loading) {
         return (
@@ -285,9 +289,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
             <Sidebar />
 
-            <main className="flex-1 overflow-y-auto relative z-10 px-6 py-8 lg:px-12">
+            <main
+                className={`flex-1 overflow-y-auto relative z-10 px-6 lg:px-12 ${showDashboardHeader ? 'py-8' : 'py-6'}`}
+            >
                 <div className="max-w-[1400px] mx-auto">
-                    <Header />
+                    {showDashboardHeader && <Header />}
                     {children}
                 </div>
             </main>
