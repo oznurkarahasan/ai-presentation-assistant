@@ -6,6 +6,11 @@ import {
     LayoutDashboard,
     Presentation,
     History,
+    CalendarDays,
+    Lightbulb,
+    MessageSquareQuote,
+    Palette,
+    Sparkles,
     Settings,
     LogOut,
     Upload,
@@ -81,15 +86,50 @@ function Sidebar() {
                             active={activeTab === 'presentations'}
                             onClick={() => { setActiveTab('presentations'); setSidebarOpen(false); }}
                         />
+                        
                         <NavItem
                             icon={<History size={20} />}
-                            label="History"
+                            label="Sessions"
                             active={activeTab === 'sessions'}
                             onClick={() => { setActiveTab('sessions'); setSidebarOpen(false); }}
+                        />
+ 
+                        <div className="pt-4 pb-2 px-4">
+                            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Ideas</span>
+                        </div>
+                        <NavItem
+                            icon={<Lightbulb size={20} />}
+                            label="Topic ideas"
+                            active={activeTab === 'ideas-topics'}
+                            onClick={() => { setActiveTab('ideas-topics'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<MessageSquareQuote size={20} />}
+                            label="Hooks & openings"
+                            active={activeTab === 'ideas-hooks'}
+                            onClick={() => { setActiveTab('ideas-hooks'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<Palette size={20} />}
+                            label="Visual direction"
+                            active={activeTab === 'ideas-visuals'}
+                            onClick={() => { setActiveTab('ideas-visuals'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<Sparkles size={20} />}
+                            label="AI Presentation"
+                            active={activeTab === 'ai-presentation'}
+                            onClick={() => { setActiveTab('ai-presentation'); setSidebarOpen(false); }}
                         />
                         <div className="pt-4 pb-2 px-4">
                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Actions</span>
                         </div>
+                        <NavItem
+                            icon={<CalendarDays size={20} />}
+                            label="Planner"
+                            active={activeTab === 'planner'}
+                            onClick={() => { setActiveTab('planner'); setSidebarOpen(false); }}
+                        />
                         <Link href="/upload" onClick={() => setSidebarOpen(false)}>
                             <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-zinc-500 hover:text-zinc-300 transition-all font-semibold text-sm h-[52px]">
                                 <Upload size={20} />

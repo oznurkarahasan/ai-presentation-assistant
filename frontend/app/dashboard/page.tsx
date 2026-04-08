@@ -206,6 +206,33 @@ export default function DashboardPage() {
                 </motion.div>
             )}
 
+            {/* AI Presentation — placeholder */}
+            {activeTab === 'ai-presentation' && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="min-h-[40vh]"
+                />
+            )}
+
+            {/* Ideas — placeholders */}
+            {(activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals') && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="min-h-[40vh]"
+                />
+            )}
+
+            {/* Planner Tab — placeholder */}
+            {activeTab === 'planner' && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="min-h-[40vh]"
+                />
+            )}
+
             {/* Sessions Tab */}
             {activeTab === 'sessions' && (
                 <motion.div
