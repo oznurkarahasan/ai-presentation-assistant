@@ -19,6 +19,7 @@ import {
     Search,
     Bell,
     User,
+    BarChart,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -162,6 +163,12 @@ function Sidebar() {
                             label="AI Presentation"
                             active={onDashboardHome && activeTab === 'ai-presentation'}
                             onClick={() => { setActiveTab('ai-presentation'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<BarChart size={20} />}
+                            label="AI Analysis"
+                            active={onDashboardHome && activeTab === 'ai-analysis'}
+                            onClick={() => { setActiveTab('ai-analysis'); setSidebarOpen(false); }}
                         />
                         <div className="pt-4 pb-2 px-4">
                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Actions</span>
