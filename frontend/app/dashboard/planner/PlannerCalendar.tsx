@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNote, X, Check, Zap, Presentation, ChevronDown } from 'lucide-react';
 import { useDashboard, RecentPresentation } from '../DashboardContext';
 import { motion } from 'framer-motion';
+import client from '../../api/client';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
 const WEEKDAYS_SHORT = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] as const;
@@ -20,6 +21,16 @@ interface ScheduledEvent {
     time: string;
     notificationTime?: string;
     note?: string;
+}
+
+interface PlannerApiEvent {
+    id: number;
+    presentation_id: number;
+    presentation_title: string;
+    scheduled_date: string;
+    scheduled_time: string;
+    reminder_time?: string | null;
+    note?: string | null;
 }
 
 function addDays(d: Date, n: number): Date {
@@ -83,7 +94,7 @@ export default function PlannerCalendar() {
     });
     const [weekStart, setWeekStart] = useState(() => startOfWeekMonday(new Date()));
     const [selected, setSelected] = useState<Date | null>(null);
-    const { presentations } = useDashboard();
+    const { presentations, setAlert } = useDashboard();
 
     // Scheduling State
     const [events, setEvents] = useState<Record<string, ScheduledEvent[]>>({});
@@ -213,21 +224,73 @@ export default function PlannerCalendar() {
         setUseReminder(true);
     };
 
-    const confirmEvent = () => {
-        if (!selected || !tempEvent.presentation || !tempEvent.time) return;
-        const key = toDateKey(selected);
-        const newEvent: ScheduledEvent = {
-            id: Math.random().toString(36).substr(2, 9),
-            presentation: tempEvent.presentation,
-            time: tempEvent.time,
-            notificationTime: tempEvent.notificationTime,
-            note: tempEvent.note
+    const toScheduledEvent = useCallback((apiEvent: PlannerApiEvent): ScheduledEvent => {
+        const presentation = presentations.find((p) => p.id === apiEvent.presentation_id) ?? {
+            id: apiEvent.presentation_id,
+            title: apiEvent.presentation_title,
+            file_name: '',
+            file_type: 'unknown',
+            slide_count: 0,
+            status: 'scheduled',
+            created_at: new Date().toISOString(),
         };
-        setEvents(prev => ({
-            ...prev,
-            [key]: [...(prev[key] || []), newEvent]
-        }));
-        setIsAdding(false);
+
+        return {
+            id: String(apiEvent.id),
+            presentation,
+            time: apiEvent.scheduled_time,
+            notificationTime: apiEvent.reminder_time ?? undefined,
+            note: apiEvent.note ?? undefined,
+        };
+    }, [presentations]);
+
+    const loadPlannerEvents = useCallback(async () => {
+        try {
+            const response = await client.get<PlannerApiEvent[]>('/api/v1/planner/events');
+            const grouped = response.data.reduce<Record<string, ScheduledEvent[]>>((acc, event) => {
+                const key = event.scheduled_date;
+                const mapped = toScheduledEvent(event);
+                if (!acc[key]) acc[key] = [];
+                acc[key].push(mapped);
+                return acc;
+            }, {});
+            setEvents(grouped);
+        } catch {
+            setAlert({ type: 'error', message: 'Planner events could not be loaded.' });
+        }
+    }, [setAlert, toScheduledEvent]);
+
+    useEffect(() => {
+        const frameId = window.requestAnimationFrame(() => {
+            void loadPlannerEvents();
+        });
+
+        return () => window.cancelAnimationFrame(frameId);
+    }, [loadPlannerEvents]);
+
+    const confirmEvent = async () => {
+        if (!selected || !tempEvent.presentation || !tempEvent.time) return;
+        const scheduledDate = toDateKey(selected);
+
+        try {
+            const response = await client.post<PlannerApiEvent>('/api/v1/planner/events', {
+                presentation_id: tempEvent.presentation.id,
+                scheduled_date: scheduledDate,
+                scheduled_time: tempEvent.time,
+                reminder_time: tempEvent.notificationTime || undefined,
+                note: tempEvent.note || undefined,
+            });
+
+            const created = toScheduledEvent(response.data);
+            setEvents((prev) => ({
+                ...prev,
+                [scheduledDate]: [...(prev[scheduledDate] || []), created],
+            }));
+            setIsAdding(false);
+            setAlert({ type: 'info', message: 'Event saved to planner.' });
+        } catch {
+            setAlert({ type: 'error', message: 'Event could not be saved.' });
+        }
     };
 
     const dayFocus = selected ?? startOfDay(new Date());

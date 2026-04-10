@@ -19,6 +19,7 @@ from app.core.exceptions import (
     ValidationError
 )
 from app.api.v1 import auth, presentations, chat, orchestration
+from app.api.v1.dashboard.planner import planner
 
 # Lifespan event to create tables and extensions
 @asynccontextmanager
@@ -137,6 +138,7 @@ app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Aut
 app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presentations", tags=["Presentations"])
 app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
 app.include_router(orchestration.router, prefix=settings.API_V1_STR + "/orchestration", tags=["Orchestration"])
+app.include_router(planner.router, prefix=settings.API_V1_STR + "/planner", tags=["Planner"])
 
 
 @app.get("/")
