@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNote, X, Check, Zap, Presentation, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNote, X, Check, Zap, Presentation, ChevronDown, BellOff, Trash2 } from 'lucide-react';
 import { useDashboard, RecentPresentation } from '../DashboardContext';
 import { motion } from 'framer-motion';
 import client from '../../api/client';
@@ -29,6 +29,7 @@ interface PlannerApiEvent {
     presentation_title: string;
     scheduled_date: string;
     scheduled_time: string;
+    reminder_date?: string | null;
     reminder_time?: string | null;
     note?: string | null;
 }
@@ -67,6 +68,31 @@ function toDateKey(d: Date): string {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+}
+
+function parseDateKey(dateKey: string): { year: number; month: number; day: number } {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return { year, month, day };
+}
+
+function localToUtcParts(dateKey: string, time: string): { date: string; time: string } {
+    const { year, month, day } = parseDateKey(dateKey);
+    const [hour, minute] = time.split(':').map(Number);
+    const local = new Date(year, month - 1, day, hour, minute, 0, 0);
+    return {
+        date: `${local.getUTCFullYear()}-${String(local.getUTCMonth() + 1).padStart(2, '0')}-${String(local.getUTCDate()).padStart(2, '0')}`,
+        time: `${String(local.getUTCHours()).padStart(2, '0')}:${String(local.getUTCMinutes()).padStart(2, '0')}`,
+    };
+}
+
+function utcToLocalParts(dateKey: string, time: string): { date: string; time: string } {
+    const { year, month, day } = parseDateKey(dateKey);
+    const [hour, minute] = time.split(':').map(Number);
+    const utc = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
+    return {
+        date: toDateKey(utc),
+        time: `${String(utc.getHours()).padStart(2, '0')}:${String(utc.getMinutes()).padStart(2, '0')}`,
+    };
 }
 
 function buildMonthCells(viewYear: number, viewMonth: number): (number | null)[] {
@@ -225,6 +251,11 @@ export default function PlannerCalendar() {
     };
 
     const toScheduledEvent = useCallback((apiEvent: PlannerApiEvent): ScheduledEvent => {
+        const scheduledLocal = utcToLocalParts(apiEvent.scheduled_date, apiEvent.scheduled_time);
+        const reminderLocal = apiEvent.reminder_time
+            ? utcToLocalParts(apiEvent.reminder_date || apiEvent.scheduled_date, apiEvent.reminder_time)
+            : null;
+
         const presentation = presentations.find((p) => p.id === apiEvent.presentation_id) ?? {
             id: apiEvent.presentation_id,
             title: apiEvent.presentation_title,
@@ -238,8 +269,8 @@ export default function PlannerCalendar() {
         return {
             id: String(apiEvent.id),
             presentation,
-            time: apiEvent.scheduled_time,
-            notificationTime: apiEvent.reminder_time ?? undefined,
+            time: scheduledLocal.time,
+            notificationTime: reminderLocal?.time ?? undefined,
             note: apiEvent.note ?? undefined,
         };
     }, [presentations]);
@@ -248,7 +279,8 @@ export default function PlannerCalendar() {
         try {
             const response = await client.get<PlannerApiEvent[]>('/api/v1/planner/events');
             const grouped = response.data.reduce<Record<string, ScheduledEvent[]>>((acc, event) => {
-                const key = event.scheduled_date;
+                const scheduledLocal = utcToLocalParts(event.scheduled_date, event.scheduled_time);
+                const key = scheduledLocal.date;
                 const mapped = toScheduledEvent(event);
                 if (!acc[key]) acc[key] = [];
                 acc[key].push(mapped);
@@ -271,13 +303,20 @@ export default function PlannerCalendar() {
     const confirmEvent = async () => {
         if (!selected || !tempEvent.presentation || !tempEvent.time) return;
         const scheduledDate = toDateKey(selected);
+        const scheduledUtc = localToUtcParts(scheduledDate, tempEvent.time);
+        const reminderUtc = tempEvent.notificationTime
+            ? localToUtcParts(scheduledDate, tempEvent.notificationTime)
+            : null;
+        const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
 
         try {
             const response = await client.post<PlannerApiEvent>('/api/v1/planner/events', {
                 presentation_id: tempEvent.presentation.id,
-                scheduled_date: scheduledDate,
-                scheduled_time: tempEvent.time,
-                reminder_time: tempEvent.notificationTime || undefined,
+                scheduled_date: scheduledUtc.date,
+                scheduled_time: scheduledUtc.time,
+                reminder_date: reminderUtc?.date,
+                reminder_time: reminderUtc?.time,
+                timezone: browserTimezone,
                 note: tempEvent.note || undefined,
             });
 
@@ -293,6 +332,44 @@ export default function PlannerCalendar() {
         }
     };
 
+    const removeReminder = async (dateKey: string, eventId: string) => {
+        try {
+            await client.delete(`/api/v1/planner/events/${eventId}/reminder`);
+            setEvents((prev) => ({
+                ...prev,
+                [dateKey]: (prev[dateKey] || []).map((event) =>
+                    event.id === eventId
+                        ? { ...event, notificationTime: undefined }
+                        : event
+                ),
+            }));
+            setAlert({ type: 'info', message: 'Reminder removed.' });
+        } catch {
+            setAlert({ type: 'error', message: 'Reminder could not be removed.' });
+        }
+    };
+
+    const removeEvent = async (dateKey: string, eventId: string) => {
+        try {
+            await client.delete(`/api/v1/planner/events/${eventId}`);
+            setEvents((prev) => {
+                const updatedDayEvents = (prev[dateKey] || []).filter((event) => event.id !== eventId);
+                if (updatedDayEvents.length === 0) {
+                    return Object.fromEntries(
+                        Object.entries(prev).filter(([key]) => key !== dateKey)
+                    );
+                }
+                return {
+                    ...prev,
+                    [dateKey]: updatedDayEvents,
+                };
+            });
+            setAlert({ type: 'info', message: 'Scheduled presentation removed.' });
+        } catch {
+            setAlert({ type: 'error', message: 'Scheduled presentation could not be removed.' });
+        }
+    };
+
     const dayFocus = selected ?? startOfDay(new Date());
     const todayStart = startOfDay(new Date());
     const isToday = (day: number) =>
@@ -302,7 +379,7 @@ export default function PlannerCalendar() {
         selected !== null && isSameDay(selected, new Date(viewYear, viewMonth, day));
 
     const cellClass =
-        'relative min-h-[4.25rem] sm:min-h-[5.5rem] md:min-h-[6.25rem] lg:min-h-[7rem] rounded-xl sm:rounded-2xl text-sm font-semibold transition-all flex items-center justify-center';
+        'relative min-h-[4.25rem] sm:min-h-[5.5rem] md:min-h-[6.25rem] lg:min-h-[7rem] rounded-xl sm:rounded-2xl text-sm font-semibold transition-all';
 
     const selectedHour = isValid24HourTime(tempEvent.time) ? tempEvent.time?.split(':')[0] ?? '09' : '09';
     const selectedMinute = isValid24HourTime(tempEvent.time) ? tempEvent.time?.split(':')[1] ?? '00' : '00';
@@ -488,7 +565,9 @@ export default function PlannerCalendar() {
                                                         : ''}
                                                 `}
                                             >
-                                                {day}
+                                                <span className="absolute left-2 top-2 text-xs font-semibold sm:text-sm">
+                                                    {day}
+                                                </span>
                                                 {isToday(day) && (
                                                     <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary sm:bottom-2" />
                                                 )}
@@ -561,7 +640,9 @@ export default function PlannerCalendar() {
                                                         : ''}
                                                 `}
                                             >
-                                                {d.getDate()}
+                                                <span className="absolute left-2 top-2 text-xs font-semibold sm:text-sm">
+                                                    {d.getDate()}
+                                                </span>
                                                 {today && (
                                                     <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary sm:bottom-2" />
                                                 )}
@@ -621,6 +702,14 @@ export default function PlannerCalendar() {
                                                 <p className="text-sm font-semibold text-white truncate">{ev.presentation.title}</p>
                                                 <p className="text-xs text-zinc-500 truncate">{ev.note || 'No notes added'}</p>
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removeEvent(toDateKey(dayFocus), ev.id)}
+                                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
+                                                title="Remove scheduled presentation"
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </button>
                                         </div>
                                     ))}
                                     {(events[toDateKey(dayFocus)] || []).length === 0 && (
@@ -680,10 +769,27 @@ export default function PlannerCalendar() {
                                                             <div className="flex items-center gap-1 text-primary/70">
                                                                 <Zap className="h-3 w-3" />
                                                                 <span>Alert: {ev.notificationTime}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => removeReminder(toDateKey(selected), ev.id)}
+                                                                    className="ml-1 inline-flex items-center gap-1 rounded-md border border-primary/25 px-1.5 py-0.5 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/10"
+                                                                    title="Remove reminder"
+                                                                >
+                                                                    <BellOff className="h-3 w-3" />
+                                                                    Remove
+                                                                </button>
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeEvent(toDateKey(selected), ev.id)}
+                                                    className="ml-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
+                                                    title="Remove scheduled presentation"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
                                             </div>
                                             {ev.note && (
                                                 <p className="mt-2 text-xs text-zinc-400 border-t border-white/5 pt-2 flex items-start gap-1.5">
@@ -862,10 +968,10 @@ export default function PlannerCalendar() {
                                             <section>
                                                 <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                     <Zap className="h-3 w-3" />
-                                                    Reminder
+                                                    Email Reminder
                                                 </h4>
                                                 <p className="text-xs text-zinc-300">
-                                                    How long before the presentation would you like to receive a reminder?
+                                                    When would you like to receive the reminder email?
                                                 </p>
 
                                                 <div className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
@@ -874,7 +980,7 @@ export default function PlannerCalendar() {
                                                         onClick={applyReminderThirtyMinutesAgo}
                                                         className="w-full rounded-lg border border-primary/35 bg-primary/12 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary/20"
                                                     >
-                                                        Reminder 30 minutes ago
+                                                        Email reminder 30 minutes ago
                                                     </button>
 
                                                     <div className="rounded-lg border border-primary/25 bg-transparent">

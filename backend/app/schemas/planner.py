@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -8,7 +9,9 @@ class PlannerEventCreate(BaseModel):
     presentation_id: int = Field(..., ge=1)
     scheduled_date: date
     scheduled_time: str = Field(..., description="24-hour format HH:MM")
+    reminder_date: Optional[date] = None
     reminder_time: Optional[str] = Field(default=None, description="24-hour format HH:MM")
+    timezone: Optional[str] = Field(default=None, description="IANA timezone, e.g. Europe/Istanbul")
     note: Optional[str] = Field(default=None, max_length=2000)
 
     @field_validator("scheduled_time")
@@ -23,6 +26,20 @@ class PlannerEventCreate(BaseModel):
             return None
         return _validate_24h_time(value)
 
+    @field_validator("timezone")
+    @classmethod
+    def validate_timezone(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            return None
+        try:
+            ZoneInfo(value)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError("Timezone must be a valid IANA timezone") from exc
+        return value
+
 
 class PlannerEventResponse(BaseModel):
     id: int
@@ -30,6 +47,7 @@ class PlannerEventResponse(BaseModel):
     presentation_title: str
     scheduled_date: date
     scheduled_time: str
+    reminder_date: Optional[date]
     reminder_time: Optional[str]
     note: Optional[str]
     created_at: Optional[datetime]

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
-from app.models.presentation import PlannerEvent, Presentation
+from app.models.presentation import PlannerEvent, Presentation, User
 from app.schemas.planner import PlannerEventCreate, PlannerEventResponse
 
 router = APIRouter()
@@ -39,10 +39,18 @@ async def create_planner_event(
     if presentation is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Presentation not found")
 
+    if payload.timezone:
+        user_stmt = select(User).where(User.id == current_user.id)
+        user_result = await db.execute(user_stmt)
+        db_user = user_result.scalar_one_or_none()
+        if db_user is not None:
+            db_user.timezone = payload.timezone
+
     scheduled_at = _parse_datetime_parts(payload.scheduled_date, payload.scheduled_time)
     reminder_at = None
     if payload.reminder_time:
-        reminder_at = _parse_datetime_parts(payload.scheduled_date, payload.reminder_time)
+        reminder_day = payload.reminder_date or payload.scheduled_date
+        reminder_at = _parse_datetime_parts(reminder_day, payload.reminder_time)
 
     event = PlannerEvent(
         user_id=current_user.id,
@@ -61,6 +69,7 @@ async def create_planner_event(
         presentation_title=presentation.title,
         scheduled_date=event.scheduled_at.date(),
         scheduled_time=event.scheduled_at.strftime("%H:%M"),
+        reminder_date=event.reminder_at.date() if event.reminder_at else None,
         reminder_time=event.reminder_at.strftime("%H:%M") if event.reminder_at else None,
         note=event.note,
         created_at=event.created_at,
@@ -100,6 +109,7 @@ async def list_planner_events(
             presentation_title=title,
             scheduled_date=event.scheduled_at.date(),
             scheduled_time=event.scheduled_at.strftime("%H:%M"),
+            reminder_date=event.reminder_at.date() if event.reminder_at else None,
             reminder_time=event.reminder_at.strftime("%H:%M") if event.reminder_at else None,
             note=event.note,
             created_at=event.created_at,
@@ -123,5 +133,25 @@ async def delete_planner_event(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Planner event not found")
 
     await db.delete(event)
+    await db.commit()
+    return None
+
+
+@router.delete("/events/{event_id}/reminder", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_planner_event_reminder(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(auth.get_current_user),
+):
+    stmt = select(PlannerEvent).where(
+        and_(PlannerEvent.id == event_id, PlannerEvent.user_id == current_user.id)
+    )
+    result = await db.execute(stmt)
+    event = result.scalar_one_or_none()
+    if event is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Planner event not found")
+
+    event.reminder_at = None
+    event.reminder_sent_at = None
     await db.commit()
     return None
