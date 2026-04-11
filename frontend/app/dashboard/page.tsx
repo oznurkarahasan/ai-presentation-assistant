@@ -13,13 +13,13 @@ import {
     Play,
     Trash2,
     Eye,
-    PlusCircle,
     ArrowUpRight,
     ChevronDown,
     X,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useDashboard, RecentPresentation } from "./DashboardContext";
+import Sessions from "./sessions/Sessions";
 import client from "../api/client";
 import axios from "axios";
 
@@ -330,35 +330,37 @@ export default function DashboardPage() {
                     animate={{ opacity: 1 }}
                     className="space-y-6"
                 >
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 className="text-3xl font-bold font-display tracking-tight">My Library</h2>
-                            <p className="text-zinc-500 text-sm mt-1">Found a total of {presentations.length} presentations.</p>
-                        </div>
-                        <Link href="/upload">
-                            <button className="bg-primary hover:bg-primary-hover text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-900/20">
-                                <PlusCircle size={20} />
-                                Add New
-                            </button>
-                        </Link>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredPresentations.map((p, i) => (
-                            <PresentationCard
-                                key={p.id}
-                                presentation={p}
-                                index={i}
-                                onDelete={handleDeletePresentation}
-                                onAddToPlanner={openPlannerModal}
-                            />
-                        ))}
-                        {filteredPresentations.length === 0 && (
-                            <div className="col-span-full py-20 bg-zinc-900/20 rounded-[2rem] border border-dashed border-white/5 flex flex-col items-center gap-4 text-zinc-500">
-                                <FileText size={64} className="opacity-10" />
-                                <p>You haven&apos;t added anything to your presentation library yet.</p>
+                    <div className="mt-8 space-y-3">
+                        <p className="px-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">
+                            Found {filteredPresentations.length} presentations
+                        </p>
+                        <div className="bg-[#0C0C0C] border border-white/5 rounded-[2rem] overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="min-w-[760px] w-full text-left">
+                                    <thead>
+                                        <tr className="border-b border-white/5">
+                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Presentation Name</th>
+                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Date</th>
+                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/5">
+                                        {filteredPresentations.map((p, i) => (
+                                            <PresentationCard
+                                                key={p.id}
+                                                presentation={p}
+                                                index={i}
+                                                onDelete={handleDeletePresentation}
+                                                onAddToPlanner={openPlannerModal}
+                                            />
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        )}
+                            {filteredPresentations.length === 0 && (
+                                <div className="py-20 text-center text-zinc-600 italic">No presentations found.</div>
+                            )}
+                        </div>
                     </div>
                 </motion.div>
             )}
@@ -383,51 +385,7 @@ export default function DashboardPage() {
 
             {/* Sessions Tab */}
             {activeTab === 'sessions' && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="space-y-6"
-                >
-                    <h2 className="text-3xl font-bold font-display tracking-tight mb-8">Session History</h2>
-                    <div className="bg-[#0C0C0C] border border-white/5 rounded-[2rem] overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-white/5">
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Presentation</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Type</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Duration</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Date</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-white/5">
-                                {recentSessions.map((s) => (
-                                    <tr key={s.id} className="hover:bg-white/[0.02] transition-colors group">
-                                        <td className="px-8 py-6">
-                                            <div className="font-semibold text-sm">{s.presentation.title}</div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${s.session_type === 'rehearsal' ? 'bg-blue-500/10 text-blue-500' : 'bg-emerald-500/10 text-emerald-500'
-                                                }`}>
-                                                {s.session_type === 'rehearsal' ? 'Rehearsal' : 'Live'}
-                                            </span>
-                                        </td>
-                                        <td className="px-8 py-6 text-sm text-zinc-400">{s.duration_minutes} min</td>
-                                        <td className="px-8 py-6 text-sm text-zinc-400">{new Date(s.started_at).toLocaleDateString('en-US')}</td>
-                                        <td className="px-8 py-6 text-right">
-                                            <button className="text-zinc-500 hover:text-white p-2 rounded-lg hover:bg-white/5 transition-all">
-                                                <Eye size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        {recentSessions.length === 0 && (
-                            <div className="py-20 text-center text-zinc-600 italic">No recorded sessions found.</div>
-                        )}
-                    </div>
-                </motion.div>
+                <Sessions sessions={recentSessions} searchQuery={searchQuery} />
             )}
 
             {plannerModalPresentation && (
@@ -835,59 +793,58 @@ function PresentationCard({
     onDelete: (id: number) => void,
     onAddToPlanner: (presentation: RecentPresentation) => void,
 }) {
+    const createdAt = new Date(presentation.created_at);
+    const createdDate = `${String(createdAt.getDate()).padStart(2, '0')}/${String(createdAt.getMonth() + 1).padStart(2, '0')}/${createdAt.getFullYear()}`;
+
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
+        <motion.tr
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-[#0C0C0C] border border-white/5 rounded-[2rem] p-6 group hover:border-primary/30 transition-all hover:shadow-2xl hover:shadow-primary/5 flex flex-col h-full"
+            transition={{ delay: index * 0.04 }}
+            className="group transition-colors hover:bg-white/[0.02]"
         >
-            <div className="flex items-start justify-between mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-zinc-900 flex items-center justify-center text-primary group-hover:scale-110 transition-transform shadow-inner">
-                    <FileText size={28} />
+            <td className="px-8 py-5">
+                <div className="min-w-0">
+                    <h3 className="truncate text-xs font-semibold text-white sm:text-sm">{presentation.title}</h3>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{presentation.slide_count} Slides</p>
                 </div>
-                <div className="flex items-center gap-2">
+            </td>
+
+            <td className="px-8 py-5 text-xs text-zinc-300 sm:text-sm">
+                {createdDate}
+            </td>
+
+            <td className="px-8 py-5 text-right">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                    <button
+                        type="button"
+                        onClick={() => onAddToPlanner(presentation)}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary/35 bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary transition-colors hover:bg-primary/20"
+                    >
+                        <CalendarDays size={12} />
+                        Add To Planner
+                    </button>
+                    <Link href={`/analyze?id=${presentation.id}`}>
+                        <button className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-bold text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white">
+                            View
+                            <Eye size={12} />
+                        </button>
+                    </Link>
+                    <Link href={`/presentation/${presentation.id}`}>
+                        <button className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-primary-hover active:scale-95">
+                            Start
+                            <Play size={12} className="fill-white" />
+                        </button>
+                    </Link>
                     <button
                         onClick={() => onDelete(presentation.id)}
-                        className="p-2 rounded-xl bg-zinc-900 border border-white/5 text-zinc-600 hover:text-red-500 transition-all"
+                        className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-zinc-900 p-1.5 text-zinc-500 transition-colors hover:border-red-500/40 hover:text-red-400"
+                        title="Delete presentation"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                     </button>
                 </div>
-            </div>
-
-            <h3 className="text-lg font-bold mb-2 truncate group-hover:text-primary transition-colors">{presentation.title}</h3>
-            <div className="flex items-center gap-3 mb-6">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{presentation.slide_count} Slides</span>
-                <span className="w-1 h-1 rounded-full bg-zinc-700"></span>
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{new Date(presentation.created_at).toLocaleDateString('en-US')}</span>
-            </div>
-
-            <button
-                type="button"
-                onClick={() => onAddToPlanner(presentation)}
-                className="mb-3 w-full rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-xs font-bold text-primary transition-colors hover:bg-primary/20"
-            >
-                <span className="flex items-center justify-center gap-2">
-                    <CalendarDays size={14} />
-                    Add To Planner
-                </span>
-            </button>
-
-            <div className="mt-auto flex items-center gap-3">
-                <Link href={`/analyze?id=${presentation.id}`} className="flex-1">
-                    <button className="w-full py-3 px-4 rounded-xl bg-white/5 border border-white/5 text-zinc-300 hover:text-white hover:bg-white/10 font-bold text-xs transition-all flex items-center justify-center gap-2">
-                        View
-                        <Eye size={14} />
-                    </button>
-                </Link>
-                <Link href={`/presentation/${presentation.id}`} className="flex-1">
-                    <button className="w-full py-3 px-4 rounded-xl bg-primary text-white font-bold text-xs transition-all shadow-lg shadow-orange-900/10 hover:shadow-orange-900/30 flex items-center justify-center gap-2 active:scale-95">
-                        Start
-                        <Play size={14} className="fill-white" />
-                    </button>
-                </Link>
-            </div>
-        </motion.div>
+            </td>
+        </motion.tr>
     );
 }
