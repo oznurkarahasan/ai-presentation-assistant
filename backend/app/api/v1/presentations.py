@@ -5,6 +5,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator
+from pydantic import BaseModel, Field
 import os
 import shutil
 import uuid
@@ -17,6 +18,10 @@ MAX_FILE_SIZE = 50 * 1024 * 1024
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.models.presentation import Presentation
+
+
+class PresentationTitleUpdate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=500)
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -219,6 +224,45 @@ async def upload_presentation(
             message="Failed to process presentation",
             details=str(e)
         )
+
+
+@router.patch("/{presentation_id}")
+async def update_presentation_title(
+    presentation_id: int,
+    payload: PresentationTitleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(auth.get_current_user),
+):
+    stmt = select(Presentation).where(
+        Presentation.id == presentation_id,
+        Presentation.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    presentation = result.scalar_one_or_none()
+
+    if not presentation:
+        raise ValidationError("Presentation not found")
+
+    normalized_title = payload.title.strip()
+    if not normalized_title:
+        raise ValidationError("Presentation title cannot be empty")
+
+    presentation.title = normalized_title
+    await db.commit()
+    await db.refresh(presentation)
+
+    logger.info(f"Presentation title updated: ID={presentation.id}, User={current_user.id}")
+
+    return {
+        "id": presentation.id,
+        "title": presentation.title,
+        "file_name": os.path.basename(presentation.file_path),
+        "file_path": presentation.file_path,
+        "file_type": presentation.file_type,
+        "slide_count": presentation.slide_count,
+        "status": presentation.status,
+        "created_at": presentation.created_at.isoformat() if presentation.created_at else None,
+    }
 
 @router.delete("/{presentation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_presentation(

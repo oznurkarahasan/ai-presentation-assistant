@@ -6,9 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
     Presentation,
     CalendarDays,
+    Check,
     ChevronLeft,
     ChevronRight,
     Clock,
+    Pencil,
     FileText,
     Play,
     Trash2,
@@ -105,6 +107,9 @@ export default function DashboardPage() {
     const [useReminder, setUseReminder] = useState(true);
     const [customReminderTime, setCustomReminderTime] = useState('');
     const [plannerNote, setPlannerNote] = useState('');
+    const [editingPresentationId, setEditingPresentationId] = useState<number | null>(null);
+    const [editingPresentationTitle, setEditingPresentationTitle] = useState('');
+    const [isSavingPresentationTitle, setIsSavingPresentationTitle] = useState(false);
 
     const selectedPlannerHour = isValid24HourTime(plannerTime) ? plannerTime.split(':')[0] : '09';
     const selectedPlannerMinute = isValid24HourTime(plannerTime) ? plannerTime.split(':')[1] : '00';
@@ -143,6 +148,56 @@ export default function DashboardPage() {
 
             setAlert({ type: 'error', message: msg });
             setTimeout(() => setAlert(null), 4500);
+        }
+    };
+
+    const startEditingPresentationTitle = (presentation: RecentPresentation) => {
+        setEditingPresentationId(presentation.id);
+        setEditingPresentationTitle(presentation.title || '');
+    };
+
+    const cancelEditingPresentationTitle = () => {
+        setEditingPresentationId(null);
+        setEditingPresentationTitle('');
+        setIsSavingPresentationTitle(false);
+    };
+
+    const savePresentationTitle = async (presentationId: number) => {
+        const normalizedTitle = editingPresentationTitle.trim();
+
+        if (!normalizedTitle) {
+            setAlert({ type: 'error', message: 'Presentation title cannot be empty.' });
+            setTimeout(() => setAlert(null), 3500);
+            return;
+        }
+
+        try {
+            setIsSavingPresentationTitle(true);
+            await client.patch(`/api/v1/presentations/${presentationId}`, { title: normalizedTitle });
+
+            setPresentations((prev: RecentPresentation[]) =>
+                prev.map((item: RecentPresentation) =>
+                    item.id === presentationId ? { ...item, title: normalizedTitle } : item
+                )
+            );
+
+            setRecentPresentations((prev: RecentPresentation[]) =>
+                prev.map((item: RecentPresentation) =>
+                    item.id === presentationId ? { ...item, title: normalizedTitle } : item
+                )
+            );
+
+            setPlannerModalPresentation((prev) =>
+                prev && prev.id === presentationId ? { ...prev, title: normalizedTitle } : prev
+            );
+
+            setAlert({ type: 'info', message: 'Presentation title updated.' });
+            setTimeout(() => setAlert(null), 3000);
+            cancelEditingPresentationTitle();
+        } catch {
+            setAlert({ type: 'error', message: 'Presentation title could not be updated.' });
+            setTimeout(() => setAlert(null), 4000);
+            setIsSavingPresentationTitle(false);
         }
     };
 
@@ -339,7 +394,7 @@ export default function DashboardPage() {
                                 <table className="min-w-[760px] w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5">
-                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Presentation Name</th>
+                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Name</th>
                                             <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Date</th>
                                             <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Actions</th>
                                         </tr>
@@ -352,6 +407,13 @@ export default function DashboardPage() {
                                                 index={i}
                                                 onDelete={handleDeletePresentation}
                                                 onAddToPlanner={openPlannerModal}
+                                                editingPresentationId={editingPresentationId}
+                                                editingPresentationTitle={editingPresentationTitle}
+                                                onEditingPresentationTitleChange={setEditingPresentationTitle}
+                                                onStartEditing={startEditingPresentationTitle}
+                                                onCancelEditing={cancelEditingPresentationTitle}
+                                                onSaveTitle={savePresentationTitle}
+                                                isSavingTitle={isSavingPresentationTitle}
                                             />
                                         ))}
                                     </tbody>
@@ -787,14 +849,29 @@ function PresentationCard({
     index,
     onDelete,
     onAddToPlanner,
+    editingPresentationId,
+    editingPresentationTitle,
+    onEditingPresentationTitleChange,
+    onStartEditing,
+    onCancelEditing,
+    onSaveTitle,
+    isSavingTitle,
 }: {
     presentation: RecentPresentation,
     index: number,
     onDelete: (id: number) => void,
     onAddToPlanner: (presentation: RecentPresentation) => void,
+    editingPresentationId: number | null,
+    editingPresentationTitle: string,
+    onEditingPresentationTitleChange: (value: string) => void,
+    onStartEditing: (presentation: RecentPresentation) => void,
+    onCancelEditing: () => void,
+    onSaveTitle: (presentationId: number) => void,
+    isSavingTitle: boolean,
 }) {
     const createdAt = new Date(presentation.created_at);
     const createdDate = `${String(createdAt.getDate()).padStart(2, '0')}/${String(createdAt.getMonth() + 1).padStart(2, '0')}/${createdAt.getFullYear()}`;
+    const isEditing = editingPresentationId === presentation.id;
 
     return (
         <motion.tr
@@ -805,7 +882,59 @@ function PresentationCard({
         >
             <td className="px-8 py-5">
                 <div className="min-w-0">
-                    <h3 className="truncate text-xs font-semibold text-white sm:text-sm">{presentation.title}</h3>
+                    {isEditing ? (
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="text"
+                                value={editingPresentationTitle}
+                                onChange={(e) => onEditingPresentationTitleChange(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        onSaveTitle(presentation.id);
+                                    }
+                                    if (e.key === 'Escape') {
+                                        e.preventDefault();
+                                        onCancelEditing();
+                                    }
+                                }}
+                                autoFocus
+                                maxLength={500}
+                                className="w-full max-w-md rounded-md border border-primary/40 bg-[#101010] px-2.5 py-1.5 text-xs font-semibold text-white outline-none focus:border-primary"
+                                aria-label="Edit presentation title"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => onSaveTitle(presentation.id)}
+                                disabled={isSavingTitle}
+                                className="inline-flex items-center justify-center rounded-md border border-primary/40 bg-primary/15 p-1.5 text-primary transition-colors hover:bg-primary/25 disabled:cursor-not-allowed disabled:opacity-60"
+                                title="Save title"
+                            >
+                                <Check size={13} />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={onCancelEditing}
+                                disabled={isSavingTitle}
+                                className="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/[0.03] p-1.5 text-zinc-300 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                                title="Cancel edit"
+                            >
+                                <X size={13} />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2">
+                            <h3 className="truncate text-xs font-semibold text-white sm:text-sm">{presentation.title}</h3>
+                            <button
+                                type="button"
+                                onClick={() => onStartEditing(presentation)}
+                                className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 transition-colors hover:bg-white/[0.08] hover:text-white"
+                                title="Edit presentation title"
+                            >
+                                <Pencil size={11} />
+                            </button>
+                        </div>
+                    )}
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{presentation.slide_count} Slides</p>
                 </div>
             </td>
