@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNote, X, Check, Zap, Presentation, ChevronDown, BellOff, Trash2 } from 'lucide-react';
+import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNote, X, Check, Zap, Presentation, BellOff, Trash2, ChevronDown } from 'lucide-react';
 import { useDashboard, RecentPresentation } from '../DashboardContext';
 import { motion } from 'framer-motion';
 import client from '../../api/client';
@@ -12,7 +12,7 @@ const WEEKDAYS_SHORT = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] as const;
 type PlannerView = 'day' | 'week' | 'month';
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
-const MINUTE_OPTIONS = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, '0'));
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 interface ScheduledEvent {
@@ -112,6 +112,67 @@ function isValid24HourTime(value?: string): boolean {
     return TIME_24H_REGEX.test(value);
 }
 
+interface TimeDropdownProps {
+    value: string;
+    options: string[];
+    onChange: (value: string) => void;
+    ariaLabel: string;
+}
+
+function TimeDropdown({ value, options, onChange, ariaLabel }: TimeDropdownProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (!wrapperRef.current) return;
+            if (!wrapperRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
+    return (
+        <div ref={wrapperRef} className="relative">
+            <button
+                type="button"
+                onClick={() => setIsOpen((prev) => !prev)}
+                aria-label={ariaLabel}
+                className="flex w-full items-center justify-between rounded-md border border-primary/35 bg-[#0C0C0C] px-2 py-1.5 text-sm font-semibold text-white outline-none transition-colors hover:border-primary focus:border-primary"
+            >
+                <span>{value}</span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isOpen && (
+                <div className="absolute left-0 right-0 z-50 mt-1 rounded-md border border-primary/35 bg-[#0C0C0C] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.9)]">
+                    <div className="max-h-48 overflow-y-auto p-1 invisible-scrollbar">
+                        {options.map((option) => (
+                            <button
+                                key={`${ariaLabel}-${option}`}
+                                type="button"
+                                onClick={() => {
+                                    onChange(option);
+                                    setIsOpen(false);
+                                }}
+                                className={`block w-full rounded px-2 py-1 text-left text-sm font-semibold transition-colors ${option === value
+                                    ? 'bg-primary text-white'
+                                    : 'text-white hover:bg-primary/20'
+                                    }`}
+                            >
+                                {option}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function PlannerCalendar() {
     const [plannerView, setPlannerView] = useState<PlannerView>('month');
     const [cursor, setCursor] = useState(() => {
@@ -128,9 +189,6 @@ export default function PlannerCalendar() {
     const [addingStep, setAddingStep] = useState<'select' | 'time' | 'note'>('select');
     const [searchTerm, setSearchTerm] = useState('');
     const [tempEvent, setTempEvent] = useState<Partial<ScheduledEvent>>({});
-    const [activeTimePanel, setActiveTimePanel] = useState<'presentation-time' | 'reminder' | null>(null);
-    const [presentationPickerPart, setPresentationPickerPart] = useState<'hour' | 'minute'>('hour');
-    const [reminderPickerPart, setReminderPickerPart] = useState<'hour' | 'minute'>('hour');
     const [useReminder, setUseReminder] = useState(true);
 
     const filteredPresentations = useMemo(() => {
@@ -244,9 +302,6 @@ export default function PlannerCalendar() {
         setAddingStep('select');
         setTempEvent({});
         setSearchTerm('');
-        setActiveTimePanel(null);
-        setPresentationPickerPart('hour');
-        setReminderPickerPart('hour');
         setUseReminder(true);
     };
 
@@ -873,90 +928,23 @@ export default function PlannerCalendar() {
                                             </h4>
                                             <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                                 <div>
-                                                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Time (24h)</p>
-                                                    <div className="rounded-lg border border-primary/25 bg-transparent">
-                                                        <div className="flex items-center justify-between px-3 py-2">
-                                                            <div className="flex items-center gap-1 text-sm font-semibold text-primary">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setPresentationPickerPart('hour');
-                                                                        setActiveTimePanel('presentation-time');
-                                                                    }}
-                                                                    className={`rounded px-1.5 py-0.5 transition-colors ${presentationPickerPart === 'hour' ? 'bg-primary/20' : 'hover:bg-primary/15'}`}
-                                                                >
-                                                                    {selectedHour}
-                                                                </button>
-                                                                <span>:</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setPresentationPickerPart('minute');
-                                                                        setActiveTimePanel('presentation-time');
-                                                                    }}
-                                                                    className={`rounded px-1.5 py-0.5 transition-colors ${presentationPickerPart === 'minute' ? 'bg-primary/20' : 'hover:bg-primary/15'}`}
-                                                                >
-                                                                    {selectedMinute}
-                                                                </button>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setActiveTimePanel((p) => p === 'presentation-time' ? null : 'presentation-time')}
-                                                                className="rounded-md border border-primary/30 bg-primary/15 p-1 text-primary transition-colors hover:bg-primary/25"
-                                                                aria-label="Toggle time options"
-                                                            >
-                                                                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${activeTimePanel === 'presentation-time' ? 'rotate-180' : ''}`} />
-                                                            </button>
+                                                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Time</p>
+                                                    <div className="rounded-lg border border-primary/25 bg-transparent p-3">
+                                                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                                            <TimeDropdown
+                                                                value={selectedHour}
+                                                                options={HOUR_OPTIONS}
+                                                                onChange={updatePresentationHour}
+                                                                ariaLabel="Presentation hour"
+                                                            />
+                                                            <span className="text-sm font-semibold text-primary">:</span>
+                                                            <TimeDropdown
+                                                                value={selectedMinute}
+                                                                options={MINUTE_OPTIONS}
+                                                                onChange={updatePresentationMinute}
+                                                                ariaLabel="Presentation minute"
+                                                            />
                                                         </div>
-                                                        {activeTimePanel === 'presentation-time' && (
-                                                            <div className="border-t border-primary/20 p-2">
-                                                                <div className="mb-2 grid grid-cols-2 gap-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setPresentationPickerPart('hour')}
-                                                                        className={`rounded-md border py-1 text-[10px] font-semibold transition-all ${presentationPickerPart === 'hour'
-                                                                            ? 'border-primary bg-primary/20 text-primary'
-                                                                            : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/25 hover:text-white'
-                                                                            }`}
-                                                                    >
-                                                                        Hour
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setPresentationPickerPart('minute')}
-                                                                        className={`rounded-md border py-1 text-[10px] font-semibold transition-all ${presentationPickerPart === 'minute'
-                                                                            ? 'border-primary bg-primary/20 text-primary'
-                                                                            : 'border-white/10 bg-white/[0.03] text-zinc-300 hover:border-white/25 hover:text-white'
-                                                                            }`}
-                                                                    >
-                                                                        Minute
-                                                                    </button>
-                                                                </div>
-
-                                                                <div className="grid max-h-32 grid-cols-6 gap-1 overflow-y-auto custom-scrollbar">
-                                                                    {(presentationPickerPart === 'hour' ? HOUR_OPTIONS : MINUTE_OPTIONS).map((value) => (
-                                                                        <button
-                                                                            key={`${presentationPickerPart}-${value}`}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                if (presentationPickerPart === 'hour') {
-                                                                                    updatePresentationHour(value);
-                                                                                } else {
-                                                                                    updatePresentationMinute(value);
-                                                                                }
-                                                                                setActiveTimePanel(null);
-                                                                            }}
-                                                                            className={`rounded-md py-1 text-[10px] font-semibold transition-all ${(presentationPickerPart === 'hour' ? selectedHour : selectedMinute) === value
-                                                                                ? 'bg-primary text-primary-foreground'
-                                                                                : 'bg-white/[0.03] text-zinc-300 hover:bg-primary/20 hover:text-primary'
-                                                                                }`}
-                                                                        >
-                                                                            {value}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
 
@@ -983,89 +971,22 @@ export default function PlannerCalendar() {
                                                         Email reminder 30 minutes ago
                                                     </button>
 
-                                                    <div className="rounded-lg border border-primary/25 bg-transparent">
-                                                        <div className="flex items-center justify-between px-3 py-2">
-                                                            <div className="flex items-center gap-1 text-sm font-semibold text-primary">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setReminderPickerPart('hour');
-                                                                        setActiveTimePanel('reminder');
-                                                                    }}
-                                                                    className={`rounded px-1.5 py-0.5 transition-colors ${reminderPickerPart === 'hour' ? 'bg-primary/20' : 'hover:bg-primary/15'}`}
-                                                                >
-                                                                    {selectedReminderHour}
-                                                                </button>
-                                                                <span>:</span>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        setReminderPickerPart('minute');
-                                                                        setActiveTimePanel('reminder');
-                                                                    }}
-                                                                    className={`rounded px-1.5 py-0.5 transition-colors ${reminderPickerPart === 'minute' ? 'bg-primary/20' : 'hover:bg-primary/15'}`}
-                                                                >
-                                                                    {selectedReminderMinute}
-                                                                </button>
-                                                            </div>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setActiveTimePanel((p) => p === 'reminder' ? null : 'reminder')}
-                                                                className="rounded-md border border-primary/30 bg-primary/15 p-1 text-primary transition-colors hover:bg-primary/25"
-                                                                aria-label="Toggle reminder options"
-                                                            >
-                                                                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${activeTimePanel === 'reminder' ? 'rotate-180' : ''}`} />
-                                                            </button>
+                                                    <div className="rounded-lg border border-primary/25 bg-transparent p-3">
+                                                        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                                            <TimeDropdown
+                                                                value={selectedReminderHour}
+                                                                options={HOUR_OPTIONS}
+                                                                onChange={updateReminderHour}
+                                                                ariaLabel="Reminder hour"
+                                                            />
+                                                            <span className="text-sm font-semibold text-primary">:</span>
+                                                            <TimeDropdown
+                                                                value={selectedReminderMinute}
+                                                                options={MINUTE_OPTIONS}
+                                                                onChange={updateReminderMinute}
+                                                                ariaLabel="Reminder minute"
+                                                            />
                                                         </div>
-                                                        {activeTimePanel === 'reminder' && (
-                                                            <div className="border-t border-primary/20 p-2">
-                                                                <div className="mb-2 grid grid-cols-2 gap-2">
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setReminderPickerPart('hour')}
-                                                                        className={`rounded-md border py-1 text-[10px] font-semibold transition-all ${reminderPickerPart === 'hour'
-                                                                            ? 'border-primary bg-primary/20 text-primary'
-                                                                            : 'bg-white/[0.03] text-zinc-300 hover:bg-primary/20 hover:text-primary'
-                                                                            }`}
-                                                                    >
-                                                                        Hour
-                                                                    </button>
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setReminderPickerPart('minute')}
-                                                                        className={`rounded-md border py-1 text-[10px] font-semibold transition-all ${reminderPickerPart === 'minute'
-                                                                            ? 'border-primary bg-primary/20 text-primary'
-                                                                            : 'bg-white/[0.03] text-zinc-300 hover:bg-primary/20 hover:text-primary'
-                                                                            }`}
-                                                                    >
-                                                                        Minute
-                                                                    </button>
-                                                                </div>
-
-                                                                <div className="grid max-h-32 grid-cols-6 gap-1 overflow-y-auto custom-scrollbar">
-                                                                    {(reminderPickerPart === 'hour' ? HOUR_OPTIONS : MINUTE_OPTIONS).map((value) => (
-                                                                        <button
-                                                                            key={`rem-${reminderPickerPart}-${value}`}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                if (reminderPickerPart === 'hour') {
-                                                                                    updateReminderHour(value);
-                                                                                } else {
-                                                                                    updateReminderMinute(value);
-                                                                                }
-                                                                                setActiveTimePanel(null);
-                                                                            }}
-                                                                            className={`rounded-md py-1 text-[10px] font-semibold transition-all ${(reminderPickerPart === 'hour' ? selectedReminderHour : selectedReminderMinute) === value
-                                                                                ? 'bg-primary text-primary-foreground'
-                                                                                : 'bg-white/[0.03] text-zinc-300 hover:bg-primary/20 hover:text-primary'
-                                                                                }`}
-                                                                        >
-                                                                            {value}
-                                                                        </button>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
                                                     </div>
 
                                                     <div className="text-[10px] text-zinc-500">
