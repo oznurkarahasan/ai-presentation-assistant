@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNote, X, Check, Zap, Presentation, BellOff, Trash2, ChevronDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNote, X, Check, Zap, Presentation, BellOff, Trash2, ChevronDown, Pencil } from 'lucide-react';
 import { useDashboard, RecentPresentation } from '../DashboardContext';
 import { motion } from 'framer-motion';
 import client from '../../api/client';
@@ -121,7 +121,26 @@ interface TimeDropdownProps {
 
 function TimeDropdown({ value, options, onChange, ariaLabel }: TimeDropdownProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [inputValue, setInputValue] = useState(value);
     const wrapperRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        setInputValue(value);
+    }, [value]);
+
+    const commitManualValue = useCallback(() => {
+        if (!/^\d{1,2}$/.test(inputValue)) {
+            setInputValue(value);
+            return;
+        }
+
+        const parsed = Number(inputValue);
+        const max = options.length - 1;
+        const clamped = Math.min(Math.max(parsed, 0), max);
+        const formatted = String(clamped).padStart(2, '0');
+        onChange(formatted);
+        setInputValue(formatted);
+    }, [inputValue, value, options.length, onChange]);
 
     useEffect(() => {
         const handleOutsideClick = (event: MouseEvent) => {
@@ -137,15 +156,34 @@ function TimeDropdown({ value, options, onChange, ariaLabel }: TimeDropdownProps
 
     return (
         <div ref={wrapperRef} className="relative">
-            <button
-                type="button"
-                onClick={() => setIsOpen((prev) => !prev)}
-                aria-label={ariaLabel}
-                className="flex w-full items-center justify-between rounded-md border border-primary/35 bg-[#0C0C0C] px-2 py-1.5 text-sm font-semibold text-white outline-none transition-colors hover:border-primary focus:border-primary"
-            >
-                <span>{value}</span>
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
+            <div className="flex w-full items-center rounded-md border border-primary/35 bg-[#0C0C0C] px-1.5 py-1 text-sm font-semibold text-white outline-none transition-colors hover:border-primary focus-within:border-primary">
+                <input
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => {
+                        const next = e.target.value.replace(/\D/g, '').slice(0, 2);
+                        setInputValue(next);
+                    }}
+                    onBlur={commitManualValue}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            commitManualValue();
+                            setIsOpen(false);
+                        }
+                    }}
+                    aria-label={ariaLabel}
+                    className="w-full bg-transparent px-1 text-center text-sm font-semibold text-white outline-none"
+                />
+                <button
+                    type="button"
+                    onClick={() => setIsOpen((prev) => !prev)}
+                    className="rounded p-1 text-white/80 transition-colors hover:text-white"
+                    aria-label={`${ariaLabel} options`}
+                >
+                    <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </button>
+            </div>
 
             {isOpen && (
                 <div className="absolute left-0 right-0 z-50 mt-1 rounded-md border border-primary/35 bg-[#0C0C0C] shadow-[0_12px_30px_-10px_rgba(0,0,0,0.9)]">
@@ -156,6 +194,7 @@ function TimeDropdown({ value, options, onChange, ariaLabel }: TimeDropdownProps
                                 type="button"
                                 onClick={() => {
                                     onChange(option);
+                                    setInputValue(option);
                                     setIsOpen(false);
                                 }}
                                 className={`block w-full rounded px-2 py-1 text-left text-sm font-semibold transition-colors ${option === value
@@ -190,6 +229,8 @@ export default function PlannerCalendar() {
     const [searchTerm, setSearchTerm] = useState('');
     const [tempEvent, setTempEvent] = useState<Partial<ScheduledEvent>>({});
     const [useReminder, setUseReminder] = useState(true);
+    const [editingEventId, setEditingEventId] = useState<string | null>(null);
+    const [editingDateKey, setEditingDateKey] = useState<string | null>(null);
 
     const filteredPresentations = useMemo(() => {
         return [...presentations]
@@ -298,11 +339,33 @@ export default function PlannerCalendar() {
 
     const handleAddEvent = () => {
         if (!selected) return;
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         setIsAdding(true);
+        setEditingEventId(null);
+        setEditingDateKey(null);
         setAddingStep('select');
-        setTempEvent({});
+        setTempEvent({
+            time: currentTime,
+            notificationTime: subtractMinutes(currentTime, 30),
+        });
         setSearchTerm('');
         setUseReminder(true);
+    };
+
+    const handleEditEvent = (dateKey: string, event: ScheduledEvent) => {
+        setIsAdding(true);
+        setEditingEventId(event.id);
+        setEditingDateKey(dateKey);
+        setSearchTerm(event.presentation.title);
+        setTempEvent({
+            presentation: event.presentation,
+            time: event.time,
+            notificationTime: event.notificationTime,
+            note: event.note,
+        });
+        setUseReminder(Boolean(event.notificationTime));
+        setAddingStep('time');
     };
 
     const toScheduledEvent = useCallback((apiEvent: PlannerApiEvent): ScheduledEvent => {
@@ -356,8 +419,9 @@ export default function PlannerCalendar() {
     }, [loadPlannerEvents]);
 
     const confirmEvent = async () => {
-        if (!selected || !tempEvent.presentation || !tempEvent.time) return;
-        const scheduledDate = toDateKey(selected);
+        if (!tempEvent.presentation || !tempEvent.time) return;
+        const scheduledDate = selected ? toDateKey(selected) : editingDateKey;
+        if (!scheduledDate) return;
         const scheduledUtc = localToUtcParts(scheduledDate, tempEvent.time);
         const reminderUtc = tempEvent.notificationTime
             ? localToUtcParts(scheduledDate, tempEvent.notificationTime)
@@ -365,7 +429,7 @@ export default function PlannerCalendar() {
         const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
 
         try {
-            const response = await client.post<PlannerApiEvent>('/api/v1/planner/events', {
+            const payload = {
                 presentation_id: tempEvent.presentation.id,
                 scheduled_date: scheduledUtc.date,
                 scheduled_time: scheduledUtc.time,
@@ -373,17 +437,38 @@ export default function PlannerCalendar() {
                 reminder_time: reminderUtc?.time,
                 timezone: browserTimezone,
                 note: tempEvent.note || undefined,
+            };
+
+            const response = editingEventId
+                ? await client.put<PlannerApiEvent>(`/api/v1/planner/events/${editingEventId}`, payload)
+                : await client.post<PlannerApiEvent>('/api/v1/planner/events', payload);
+
+            const saved = toScheduledEvent(response.data);
+            const savedLocal = utcToLocalParts(response.data.scheduled_date, response.data.scheduled_time);
+            const targetDateKey = savedLocal.date;
+
+            setEvents((prev) => {
+                const sourceDateKey = editingDateKey || scheduledDate;
+                const withoutOld = Object.fromEntries(
+                    Object.entries(prev).map(([key, dayEvents]) => [
+                        key,
+                        key === sourceDateKey ? dayEvents.filter((event) => event.id !== String(response.data.id)) : dayEvents,
+                    ])
+                ) as Record<string, ScheduledEvent[]>;
+
+                const nextDayEvents = [...(withoutOld[targetDateKey] || []), saved];
+                return {
+                    ...withoutOld,
+                    [targetDateKey]: nextDayEvents,
+                };
             });
 
-            const created = toScheduledEvent(response.data);
-            setEvents((prev) => ({
-                ...prev,
-                [scheduledDate]: [...(prev[scheduledDate] || []), created],
-            }));
             setIsAdding(false);
-            setAlert({ type: 'info', message: 'Event saved to planner.' });
+            setEditingEventId(null);
+            setEditingDateKey(null);
+            setAlert({ type: 'info', message: editingEventId ? 'Event updated.' : 'Event saved to planner.' });
         } catch {
-            setAlert({ type: 'error', message: 'Event could not be saved.' });
+            setAlert({ type: 'error', message: editingEventId ? 'Event could not be updated.' : 'Event could not be saved.' });
         }
     };
 
@@ -757,14 +842,24 @@ export default function PlannerCalendar() {
                                                 <p className="text-sm font-semibold text-white truncate">{ev.presentation.title}</p>
                                                 <p className="text-xs text-zinc-500 truncate">{ev.note || 'No notes added'}</p>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => removeEvent(toDateKey(dayFocus), ev.id)}
-                                                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
-                                                title="Remove scheduled presentation"
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </button>
+                                            <div className="flex items-center gap-1.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditEvent(toDateKey(dayFocus), ev)}
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                                                    title="Edit scheduled presentation"
+                                                >
+                                                    <Pencil className="h-3.5 w-3.5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeEvent(toDateKey(dayFocus), ev.id)}
+                                                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
+                                                    title="Remove scheduled presentation"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
                                         </div>
                                     ))}
                                     {(events[toDateKey(dayFocus)] || []).length === 0 && (
@@ -837,14 +932,24 @@ export default function PlannerCalendar() {
                                                         )}
                                                     </div>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeEvent(toDateKey(selected), ev.id)}
-                                                    className="ml-2 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
-                                                    title="Remove scheduled presentation"
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </button>
+                                                <div className="ml-2 flex shrink-0 items-center gap-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleEditEvent(toDateKey(selected), ev)}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
+                                                        title="Edit scheduled presentation"
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => removeEvent(toDateKey(selected), ev.id)}
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
+                                                        title="Remove scheduled presentation"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
                                             {ev.note && (
                                                 <p className="mt-2 text-xs text-zinc-400 border-t border-white/5 pt-2 flex items-start gap-1.5">
@@ -872,12 +977,14 @@ export default function PlannerCalendar() {
                         <div className="absolute inset-0 z-20 flex flex-col bg-[#0C0C0C] p-5 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem]">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold text-white">
-                                    {addingStep === 'select' && 'Select Presentation'}
-                                    {addingStep === 'time' && 'Select Time'}
-                                    {addingStep === 'note' && 'Add Note'}
+                                    {editingEventId ? 'Edit Planner Event' : addingStep === 'select' ? 'Select Presentation' : addingStep === 'time' ? 'Select Time' : 'Add Note'}
                                 </h3>
                                 <button
-                                    onClick={() => setIsAdding(false)}
+                                    onClick={() => {
+                                        setIsAdding(false);
+                                        setEditingEventId(null);
+                                        setEditingDateKey(null);
+                                    }}
                                     className="text-zinc-500 hover:text-white"
                                 >
                                     <X className="h-4 w-4" />
@@ -928,7 +1035,6 @@ export default function PlannerCalendar() {
                                             </h4>
                                             <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                                 <div>
-                                                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Time</p>
                                                     <div className="rounded-lg border border-primary/25 bg-transparent p-3">
                                                         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                                             <TimeDropdown
@@ -1047,7 +1153,7 @@ export default function PlannerCalendar() {
                                             className="flex-[2] py-3 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-all shadow-[0_4px_20px_-4px_rgba(234,88,12,0.45)] flex items-center justify-center gap-2"
                                         >
                                             <Check className="h-4 w-4" />
-                                            Confirm Schedule
+                                            {editingEventId ? 'Save Changes' : 'Confirm Schedule'}
                                         </button>
                                     </div>
                                 </div>
