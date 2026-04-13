@@ -219,7 +219,7 @@ export default function PlannerCalendar() {
         return new Date(n.getFullYear(), n.getMonth(), 1);
     });
     const [weekStart, setWeekStart] = useState(() => startOfWeekMonday(new Date()));
-    const [selected, setSelected] = useState<Date | null>(null);
+    const [selected, setSelected] = useState<Date | null>(() => startOfDay(new Date()));
     const { presentations, setAlert } = useDashboard();
 
     // Scheduling State
@@ -707,17 +707,14 @@ export default function PlannerCalendar() {
                                                     ${isSelected(day)
                                                         ? 'z-[1] border-2 border-primary bg-primary/20 text-primary shadow-[0_0_20px_-4px_rgba(234,88,12,0.45)]'
                                                         : 'border border-transparent text-zinc-300 hover:border-white/10 hover:bg-white/[0.06]'}
-                                                    ${isToday(day) && !isSelected(day)
-                                                        ? 'bg-primary/5 text-white ring-1 ring-primary/50'
-                                                        : ''}
                                                 `}
                                             >
-                                                <span className="absolute left-2 top-2 text-xs font-semibold sm:text-sm">
-                                                    {day}
+                                                <span className="absolute left-2 top-2 inline-flex items-center gap-1 text-xs font-semibold sm:text-sm">
+                                                    <span>{day}</span>
+                                                    {isToday(day) && (
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(234,88,12,0.8)]" aria-hidden="true" />
+                                                    )}
                                                 </span>
-                                                {isToday(day) && (
-                                                    <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary sm:bottom-2" />
-                                                )}
 
                                                 <div className="absolute inset-x-1 top-7 bottom-1 overflow-hidden pointer-events-none hidden sm:flex flex-col gap-1">
                                                     {(events[toDateKey(new Date(viewYear, viewMonth, day))] || []).slice(0, 2).map(ev => (
@@ -782,17 +779,14 @@ export default function PlannerCalendar() {
                                                     ${sel
                                                         ? 'z-[1] border-2 border-primary bg-primary/20 text-primary shadow-[0_0_20px_-4px_rgba(234,88,12,0.45)]'
                                                         : 'border border-transparent text-zinc-300 hover:border-white/10 hover:bg-white/[0.06]'}
-                                                    ${today && !sel
-                                                        ? 'bg-primary/5 text-white ring-1 ring-primary/50'
-                                                        : ''}
                                                 `}
                                             >
-                                                <span className="absolute left-2 top-2 text-xs font-semibold sm:text-sm">
-                                                    {d.getDate()}
+                                                <span className="absolute left-2 top-2 inline-flex items-center gap-1 text-xs font-semibold sm:text-sm">
+                                                    <span>{d.getDate()}</span>
+                                                    {today && (
+                                                        <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(234,88,12,0.8)]" aria-hidden="true" />
+                                                    )}
                                                 </span>
-                                                {today && (
-                                                    <span className="absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-primary sm:bottom-2" />
-                                                )}
 
                                                 <div className="absolute inset-x-1 top-7 bottom-1 overflow-hidden pointer-events-none hidden sm:flex flex-col gap-1">
                                                     {(events[toDateKey(d)] || []).slice(0, 2).map(ev => (
