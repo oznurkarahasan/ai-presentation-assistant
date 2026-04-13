@@ -71,6 +71,10 @@
 	- moved `ChatRequest` and `ChatResponse` from API module to `backend/app/schemas/chat.py`.
 - Presentation title editing support:
 	- added `PATCH /api/v1/presentations/{presentation_id}` in `backend/app/api/v1/presentations.py`.
+- Profile settings API support in `backend/app/api/v1/auth.py`:
+	- extended `PATCH /api/v1/auth/me` for profile update (full name, email) and password change with current-password verification
+	- added `DELETE /api/v1/auth/me` for password-confirmed account deletion
+	- added duplicate-email and empty-name validation paths
 
 ## Frontend Updates
 
@@ -154,6 +158,34 @@ Branch name: 53-session-records-and-profile-settings-in-dashboard
 - Moved today's marker dot next to the day number and increased visibility.
 - Planner now opens with the current day selected by default.
 
+### 6. Profile Settings View
+
+#### Frontend
+- Added profile settings page implementation in `frontend/app/dashboard/profile/Profile.tsx`.
+- Profile information management:
+	- editable `full_name` and `email`
+	- save/cancel flow with dirty-state detection
+	- inline error handling and success alerts
+- Security management:
+	- current password + new password + confirmation flow
+	- minimum length and confirmation validation in UI
+	- server error propagation for invalid current password
+- Account deletion flow:
+	- two-step danger-zone modal (`warning -> password confirmation`)
+	- password-confirmed delete request to backend
+	- token cleanup and redirect to login on success
+- Responsive behavior:
+	- profile info and security forms adapt from stacked mobile layout to dual-column desktop layout
+	- modal and controls tuned for mobile and desktop interaction.
+
+#### Backend
+- Extended `UserUpdate` and `DeleteAccountRequest` support in `backend/app/schemas/auth.py` to validate profile/password mutation payloads.
+- Added server-side checks in `backend/app/api/v1/auth.py` for:
+	- unique email constraint on profile update
+	- non-empty full name normalization
+	- current password verification before password change
+	- password verification before account deletion.
+
 ## Test Coverage
 - Added planner API test file: `backend/tests/test_planner.py`.
 - Scenario covered:
@@ -162,6 +194,10 @@ Branch name: 53-session-records-and-profile-settings-in-dashboard
 	- list planner events by date
 	- delete planner event
 - Updated `backend/tests/conftest.py` dependency overrides for planner DB injection.
+- Extended auth tests in `backend/tests/test_auth.py` for profile settings flows:
+	- `PATCH /api/v1/auth/me` success path (profile + password update)
+	- `PATCH /api/v1/auth/me` wrong current password failure path
+	- `DELETE /api/v1/auth/me` success and wrong-password failure paths
 
 ## Functional Outcome
 - Users can now schedule presentations via dashboard planner.
