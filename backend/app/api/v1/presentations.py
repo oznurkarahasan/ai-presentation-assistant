@@ -5,7 +5,13 @@ from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator
-from pydantic import BaseModel, Field
+from app.schemas.presentations import (
+    PresentationDetailResponse,
+    PresentationListItemResponse,
+    PresentationTitleUpdateRequest,
+    PresentationUploadResponse,
+    RecentSessionItemResponse,
+)
 import os
 import shutil
 import uuid
@@ -19,15 +25,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.models.presentation import Presentation, PresentationSession
 
-
-class PresentationTitleUpdate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=500)
-
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
 
-@router.get("/", response_model=list)
+@router.get("/", response_model=list[PresentationListItemResponse])
 async def list_presentations(
     db: AsyncSession = Depends(get_db),
     current_user = Depends(auth.get_current_user)
@@ -51,7 +53,7 @@ async def list_presentations(
     ]
 
 
-@router.get("/sessions/recent", response_model=list)
+@router.get("/sessions/recent", response_model=list[RecentSessionItemResponse])
 async def list_recent_sessions(
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_db),
@@ -112,7 +114,7 @@ async def delete_session(
     await db.commit()
     return None
 
-@router.get("/{presentation_id}")
+@router.get("/{presentation_id}", response_model=PresentationDetailResponse)
 async def get_presentation(
     presentation_id: int,
     include_slides: bool = Query(False, description="Include slide text content in response"),
@@ -173,7 +175,7 @@ async def get_presentation(
     return response
 
 
-@router.post("/upload", status_code=status.HTTP_201_CREATED)
+@router.post("/upload", response_model=PresentationUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_presentation(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
@@ -288,10 +290,10 @@ async def upload_presentation(
         )
 
 
-@router.patch("/{presentation_id}")
+@router.patch("/{presentation_id}", response_model=PresentationListItemResponse)
 async def update_presentation_title(
     presentation_id: int,
-    payload: PresentationTitleUpdate,
+    payload: PresentationTitleUpdateRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(auth.get_current_user),
 ):
