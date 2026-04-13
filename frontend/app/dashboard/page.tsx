@@ -24,6 +24,7 @@ import {
 import { motion } from "framer-motion";
 import { useDashboard, RecentPresentation } from "./DashboardContext";
 import Sessions from "./sessions/Sessions";
+import Profile from "./profile/Profile";
 import client from "../api/client";
 import axios from "axios";
 
@@ -492,6 +493,11 @@ export default function DashboardPage() {
             {/* Sessions Tab */}
             {activeTab === 'sessions' && (
                 <Sessions sessions={recentSessions} searchQuery={searchQuery} onDeleteSession={handleDeleteSession} />
+            )}
+
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+                <Profile />
             )}
 
             {plannerModalPresentation && (
