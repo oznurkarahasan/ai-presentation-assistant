@@ -69,10 +69,14 @@ async def client(db_session):
     app.dependency_overrides[get_db] = override_get_db
     
     try:
-        from app.api.v1.presentations import get_db as pres_get_db
+        from app.api.v1.dashboard.library.library import get_db as library_get_db
+        from app.api.v1.dashboard.sessions.sessions import get_db as sessions_get_db
+        from app.api.v1.dashboard.profile.profile import auth as profile_auth_module
         from app.api.v1.chat import get_db as chat_get_db
         from app.api.v1.dashboard.planner.planner import get_db as planner_get_db
-        app.dependency_overrides[pres_get_db] = override_get_db
+        app.dependency_overrides[library_get_db] = override_get_db
+        app.dependency_overrides[sessions_get_db] = override_get_db
+        app.dependency_overrides[profile_auth_module.get_db] = override_get_db
         app.dependency_overrides[chat_get_db] = override_get_db
         app.dependency_overrides[planner_get_db] = override_get_db
     except ImportError:

@@ -20,8 +20,11 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ValidationError
 )
-from app.api.v1 import auth, presentations, chat, orchestration
+from app.api.v1 import auth, chat, orchestration
+from app.api.v1.dashboard.library import library
 from app.api.v1.dashboard.planner import planner
+from app.api.v1.dashboard.profile import profile
+from app.api.v1.dashboard.sessions import sessions
 from app.services.planner_reminder_service import run_reminder_worker
 
 # Lifespan event to create tables and extensions
@@ -146,7 +149,9 @@ if not os.path.exists("uploaded_files"):
 app.mount("/uploaded_files", StaticFiles(directory="uploaded_files"), name="uploaded_files")
 
 app.include_router(auth.router, prefix=settings.API_V1_STR + "/auth", tags=["Authentication"])
-app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presentations", tags=["Presentations"])
+app.include_router(profile.router, prefix=settings.API_V1_STR + "/auth", tags=["Profile"])
+app.include_router(library.router, prefix=settings.API_V1_STR + "/presentations", tags=["Library"])
+app.include_router(sessions.router, prefix=settings.API_V1_STR + "/presentations", tags=["Sessions"])
 app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
 app.include_router(orchestration.router, prefix=settings.API_V1_STR + "/orchestration", tags=["Orchestration"])
 app.include_router(planner.router, prefix=settings.API_V1_STR + "/planner", tags=["Planner"])
