@@ -191,7 +191,7 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
                                 >
                                     <Play size={14} />
-                                    Present again
+                                    New session
                                 </Link>
 
                                 <Link
