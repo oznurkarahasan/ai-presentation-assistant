@@ -24,6 +24,7 @@ import {
 import { motion } from "framer-motion";
 import { useDashboard, RecentPresentation } from "./DashboardContext";
 import Sessions from "./sessions/Sessions";
+import Profile from "./profile/Profile";
 import client from "../api/client";
 import axios from "axios";
 
@@ -148,6 +149,7 @@ export default function DashboardPage() {
     const [plannerModalPresentation, setPlannerModalPresentation] = useState<RecentPresentation | null>(null);
     const [plannerDate, setPlannerDate] = useState(() => toDateKey(new Date()));
     const [plannerTime, setPlannerTime] = useState('09:00');
+    const [hasSelectedPresentationTime, setHasSelectedPresentationTime] = useState(false);
     const [useReminder, setUseReminder] = useState(true);
     const [customReminderTime, setCustomReminderTime] = useState('');
     const [plannerNote, setPlannerNote] = useState('');
@@ -255,6 +257,7 @@ export default function DashboardPage() {
         setPlannerModalPresentation(presentation);
         setPlannerDate(toDateKey(new Date()));
         setPlannerTime(initialTime);
+        setHasSelectedPresentationTime(false);
         setUseReminder(true);
         setCustomReminderTime(subtractMinutes(initialTime, 30));
         setPlannerNote('');
@@ -265,10 +268,12 @@ export default function DashboardPage() {
     };
 
     const updatePlannerHour = (hour: string) => {
+        setHasSelectedPresentationTime(true);
         setPlannerTime(`${hour}:${selectedPlannerMinute}`);
     };
 
     const updatePlannerMinute = (minute: string) => {
+        setHasSelectedPresentationTime(true);
         setPlannerTime(`${selectedPlannerHour}:${minute}`);
     };
 
@@ -494,6 +499,20 @@ export default function DashboardPage() {
                 <Sessions sessions={recentSessions} searchQuery={searchQuery} onDeleteSession={handleDeleteSession} />
             )}
 
+            {/* Profile Tab */}
+            {activeTab === 'profile' && (
+                <Profile />
+            )}
+
+            {/* Billing Tab — placeholder */}
+            {activeTab === 'billing' && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="min-h-[40vh]"
+                />
+            )}
+
             {plannerModalPresentation && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                     <div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-[#0C0C0C] p-5 sm:p-6">
@@ -528,7 +547,10 @@ export default function DashboardPage() {
                             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                 <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                     <Clock size={12} />
-                                    Time
+                                    Presentation Time
+                                </p>
+                                <p className="mb-2 text-xs text-zinc-300">
+                                    This is the start time of your presentation.
                                 </p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                     <TimeDropdown
@@ -545,58 +567,71 @@ export default function DashboardPage() {
                                         ariaLabel="Planner minute"
                                     />
                                 </div>
-                                <p className="mt-2 text-[11px] text-zinc-500">Selected time: <span className="font-semibold text-zinc-200">{plannerTime}</span></p>
+                                <p className="mt-2 text-[11px] text-zinc-500">Presentation starts at: <span className="font-semibold text-zinc-200">{plannerTime}</span></p>
                             </div>
 
-                            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                                <div className="mb-2 flex items-center justify-between">
-                                    <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Reminder</p>
+                            {hasSelectedPresentationTime && isValid24HourTime(plannerTime) && (
+                                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Email Reminder</p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setUseReminder((v) => !v)}
+                                            className={`rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors ${useReminder
+                                                ? 'border-primary/30 text-primary hover:bg-primary/10'
+                                                : 'border-white/15 text-zinc-300 hover:bg-white/[0.04]'
+                                                }`}
+                                        >
+                                            {useReminder ? 'Disable' : 'Enable'}
+                                        </button>
+                                    </div>
+                                    <p className="mb-2 text-xs text-zinc-300">
+                                        This setting is only for the reminder email delivery time.
+                                    </p>
                                     <button
                                         type="button"
-                                        onClick={() => setUseReminder((v) => !v)}
-                                        className={`rounded-md border px-2 py-1 text-[10px] font-semibold transition-colors ${useReminder
-                                            ? 'border-primary/30 text-primary hover:bg-primary/10'
-                                            : 'border-white/15 text-zinc-300 hover:bg-white/[0.04]'
-                                            }`}
+                                        onClick={applyReminderThirtyMinutesAgo}
+                                        className="mb-2 w-full rounded-lg border border-primary/35 bg-primary/12 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
                                     >
-                                        {useReminder ? 'Disable' : 'Enable'}
+                                        Email reminder 30 minutes ago
                                     </button>
+                                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                                        <TimeDropdown
+                                            value={selectedReminderHour}
+                                            options={HOUR_OPTIONS}
+                                            onChange={updateReminderHour}
+                                            ariaLabel="Reminder hour"
+                                        />
+                                        <span className="text-sm font-semibold text-zinc-300">:</span>
+                                        <TimeDropdown
+                                            value={selectedReminderMinute}
+                                            options={MINUTE_OPTIONS}
+                                            onChange={updateReminderMinute}
+                                            ariaLabel="Reminder minute"
+                                        />
+                                    </div>
+                                    <p className="mt-2 text-[11px] text-zinc-500">Email will be sent at: <span className="font-semibold text-zinc-200">{useReminder ? selectedReminderTime : 'No reminder'}</span></p>
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={applyReminderThirtyMinutesAgo}
-                                    className="mb-2 w-full rounded-lg border border-primary/35 bg-primary/12 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
-                                >
-                                    Email reminder 30 minutes ago
-                                </button>
-                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                                    <TimeDropdown
-                                        value={selectedReminderHour}
-                                        options={HOUR_OPTIONS}
-                                        onChange={updateReminderHour}
-                                        ariaLabel="Reminder hour"
-                                    />
-                                    <span className="text-sm font-semibold text-zinc-300">:</span>
-                                    <TimeDropdown
-                                        value={selectedReminderMinute}
-                                        options={MINUTE_OPTIONS}
-                                        onChange={updateReminderMinute}
-                                        ariaLabel="Reminder minute"
-                                    />
-                                </div>
-                                <p className="mt-2 text-[11px] text-zinc-500">Selected reminder: <span className="font-semibold text-zinc-200">{useReminder ? selectedReminderTime : 'No reminder'}</span></p>
-                            </div>
+                            )}
 
-                            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Note (Optional)</p>
-                                <textarea
-                                    value={plannerNote}
-                                    onChange={(e) => setPlannerNote(e.target.value)}
-                                    maxLength={300}
-                                    placeholder="Add a note for this planner event..."
-                                    className="invisible-scrollbar min-h-[90px] w-full resize-none rounded-lg border border-white/10 bg-[#0C0C0C] px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-primary/50"
-                                />
-                            </div>
+                            {!hasSelectedPresentationTime && (
+                                <p className="text-[11px] text-zinc-500">
+                                    Select presentation time first. Email reminder and note options appear after that.
+                                </p>
+                            )}
+
+                            {hasSelectedPresentationTime && isValid24HourTime(plannerTime) && (
+                                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                                    <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Note (Optional)</p>
+                                    <textarea
+                                        value={plannerNote}
+                                        onChange={(e) => setPlannerNote(e.target.value)}
+                                        maxLength={300}
+                                        placeholder="Add a note for this planner event..."
+                                        className="invisible-scrollbar min-h-[90px] w-full resize-none rounded-lg border border-white/10 bg-[#0C0C0C] px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-primary/50"
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="mt-5 grid grid-cols-2 gap-2">
@@ -610,7 +645,8 @@ export default function DashboardPage() {
                             <button
                                 type="button"
                                 onClick={handleAddToPlanner}
-                                className="rounded-lg bg-primary py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-hover"
+                                disabled={!hasSelectedPresentationTime || !isValid24HourTime(plannerTime)}
+                                className="rounded-lg bg-primary py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                             >
                                 Add To Planner
                             </button>

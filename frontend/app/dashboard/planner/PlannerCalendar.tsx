@@ -229,6 +229,7 @@ export default function PlannerCalendar() {
     const [searchTerm, setSearchTerm] = useState('');
     const [tempEvent, setTempEvent] = useState<Partial<ScheduledEvent>>({});
     const [useReminder, setUseReminder] = useState(true);
+    const [hasSelectedPresentationTime, setHasSelectedPresentationTime] = useState(false);
     const [editingEventId, setEditingEventId] = useState<string | null>(null);
     const [editingDateKey, setEditingDateKey] = useState<string | null>(null);
 
@@ -351,6 +352,7 @@ export default function PlannerCalendar() {
         });
         setSearchTerm('');
         setUseReminder(true);
+        setHasSelectedPresentationTime(false);
     };
 
     const handleEditEvent = (dateKey: string, event: ScheduledEvent) => {
@@ -365,6 +367,7 @@ export default function PlannerCalendar() {
             note: event.note,
         });
         setUseReminder(Boolean(event.notificationTime));
+        setHasSelectedPresentationTime(true);
         setAddingStep('time');
     };
 
@@ -532,10 +535,12 @@ export default function PlannerCalendar() {
     const selectedMinute = isValid24HourTime(tempEvent.time) ? tempEvent.time?.split(':')[1] ?? '00' : '00';
 
     const updatePresentationHour = (hour: string) => {
+        setHasSelectedPresentationTime(true);
         setTempEvent((prev) => ({ ...prev, time: `${hour}:${selectedMinute}` }));
     };
 
     const updatePresentationMinute = (minute: string) => {
+        setHasSelectedPresentationTime(true);
         setTempEvent((prev) => ({ ...prev, time: `${selectedHour}:${minute}` }));
     };
 
@@ -1034,6 +1039,9 @@ export default function PlannerCalendar() {
                                                 <Presentation className="h-3 w-3" />
                                                 Presentation Time
                                             </h4>
+                                            <p className="mb-3 text-xs text-zinc-300">
+                                                This is the start time of your presentation.
+                                            </p>
                                             <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                                 <div>
                                                     <div className="rounded-lg border border-primary/25 bg-transparent p-3">
@@ -1055,18 +1063,18 @@ export default function PlannerCalendar() {
                                                     </div>
                                                 </div>
 
-                                                <p className="text-[10px] text-zinc-500">Selected presentation time: <span className="font-semibold text-zinc-200">{tempEvent.time || `${selectedHour}:${selectedMinute}`}</span></p>
+                                                <p className="text-[10px] text-zinc-500">Presentation starts at: <span className="font-semibold text-zinc-200">{tempEvent.time || `${selectedHour}:${selectedMinute}`}</span></p>
                                             </div>
                                         </section>
 
-                                        {isValid24HourTime(tempEvent.time) && (
+                                        {hasSelectedPresentationTime && isValid24HourTime(tempEvent.time) && (
                                             <section>
                                                 <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                     <Zap className="h-3 w-3" />
                                                     Email Reminder
                                                 </h4>
                                                 <p className="text-xs text-zinc-300">
-                                                    When would you like to receive the reminder email?
+                                                    This setting is only for the reminder email delivery time.
                                                 </p>
 
                                                 <div className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
@@ -1097,7 +1105,7 @@ export default function PlannerCalendar() {
                                                     </div>
 
                                                     <div className="text-[10px] text-zinc-500">
-                                                        Selected reminder time: <span className="font-semibold text-zinc-200">{useReminder ? (tempEvent.notificationTime || defaultReminderTime) : 'No reminder'}</span>
+                                                        Email will be sent at: <span className="font-semibold text-zinc-200">{useReminder ? (tempEvent.notificationTime || defaultReminderTime) : 'No reminder'}</span>
                                                     </div>
 
                                                     <button
@@ -1113,6 +1121,12 @@ export default function PlannerCalendar() {
                                                 </div>
                                             </section>
                                         )}
+
+                                        {!hasSelectedPresentationTime && (
+                                            <p className="text-[11px] text-zinc-500">
+                                                Select presentation time first. Email reminder options appear after that.
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div className="mt-auto flex gap-2 pt-4 border-t border-white/5">
@@ -1123,7 +1137,7 @@ export default function PlannerCalendar() {
                                             Back
                                         </button>
                                         <button
-                                            disabled={!isValid24HourTime(tempEvent.time)}
+                                            disabled={!hasSelectedPresentationTime || !isValid24HourTime(tempEvent.time)}
                                             onClick={proceedToNote}
                                             className="flex-[2] py-2 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >

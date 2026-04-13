@@ -11,7 +11,6 @@ import {
     MessageSquareQuote,
     Palette,
     Sparkles,
-    Settings,
     LogOut,
     Upload,
     Plus,
@@ -21,6 +20,7 @@ import {
     Bell,
     User,
     BarChart,
+    CreditCard,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -181,16 +181,24 @@ function Sidebar() {
                             active={pathname === '/dashboard/planner'}
                             onNavigate={() => setSidebarOpen(false)}
                         />
+                        <NavItem
+                            icon={<CreditCard size={20} />}
+                            label="Billing"
+                            active={onDashboardHome && activeTab === 'billing'}
+                            onClick={() => { setActiveTab('billing'); setSidebarOpen(false); }}
+                        />
                         <Link href="/upload" onClick={() => setSidebarOpen(false)}>
                             <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-zinc-500 hover:text-zinc-300 transition-all font-semibold text-sm h-[52px]">
                                 <Upload size={20} />
                                 New Presentation
                             </button>
                         </Link>
-                        <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-zinc-500 hover:text-zinc-300 transition-all font-semibold text-sm h-[52px]">
-                            <Settings size={20} />
-                            Settings
-                        </button>
+                        <NavItem
+                            icon={<User size={20} />}
+                            label="Profile"
+                            active={onDashboardHome && activeTab === 'profile'}
+                            onClick={() => { setActiveTab('profile'); setSidebarOpen(false); }}
+                        />
                     </nav>
 
                     <div className="mt-auto space-y-4">
@@ -210,9 +218,16 @@ function Sidebar() {
 
 function Header() {
     const { user, activeTab, searchQuery, setSearchQuery } = useDashboard();
-    const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions';
-    const compactTitle = activeTab === 'sessions' ? 'Sessions' : 'Library';
+    const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing';
+    const compactTitle = activeTab === 'sessions'
+        ? 'Sessions'
+        : activeTab === 'profile'
+            ? 'Profile'
+            : activeTab === 'billing'
+                ? 'Billing'
+            : 'Library';
     const compactSearchPlaceholder = activeTab === 'sessions' ? 'Search sessions...' : 'Search presentations...';
+    const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions';
 
     const getTimeGreeting = () => {
         const hour = new Date().getHours();
@@ -233,32 +248,34 @@ function Header() {
                     <h1 className="text-base font-bold tracking-tight text-white sm:text-lg">{compactTitle}</h1>
                 </motion.div>
 
-                <motion.div
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="flex w-full items-center gap-2 sm:w-auto"
-                >
-                    <div className="relative w-full sm:w-72">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-                        <input
-                            type="text"
-                            placeholder={compactSearchPlaceholder}
-                            className="w-full rounded-full border border-white/5 bg-[#101010] py-2.5 pl-11 pr-6 text-sm focus:border-primary/50 focus:outline-none"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                    </div>
-                    <Link href="/upload" className="shrink-0">
-                        <button
-                            type="button"
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
-                            aria-label="Upload presentation"
-                            title="Upload presentation"
-                        >
-                            <Plus size={18} />
-                        </button>
-                    </Link>
-                </motion.div>
+                {showCompactSearch && (
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex w-full items-center gap-2 sm:w-auto"
+                    >
+                        <div className="relative w-full sm:w-72">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                            <input
+                                type="text"
+                                placeholder={compactSearchPlaceholder}
+                                className="w-full rounded-full border border-white/5 bg-[#101010] py-2.5 pl-11 pr-6 text-sm focus:border-primary/50 focus:outline-none"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        <Link href="/upload" className="shrink-0">
+                            <button
+                                type="button"
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
+                                aria-label="Upload presentation"
+                                title="Upload presentation"
+                            >
+                                <Plus size={18} />
+                            </button>
+                        </Link>
+                    </motion.div>
+                )}
             </header>
         );
     }
