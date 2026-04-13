@@ -113,6 +113,47 @@
 - Minor landing page update in `frontend/app/page.tsx`.
 - Dependency lockfile updated: `frontend/package-lock.json`.
 
+### 5. Sessions view
+
+Branch name: 53-session-records-and-profile-settings-in-dashboard
+
+#### Backend
+- Added session lifecycle service: `backend/app/services/session_records_service.py`.
+	- `resolve_user_id_from_token`
+	- `start_live_session`
+	- `end_live_session`
+- Refactored websocket orchestration to use the new session service:
+	- session start/end handled via session events and disconnect fallback
+	- current slide index updates linked to active session
+- Extended presentations API in `backend/app/api/v1/presentations.py`:
+	- `GET /api/v1/presentations/sessions/recent`
+	- `DELETE /api/v1/presentations/sessions/{session_id}`
+	- session payload includes `duration_seconds` for precise UI rendering.
+
+#### Frontend
+- Dashboard data layer (`frontend/app/dashboard/DashboardContext.tsx`):
+	- fetches recent sessions from backend
+	- computes dashboard session metrics from real session data.
+- Live presentation page (`frontend/app/presentation/[id]/page.tsx`):
+	- websocket connection includes auth token
+	- session behavior keeps pause/resume in the same page as one session.
+- Sessions UI (`frontend/app/dashboard/sessions/Sessions.tsx`):
+	- added date + time columns (24-hour format)
+	- duration rendered as `mm:ss`
+	- actions moved to a three-dot dropdown (Delete / Present again / View)
+	- dropdown rendered with portal/fixed positioning to avoid layout and scroll shift.
+- My Presentations actions (`frontend/app/dashboard/page.tsx`):
+	- actions converted to a three-dot dropdown (Add to planner / View / Present again / Delete).
+- Analyze navigation consistency:
+	- `returnTo` query propagation added in upload, library, and dashboard entry points
+	- analyze page back button returns to source page when provided.
+
+#### Planner UX Polishing
+- Standardized dashboard/planner alerts to auto-dismiss in `3500ms`.
+- Removed current-day framed highlight in planner cells; retained marker as a dot only.
+- Moved today's marker dot next to the day number and increased visibility.
+- Planner now opens with the current day selected by default.
+
 ## Test Coverage
 - Added planner API test file: `backend/tests/test_planner.py`.
 - Scenario covered:
