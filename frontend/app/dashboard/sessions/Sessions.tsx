@@ -1,16 +1,17 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Eye } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { RecentSession } from '../DashboardContext';
 
 interface SessionsProps {
     sessions: RecentSession[];
     searchQuery: string;
+    onDeleteSession: (sessionId: number) => void;
 }
 
-export default function Sessions({ sessions, searchQuery }: SessionsProps) {
+export default function Sessions({ sessions, searchQuery, onDeleteSession }: SessionsProps) {
     const filteredSessions = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         if (!query) return sessions;
@@ -18,6 +19,15 @@ export default function Sessions({ sessions, searchQuery }: SessionsProps) {
             session.presentation.title?.toLowerCase().includes(query)
         );
     }, [sessions, searchQuery]);
+
+    const formatDuration = (durationSeconds?: number, fallbackMinutes?: number) => {
+        const total = Number.isFinite(durationSeconds as number)
+            ? Math.max(0, Math.floor(durationSeconds as number))
+            : Math.max(0, Math.floor((fallbackMinutes || 0) * 60));
+        const minutes = Math.floor(total / 60);
+        const seconds = total % 60;
+        return `${minutes}:${String(seconds).padStart(2, '0')}`;
+    };
 
     return (
         <motion.div
@@ -60,14 +70,26 @@ export default function Sessions({ sessions, searchQuery }: SessionsProps) {
                                                 {s.session_type === 'rehearsal' ? 'Rehearsal' : 'Live'}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-5 text-sm text-zinc-400">{s.duration_minutes} min</td>
+                                        <td className="px-8 py-5 text-sm text-zinc-400">
+                                            {formatDuration(s.duration_seconds, s.duration_minutes)}
+                                        </td>
                                         <td className="px-8 py-5 text-sm text-zinc-400">
                                             {new Date(s.started_at).toLocaleDateString('en-GB')}
                                         </td>
                                         <td className="px-8 py-5 text-right">
-                                            <button className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white">
-                                                <Eye size={16} />
-                                            </button>
+                                            <div className="inline-flex items-center gap-1">
+                                                <button className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white">
+                                                    <Eye size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => onDeleteSession(s.id)}
+                                                    className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-red-500/10 hover:text-red-400"
+                                                    title="Delete session"
+                                                    aria-label="Delete session"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

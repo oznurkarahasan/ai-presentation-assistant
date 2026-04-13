@@ -98,8 +98,50 @@ export default function DashboardPage() {
         alert,
         setRecentPresentations,
         setPresentations,
+        setRecentSessions,
         setActiveTab
     } = useDashboard();
+
+    const handleDeleteSession = async (sessionId: number) => {
+        if (!confirm("Are you sure you want to delete this session record?")) return;
+
+        try {
+            await client.delete(`/api/v1/presentations/sessions/${sessionId}`);
+            setRecentSessions((prev) => {
+                const removed = prev.find((session) => session.id === sessionId);
+                const next = prev.filter((session) => session.id !== sessionId);
+
+                if (removed && stats) {
+                    const removedMinutes = (removed.duration_seconds || 0) / 60;
+                    const nextCount = Math.max(0, stats.total_sessions - 1);
+                    const currentTotalMinutes = (stats.avg_session_minutes || 0) * (stats.total_sessions || 0);
+                    const nextTotalMinutes = Math.max(0, currentTotalMinutes - removedMinutes);
+
+                    const nextLiveHours = removed.session_type === 'live'
+                        ? Math.max(0, (stats.total_live_hours || 0) - removedMinutes / 60)
+                        : (stats.total_live_hours || 0);
+                    const nextRehearsalHours = removed.session_type === 'rehearsal'
+                        ? Math.max(0, (stats.total_rehearsal_hours || 0) - removedMinutes / 60)
+                        : (stats.total_rehearsal_hours || 0);
+
+                    setStats({
+                        ...stats,
+                        total_sessions: nextCount,
+                        avg_session_minutes: nextCount > 0 ? Number((nextTotalMinutes / nextCount).toFixed(1)) : 0,
+                        total_live_hours: Number(nextLiveHours.toFixed(1)),
+                        total_rehearsal_hours: Number(nextRehearsalHours.toFixed(1)),
+                    });
+                }
+
+                return next;
+            });
+            setAlert({ type: 'info', message: 'Session deleted.' });
+            setTimeout(() => setAlert(null), 3000);
+        } catch {
+            setAlert({ type: 'error', message: 'Session could not be deleted.' });
+            setTimeout(() => setAlert(null), 4000);
+        }
+    };
 
     const [plannerModalPresentation, setPlannerModalPresentation] = useState<RecentPresentation | null>(null);
     const [plannerDate, setPlannerDate] = useState(() => toDateKey(new Date()));
@@ -447,7 +489,7 @@ export default function DashboardPage() {
 
             {/* Sessions Tab */}
             {activeTab === 'sessions' && (
-                <Sessions sessions={recentSessions} searchQuery={searchQuery} />
+                <Sessions sessions={recentSessions} searchQuery={searchQuery} onDeleteSession={handleDeleteSession} />
             )}
 
             {plannerModalPresentation && (
