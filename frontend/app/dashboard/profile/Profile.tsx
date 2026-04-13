@@ -19,6 +19,11 @@ export default function Profile() {
 	const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 	const [profileError, setProfileError] = useState<string | null>(null);
 	const [passwordError, setPasswordError] = useState<string | null>(null);
+	const [pendingEmailVerification, setPendingEmailVerification] = useState<string | null>(null);
+	const [emailVerificationCode, setEmailVerificationCode] = useState('');
+	const [emailVerificationError, setEmailVerificationError] = useState<string | null>(null);
+	const [isSendingEmailCode, setIsSendingEmailCode] = useState(false);
+	const [isVerifyingEmailCode, setIsVerifyingEmailCode] = useState(false);
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteStep, setDeleteStep] = useState<'warning' | 'password'>('warning');
 	const [deletePassword, setDeletePassword] = useState('');
@@ -44,6 +49,10 @@ export default function Profile() {
 
 	const hasPasswordDraft = currentPassword || newPassword || confirmPassword;
 	const currentPlan = 'Free Plan';
+	const normalizedEmail = email.trim().toLowerCase();
+	const currentEmail = (user.email || '').trim().toLowerCase();
+	const emailChanged = normalizedEmail !== currentEmail;
+	const isEmailCodeSentForCurrentInput = Boolean(pendingEmailVerification && pendingEmailVerification === normalizedEmail);
 
 	const resetPasswordFields = () => {
 		setCurrentPassword('');
@@ -52,15 +61,85 @@ export default function Profile() {
 		setPasswordError(null);
 	};
 
+	const resetEmailVerificationState = () => {
+		setPendingEmailVerification(null);
+		setEmailVerificationCode('');
+		setEmailVerificationError(null);
+	};
+
+	const requestEmailVerificationCode = async (newEmail: string) => {
+		setIsSendingEmailCode(true);
+		setEmailVerificationError(null);
+		try {
+			await client.post('/api/v1/auth/me/email-change/request-code', { new_email: newEmail });
+			setPendingEmailVerification(newEmail);
+			setEmailVerificationCode('');
+			setAlert({ type: 'info', message: 'Verification code sent to your new email.' });
+			setTimeout(() => setAlert(null), 3500);
+		} catch (error) {
+			const apiMessage = axios.isAxiosError(error)
+				? (error.response?.data?.detail as string | undefined)
+				: undefined;
+			setEmailVerificationError(apiMessage || 'Failed to send verification code.');
+		} finally {
+			setIsSendingEmailCode(false);
+		}
+	};
+
+	const handleConfirmEmailCode = async () => {
+		if (!pendingEmailVerification || emailVerificationCode.trim().length !== 6 || isVerifyingEmailCode) return;
+
+		const normalizedName = fullName.trim();
+		if (!normalizedName) {
+			setProfileError('Full name cannot be empty.');
+			return;
+		}
+
+		try {
+			setIsVerifyingEmailCode(true);
+			setEmailVerificationError(null);
+			setProfileError(null);
+
+			await client.post('/api/v1/auth/me/email-change/confirm', {
+				new_email: pendingEmailVerification,
+				code: emailVerificationCode.trim(),
+			});
+
+			if (normalizedName !== (user.full_name || '')) {
+				await client.patch('/api/v1/auth/me', { full_name: normalizedName });
+			}
+
+			await refreshData();
+			resetEmailVerificationState();
+			setAlert({ type: 'info', message: 'Email updated successfully.' });
+			setTimeout(() => setAlert(null), 3500);
+		} catch (error) {
+			const apiMessage = axios.isAxiosError(error)
+				? (error.response?.data?.detail as string | undefined)
+				: undefined;
+			setEmailVerificationError(apiMessage || 'Verification failed.');
+		} finally {
+			setIsVerifyingEmailCode(false);
+		}
+	};
+
 	const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		if (!hasProfileChanges || isUpdatingProfile) return;
 
 		const normalizedName = fullName.trim();
-		const normalizedEmail = email.trim();
 
 		if (!normalizedName) {
 			setProfileError('Full name cannot be empty.');
+			return;
+		}
+
+		if (emailChanged) {
+			if (isEmailCodeSentForCurrentInput) {
+				setProfileError('Enter the verification code below to complete email update.');
+				return;
+			}
+			await requestEmailVerificationCode(normalizedEmail);
 			return;
 		}
 
@@ -69,10 +148,10 @@ export default function Profile() {
 			setProfileError(null);
 			await client.patch('/api/v1/auth/me', {
 				full_name: normalizedName,
-				email: normalizedEmail,
 			});
 
 			await refreshData();
+			resetEmailVerificationState();
 			setAlert({ type: 'info', message: 'Profile updated successfully.' });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
@@ -204,11 +283,61 @@ export default function Profile() {
 									id="profile-email"
 									type="email"
 									value={email}
-									onChange={(e) => setEmail(e.target.value)}
+									onChange={(e) => {
+										const next = e.target.value;
+										setEmail(next);
+										const normalizedNext = next.trim().toLowerCase();
+										if (pendingEmailVerification && pendingEmailVerification !== normalizedNext) {
+											resetEmailVerificationState();
+										}
+									}}
 									autoComplete="email"
 									className="w-full rounded-xl border border-white/10 bg-[#0C0C0C] px-3.5 py-2.5 text-sm text-white outline-none transition-colors focus:border-primary/70"
 								/>
 							</div>
+
+							{emailChanged && (
+								<div className="rounded-lg border border-primary/35 bg-primary/10 p-3">
+									<p className="text-xs font-semibold text-primary">Email change requires verification</p>
+									<p className="mt-1 text-xs text-zinc-300">We will send a 6-digit code to your new email address.</p>
+
+									{isEmailCodeSentForCurrentInput && (
+										<div className="mt-3 space-y-2">
+											<input
+												type="text"
+												inputMode="numeric"
+												maxLength={6}
+												placeholder="Enter 6-digit code"
+												value={emailVerificationCode}
+												onChange={(e) => setEmailVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+												className="w-full rounded-lg border border-white/10 bg-[#0C0C0C] px-3 py-2 text-sm text-white outline-none focus:border-primary/70"
+											/>
+											<div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+												<button
+													type="button"
+													onClick={() => requestEmailVerificationCode(normalizedEmail)}
+													disabled={isSendingEmailCode || isVerifyingEmailCode}
+													className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+												>
+													{isSendingEmailCode ? 'Sending...' : 'Resend Code'}
+												</button>
+												<button
+													type="button"
+													onClick={handleConfirmEmailCode}
+													disabled={emailVerificationCode.trim().length !== 6 || isVerifyingEmailCode}
+													className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+												>
+													{isVerifyingEmailCode ? 'Verifying...' : 'Verify Code'}
+												</button>
+											</div>
+										</div>
+									)}
+								</div>
+							)}
+
+							{emailVerificationError && (
+								<p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300 sm:text-sm">{emailVerificationError}</p>
+							)}
 
 							{profileError && (
 								<p className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-300 sm:text-sm">{profileError}</p>
@@ -221,6 +350,7 @@ export default function Profile() {
 										setFullName(user.full_name || '');
 										setEmail(user.email || '');
 										setProfileError(null);
+										resetEmailVerificationState();
 									}}
 									disabled={!hasProfileChanges || isUpdatingProfile}
 									className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
@@ -232,7 +362,7 @@ export default function Profile() {
 									disabled={!hasProfileChanges || isUpdatingProfile}
 									className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-black transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 								>
-									{isUpdatingProfile ? 'Saving...' : 'Save Changes'}
+									{isUpdatingProfile ? 'Saving...' : emailChanged ? 'Send Verification Code' : 'Save Changes'}
 								</button>
 							</div>
 						</div>
