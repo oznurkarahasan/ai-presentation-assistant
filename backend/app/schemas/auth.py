@@ -9,6 +9,10 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
+
+class MessageResponse(BaseModel):
+    msg: str
+
 class UserCreate(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100, description="User's full name")
     email: EmailStr = Field(..., description="Valid email address")

@@ -151,7 +151,7 @@ async def update_me(
     return current_user
 
 
-@router.delete("/me")
+@router.delete("/me", response_model=schemas.MessageResponse)
 async def delete_me(
     payload: schemas.DeleteAccountRequest,
     current_user: User = Depends(get_current_user),
@@ -172,7 +172,7 @@ async def delete_me(
     return {"msg": "Account deleted successfully."}
 
 
-@router.post("/forgot-password")
+@router.post("/forgot-password", response_model=schemas.MessageResponse)
 async def forgot_password(
     payload: ForgotPassword,
     background_tasks: BackgroundTasks,
@@ -194,7 +194,7 @@ async def forgot_password(
     return {"msg": "If that email exists, a password reset link has been sent."}
 
 
-@router.post("/reset-password")
+@router.post("/reset-password", response_model=schemas.MessageResponse)
 async def reset_password(
     payload: ResetPassword,
     db: AsyncSession = Depends(get_db)
