@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Eye, Trash2 } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { Eye, MoreVertical, Play, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { createPortal } from 'react-dom';
 import { RecentSession } from '../DashboardContext';
 
 interface SessionsProps {
@@ -12,6 +14,9 @@ interface SessionsProps {
 }
 
 export default function Sessions({ sessions, searchQuery, onDeleteSession }: SessionsProps) {
+    const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+    const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
+
     const filteredSessions = useMemo(() => {
         const query = searchQuery.trim().toLowerCase();
         if (!query) return sessions;
@@ -19,6 +24,37 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
             session.presentation.title?.toLowerCase().includes(query)
         );
     }, [sessions, searchQuery]);
+
+    const openMenuSession = useMemo(
+        () => filteredSessions.find((session) => session.id === openMenuId) ?? null,
+        [filteredSessions, openMenuId]
+    );
+
+    useEffect(() => {
+        const handleOutsideClick = (event: MouseEvent) => {
+            const target = event.target as Element | null;
+            if (target?.closest('[data-session-menu-root]')) return;
+            setOpenMenuId(null);
+            setMenuPosition(null);
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        return () => document.removeEventListener('mousedown', handleOutsideClick);
+    }, []);
+
+    useEffect(() => {
+        const closeMenu = () => {
+            setOpenMenuId(null);
+            setMenuPosition(null);
+        };
+
+        window.addEventListener('resize', closeMenu);
+        window.addEventListener('scroll', closeMenu, true);
+        return () => {
+            window.removeEventListener('resize', closeMenu);
+            window.removeEventListener('scroll', closeMenu, true);
+        };
+    }, []);
 
     const formatDuration = (durationSeconds?: number, fallbackMinutes?: number) => {
         const total = Number.isFinite(durationSeconds as number)
@@ -42,13 +78,14 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
 
                 <div className="bg-[#0C0C0C] border border-white/5 rounded-[2rem] overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="min-w-[760px] w-full text-left">
+                        <table className="min-w-[860px] w-full text-left">
                             <thead>
                                 <tr className="border-b border-white/5">
                                     <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Presentation</th>
                                     <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Type</th>
                                     <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Duration</th>
                                     <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Date</th>
+                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Time</th>
                                     <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Action</th>
                                 </tr>
                             </thead>
@@ -76,18 +113,42 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                                         <td className="px-8 py-5 text-sm text-zinc-400">
                                             {new Date(s.started_at).toLocaleDateString('en-GB')}
                                         </td>
+                                        <td className="px-8 py-5 text-sm text-zinc-400">
+                                            {new Date(s.started_at).toLocaleTimeString('en-GB', {
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                hour12: false,
+                                            })}
+                                        </td>
                                         <td className="px-8 py-5 text-right">
-                                            <div className="inline-flex items-center gap-1">
-                                                <button className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white">
-                                                    <Eye size={16} />
-                                                </button>
+                                            <div className="inline-flex" data-session-menu-root>
                                                 <button
-                                                    onClick={() => onDeleteSession(s.id)}
-                                                    className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-red-500/10 hover:text-red-400"
-                                                    title="Delete session"
-                                                    aria-label="Delete session"
+                                                    type="button"
+                                                    onClick={(event) => {
+                                                        if (openMenuId === s.id) {
+                                                            setOpenMenuId(null);
+                                                            setMenuPosition(null);
+                                                            return;
+                                                        }
+
+                                                        const rect = event.currentTarget.getBoundingClientRect();
+                                                        const menuWidth = 176;
+                                                        const margin = 8;
+                                                        const left = Math.min(
+                                                            window.innerWidth - menuWidth - margin,
+                                                            Math.max(margin, rect.right - menuWidth)
+                                                        );
+                                                        setMenuPosition({
+                                                            top: rect.bottom + 6,
+                                                            left,
+                                                        });
+                                                        setOpenMenuId(s.id);
+                                                    }}
+                                                    className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white"
+                                                    title="Session actions"
+                                                    aria-label="Session actions"
                                                 >
-                                                    <Trash2 size={16} />
+                                                    <MoreVertical size={16} />
                                                 </button>
                                             </div>
                                         </td>
@@ -100,6 +161,53 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                     {filteredSessions.length === 0 && (
                         <div className="py-20 text-center text-zinc-600 italic">No recorded sessions found.</div>
                     )}
+
+                    {openMenuSession && menuPosition && typeof document !== 'undefined' &&
+                        createPortal(
+                            <div
+                                data-session-menu-root
+                                className="fixed z-[120] w-44 overflow-hidden rounded-xl border border-white/10 bg-[#111111] shadow-xl"
+                                style={{ top: menuPosition.top, left: menuPosition.left }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setOpenMenuId(null);
+                                        setMenuPosition(null);
+                                        onDeleteSession(openMenuSession.id);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                                >
+                                    <Trash2 size={14} />
+                                    Delete
+                                </button>
+
+                                <Link
+                                    href={`/presentation/${openMenuSession.presentation.id}`}
+                                    onClick={() => {
+                                        setOpenMenuId(null);
+                                        setMenuPosition(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
+                                >
+                                    <Play size={14} />
+                                    Present again
+                                </Link>
+
+                                <Link
+                                    href={`/analyze?id=${openMenuSession.presentation.id}&returnTo=${encodeURIComponent('/dashboard?tab=sessions')}`}
+                                    onClick={() => {
+                                        setOpenMenuId(null);
+                                        setMenuPosition(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
+                                >
+                                    <Eye size={14} />
+                                    View
+                                </Link>
+                            </div>,
+                            document.body
+                        )}
                 </div>
             </div>
         </motion.div>

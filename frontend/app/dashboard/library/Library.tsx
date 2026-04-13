@@ -401,7 +401,7 @@ function PresentationCard({
             </button>
 
             <div className="mt-auto grid grid-cols-2 gap-2">
-                <Link href={`/analyze?id=${presentation.id}`} className="flex-1">
+                <Link href={`/analyze?id=${presentation.id}&returnTo=${encodeURIComponent('/dashboard?tab=presentations')}`} className="flex-1">
                     <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs font-bold text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white">
                         View
                         <Eye size={14} />

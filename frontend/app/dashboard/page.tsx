@@ -870,7 +870,7 @@ function PresentationRow({ presentation, index, onDelete }: { presentation: Rece
                 </div>
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Link href={`/analyze?id=${presentation.id}`}>
+                <Link href={`/analyze?id=${presentation.id}&returnTo=${encodeURIComponent('/dashboard?tab=overview')}`}>
                     <button className="p-2 rounded-lg bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white transition-all hover:shadow-lg">
                         <Eye size={16} />
                     </button>
@@ -995,7 +995,7 @@ function PresentationCard({
                         <CalendarDays size={12} />
                         Add To Planner
                     </button>
-                    <Link href={`/analyze?id=${presentation.id}`}>
+                    <Link href={`/analyze?id=${presentation.id}&returnTo=${encodeURIComponent('/dashboard?tab=presentations')}`}>
                         <button className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-bold text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white">
                             View
                             <Eye size={12} />

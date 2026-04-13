@@ -189,9 +189,9 @@ export default function UploadPage() {
         // Authenticated user - redirect to analyze page
         const presentationId = localStorage.getItem("last_presentation_id");
         if (presentationId) {
-            router.push(`/analyze?id=${presentationId}`);
+            router.push(`/analyze?id=${presentationId}&returnTo=${encodeURIComponent('/upload')}`);
         } else {
-            router.push("/analyze");
+            router.push(`/analyze?returnTo=${encodeURIComponent('/upload')}`);
         }
     };
 
