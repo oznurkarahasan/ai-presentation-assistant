@@ -5,6 +5,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator
+from pydantic import BaseModel, Field
 import os
 import shutil
 import uuid
@@ -16,7 +17,11 @@ MAX_FILE_SIZE = 50 * 1024 * 1024
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from app.models.presentation import Presentation
+from app.models.presentation import Presentation, PresentationSession
+
+
+class PresentationTitleUpdate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=500)
 
 async def get_db():
     async with AsyncSessionLocal() as session:
@@ -44,6 +49,68 @@ async def list_presentations(
         }
         for p in presentations
     ]
+
+
+@router.get("/sessions/recent", response_model=list)
+async def list_recent_sessions(
+    limit: int = Query(100, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(auth.get_current_user),
+):
+    stmt = (
+        select(PresentationSession, Presentation)
+        .join(Presentation, Presentation.id == PresentationSession.presentation_id)
+        .where(PresentationSession.user_id == current_user.id)
+        .order_by(PresentationSession.started_at.desc())
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    response = []
+    for session, presentation in rows:
+        duration_seconds = int(session.duration_seconds or 0)
+        duration_minutes = int(duration_seconds // 60)
+        response.append(
+            {
+                "id": session.id,
+                "session_type": session.session_type.value if hasattr(session.session_type, "value") else str(session.session_type),
+                "duration_seconds": duration_seconds,
+                "duration_minutes": duration_minutes,
+                "started_at": session.started_at.isoformat() if session.started_at else None,
+                "ended_at": session.ended_at.isoformat() if session.ended_at else None,
+                "presentation": {
+                    "id": presentation.id,
+                    "title": presentation.title,
+                    "slide_count": presentation.slide_count,
+                },
+            }
+        )
+
+    return response
+
+
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_session(
+    session_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(auth.get_current_user),
+):
+    stmt = (
+        select(PresentationSession)
+        .join(Presentation, Presentation.id == PresentationSession.presentation_id)
+        .where(PresentationSession.id == session_id)
+        .where(Presentation.user_id == current_user.id)
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+
+    if session is None:
+        raise ValidationError("Session not found")
+
+    await db.delete(session)
+    await db.commit()
+    return None
 
 @router.get("/{presentation_id}")
 async def get_presentation(
@@ -219,6 +286,45 @@ async def upload_presentation(
             message="Failed to process presentation",
             details=str(e)
         )
+
+
+@router.patch("/{presentation_id}")
+async def update_presentation_title(
+    presentation_id: int,
+    payload: PresentationTitleUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(auth.get_current_user),
+):
+    stmt = select(Presentation).where(
+        Presentation.id == presentation_id,
+        Presentation.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    presentation = result.scalar_one_or_none()
+
+    if not presentation:
+        raise ValidationError("Presentation not found")
+
+    normalized_title = payload.title.strip()
+    if not normalized_title:
+        raise ValidationError("Presentation title cannot be empty")
+
+    presentation.title = normalized_title
+    await db.commit()
+    await db.refresh(presentation)
+
+    logger.info(f"Presentation title updated: ID={presentation.id}, User={current_user.id}")
+
+    return {
+        "id": presentation.id,
+        "title": presentation.title,
+        "file_name": os.path.basename(presentation.file_path),
+        "file_path": presentation.file_path,
+        "file_type": presentation.file_type,
+        "slide_count": presentation.slide_count,
+        "status": presentation.status,
+        "created_at": presentation.created_at.isoformat() if presentation.created_at else None,
+    }
 
 @router.delete("/{presentation_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_presentation(

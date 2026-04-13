@@ -46,7 +46,7 @@ export default function PricingPage() {
                         {/* Pro Tier */}
                         <PricingCard
                             tier="Pro"
-                            price="10"
+                            price="9.99"
                             desc="The power user&apos;s choice for professional speaking."
                             features={[
                                 "Unlimited Presentations",
@@ -64,7 +64,7 @@ export default function PricingPage() {
                         {/* Enterprise Tier */}
                         <PricingCard
                             tier="Enterprise"
-                            price="50"
+                            price="49.99"
                             desc="Global scale tools for teams and top-tier speakers."
                             features={[
                                 "Everything in Pro",

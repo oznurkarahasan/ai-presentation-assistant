@@ -71,6 +71,7 @@ class User(Base):
     preferences = relationship("UserPreference", back_populates="user", uselist=False, cascade="all, delete-orphan")
     sessions = relationship("PresentationSession", back_populates="user", cascade="all, delete-orphan")
     notes = relationship("Note", back_populates="user", cascade="all, delete-orphan")
+    planner_events = relationship("PlannerEvent", back_populates="user", cascade="all, delete-orphan")
     created_presentations = relationship("Presentation", foreign_keys="Presentation.created_by", back_populates="creator")
 
     __table_args__ = (
@@ -132,6 +133,7 @@ class Presentation(Base):
     slides = relationship("Slide", back_populates="presentation", cascade="all, delete-orphan", order_by="Slide.page_number")
     analysis = relationship("PresentationAnalysis", back_populates="presentation", uselist=False, cascade="all, delete-orphan")
     sessions = relationship("PresentationSession", back_populates="presentation", cascade="all, delete-orphan")
+    planner_events = relationship("PlannerEvent", back_populates="presentation", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index('ix_presentation_status_created', 'status', 'created_at'),
@@ -219,6 +221,28 @@ class Note(Base):
     
     __table_args__ = (
         Index('ix_note_user_slide', 'user_id', 'slide_id'),
+    )
+
+
+class PlannerEvent(Base):
+    __tablename__ = "planner_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    presentation_id = Column(Integer, ForeignKey("presentations.id", ondelete="CASCADE"), nullable=False, index=True)
+    scheduled_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    reminder_at = Column(DateTime(timezone=True), nullable=True)
+    reminder_sent_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    user = relationship("User", back_populates="planner_events")
+    presentation = relationship("Presentation", back_populates="planner_events")
+
+    __table_args__ = (
+        Index('ix_planner_user_scheduled', 'user_id', 'scheduled_at'),
+        Index('ix_planner_presentation_scheduled', 'presentation_id', 'scheduled_at'),
     )
 
 class VerificationToken(Base):

@@ -152,6 +152,7 @@ export default function RealTimePresentationPage() {
     const viewerContainerRef = useRef<HTMLDivElement>(null);
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(totalPages);
+    const isListeningRef = useRef(isListening);
 
     // Sync refs with state to avoid closure staleness in STT/WebSocket handlers
     useEffect(() => {
@@ -161,6 +162,21 @@ export default function RealTimePresentationPage() {
     useEffect(() => {
         totalPagesRef.current = totalPages;
     }, [totalPages]);
+
+    useEffect(() => {
+        isListeningRef.current = isListening;
+    }, [isListening]);
+
+    const sendSessionEvent = useCallback((eventName: "START" | "END") => {
+        if (socketRef.current?.readyState !== WebSocket.OPEN) return;
+        socketRef.current.send(JSON.stringify({
+            type: "SESSION_EVENT",
+            event: eventName,
+            session_type: "live",
+            current_page: currentPageRef.current,
+            total_pages: totalPagesRef.current,
+        }));
+    }, []);
 
     // Fetch presentation details
     useEffect(() => {
@@ -277,7 +293,10 @@ export default function RealTimePresentationPage() {
             const socketId = Math.random().toString(36).substring(7);
             const host = typeof window !== 'undefined' ? window.location.hostname : '127.0.0.1';
             const baseWsUrl = process.env.NEXT_PUBLIC_WS_URL || `ws://${host}:8000`;
-            const wsUrl = `${baseWsUrl}/api/v1/orchestration/ws/presentation/${presentationId}`;
+            const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+            const wsUrl = token
+                ? `${baseWsUrl}/api/v1/orchestration/ws/presentation/${presentationId}?token=${encodeURIComponent(token)}`
+                : `${baseWsUrl}/api/v1/orchestration/ws/presentation/${presentationId}`;
 
             console.log(`[WebSocket] [${socketId}] Connecting to: ${wsUrl} (Current Host: ${host})`);
             setWsStatus("connecting");
@@ -288,6 +307,9 @@ export default function RealTimePresentationPage() {
             socket.onopen = () => {
                 console.log(`[WebSocket] [${socketId}] Connected successfully`);
                 setWsStatus("connected");
+                if (isListeningRef.current) {
+                    sendSessionEvent("START");
+                }
             };
 
             socket.onmessage = (event) => {
@@ -334,7 +356,7 @@ export default function RealTimePresentationPage() {
             if (socket) socket.close();
             clearTimeout(reconnectTimeout);
         };
-    }, [presentationId, handleCommand]);
+    }, [presentationId, handleCommand, sendSessionEvent]);
 
     const toggleFullScreen = () => {
         if (!document.fullscreenElement && viewerContainerRef.current) {
@@ -374,6 +396,7 @@ export default function RealTimePresentationPage() {
             setIsListening(false);
         } else {
             setSttError(null);
+            sendSessionEvent("START");
             startSpeechRecognition();
         }
     };
