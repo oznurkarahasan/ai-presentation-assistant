@@ -146,7 +146,7 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
             closePlannerModal();
         } catch {
             setAlert({ type: 'error', message: 'Presentation could not be added to planner.' });
-            setTimeout(() => setAlert(null), 4500);
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 

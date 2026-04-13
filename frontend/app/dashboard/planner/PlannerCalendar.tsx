@@ -407,6 +407,7 @@ export default function PlannerCalendar() {
             setEvents(grouped);
         } catch {
             setAlert({ type: 'error', message: 'Planner events could not be loaded.' });
+            setTimeout(() => setAlert(null), 3500);
         }
     }, [setAlert, toScheduledEvent]);
 
@@ -467,8 +468,10 @@ export default function PlannerCalendar() {
             setEditingEventId(null);
             setEditingDateKey(null);
             setAlert({ type: 'info', message: editingEventId ? 'Event updated.' : 'Event saved to planner.' });
+            setTimeout(() => setAlert(null), 3500);
         } catch {
             setAlert({ type: 'error', message: editingEventId ? 'Event could not be updated.' : 'Event could not be saved.' });
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 
@@ -484,8 +487,10 @@ export default function PlannerCalendar() {
                 ),
             }));
             setAlert({ type: 'info', message: 'Reminder removed.' });
+            setTimeout(() => setAlert(null), 3500);
         } catch {
             setAlert({ type: 'error', message: 'Reminder could not be removed.' });
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 
@@ -505,8 +510,10 @@ export default function PlannerCalendar() {
                 };
             });
             setAlert({ type: 'info', message: 'Scheduled presentation removed.' });
+            setTimeout(() => setAlert(null), 3500);
         } catch {
             setAlert({ type: 'error', message: 'Scheduled presentation could not be removed.' });
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 

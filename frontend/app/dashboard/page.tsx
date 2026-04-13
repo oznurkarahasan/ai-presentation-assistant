@@ -138,10 +138,10 @@ export default function DashboardPage() {
                 return next;
             });
             setAlert({ type: 'info', message: 'Session deleted.' });
-            setTimeout(() => setAlert(null), 3000);
+            setTimeout(() => setAlert(null), 3500);
         } catch {
             setAlert({ type: 'error', message: 'Session could not be deleted.' });
-            setTimeout(() => setAlert(null), 4000);
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 
@@ -191,7 +191,7 @@ export default function DashboardPage() {
             }
 
             setAlert({ type: 'error', message: msg });
-            setTimeout(() => setAlert(null), 4500);
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 
@@ -236,11 +236,11 @@ export default function DashboardPage() {
             );
 
             setAlert({ type: 'info', message: 'Presentation title updated.' });
-            setTimeout(() => setAlert(null), 3000);
+            setTimeout(() => setAlert(null), 3500);
             cancelEditingPresentationTitle();
         } catch {
             setAlert({ type: 'error', message: 'Presentation title could not be updated.' });
-            setTimeout(() => setAlert(null), 4000);
+            setTimeout(() => setAlert(null), 3500);
             setIsSavingPresentationTitle(false);
         }
     };
@@ -314,7 +314,7 @@ export default function DashboardPage() {
             closePlannerModal();
         } catch {
             setAlert({ type: 'error', message: 'Presentation could not be added to planner.' });
-            setTimeout(() => setAlert(null), 4500);
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 
