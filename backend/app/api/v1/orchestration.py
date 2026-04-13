@@ -1,11 +1,17 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 from app.services import intent_service
+from app.services.session_records_service import (
+    end_live_session,
+    resolve_user_id_from_token,
+    start_live_session,
+)
 from app.core.logger import logger
 from app.core.database import AsyncSessionLocal
 from app.models.presentation import PresentationSession, Base
-from sqlalchemy import select, update, text
+from sqlalchemy import update
 
 router = APIRouter()
 
@@ -51,6 +57,9 @@ manager = ConnectionManager()
 async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
     logger.info(f"[WebSocket Handshake] Start for presentation_id: {presentation_id}")
     logger.debug(f"Loaded tables: {list(Base.metadata.tables.keys())}")
+    user_id: Optional[int] = await resolve_user_id_from_token(websocket.query_params.get("token"))
+    current_session_id: Optional[int] = None
+
     try:
         await manager.connect(presentation_id, websocket)
         logger.info(f"[WebSocket Handshake] Connection accepted for {presentation_id}")
@@ -65,10 +74,33 @@ async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
             logger.debug(f"Received WebSocket message for {presentation_id}: {data[:50]}...")
             try:
                 payload = json.loads(data)
+                message_type = payload.get("type")
+
+                if message_type == "SESSION_EVENT":
+                    event_name = payload.get("event")
+                    if event_name == "START" and current_session_id is None:
+                        current_slide = int(payload.get("current_page") or 1)
+                        current_session_id = await start_live_session(
+                            presentation_id=int(presentation_id),
+                            user_id=user_id,
+                            current_slide=current_slide,
+                        )
+                    elif event_name == "END" and current_session_id is not None:
+                        await end_live_session(current_session_id)
+                        current_session_id = None
+                    continue
+
                 transcript = payload.get("transcript", "")
                 is_final = payload.get("is_final", False)
                 current_slide = payload.get("current_page", 1)
                 total_slides = payload.get("total_pages", 1)
+
+                if current_session_id is None and (transcript or is_final):
+                    current_session_id = await start_live_session(
+                        presentation_id=int(presentation_id),
+                        user_id=user_id,
+                        current_slide=int(current_slide),
+                    )
                 
                 if is_final:
                     # Perform intent analysis with context
@@ -87,17 +119,15 @@ async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
                     # Persist the current state to the latest active session (no await to keep responsive)
                     try:
                         async with AsyncSessionLocal() as db:
-                            # Update the most recent active session for this presentation
-                            # Note: presentation_id is a string from the URL, converting to int
-                            stmt = (
-                                update(PresentationSession)
-                                .where(PresentationSession.presentation_id == int(presentation_id))
-                                .where(PresentationSession.ended_at == None)
-                                .values(current_slide_index=current_slide)
-                            )
-                            await db.execute(stmt)
-                            await db.commit()
-                            logger.debug(f"Persisted slide state {current_slide} for presentation {presentation_id}")
+                            if current_session_id is not None:
+                                stmt = (
+                                    update(PresentationSession)
+                                    .where(PresentationSession.id == current_session_id)
+                                    .values(current_slide_index=current_slide)
+                                )
+                                await db.execute(stmt)
+                                await db.commit()
+                                logger.debug(f"Persisted slide state {current_slide} for presentation {presentation_id}")
                     except Exception as db_err:
                         logger.error(f"Database session update failed for {presentation_id}: {db_err}")
                 
@@ -116,6 +146,10 @@ async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
                 
     except WebSocketDisconnect:
         manager.disconnect(presentation_id, websocket)
+        if current_session_id is not None:
+            await end_live_session(current_session_id)
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
         manager.disconnect(presentation_id, websocket)
+        if current_session_id is not None:
+            await end_live_session(current_session_id)

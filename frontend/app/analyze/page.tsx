@@ -51,6 +51,8 @@ export default function AnalyzePage() {
     const chatEndRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
     const presentationId = searchParams.get('id');
+    const returnToParam = searchParams.get('returnTo');
+    const backHref = returnToParam && returnToParam.startsWith('/') ? returnToParam : '/dashboard';
 
     const [showChat, setShowChat] = useState(true);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -253,7 +255,7 @@ export default function AnalyzePage() {
                         <div className="flex items-center gap-4">
                             {!isFullScreen && (
                                 <>
-                                    <Link href="/dashboard" className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400 hover:text-white">
+                                    <Link href={backHref} className="p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400 hover:text-white">
                                         <ArrowLeft size={20} />
                                     </Link>
                                     <div className="h-4 w-[1px] bg-white/10" />

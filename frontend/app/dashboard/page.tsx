@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
     Presentation,
@@ -17,6 +18,7 @@ import {
     Eye,
     ArrowUpRight,
     ChevronDown,
+    MoreVertical,
     X,
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -98,8 +100,50 @@ export default function DashboardPage() {
         alert,
         setRecentPresentations,
         setPresentations,
+        setRecentSessions,
         setActiveTab
     } = useDashboard();
+
+    const handleDeleteSession = async (sessionId: number) => {
+        if (!confirm("Are you sure you want to delete this session record?")) return;
+
+        try {
+            await client.delete(`/api/v1/presentations/sessions/${sessionId}`);
+            setRecentSessions((prev) => {
+                const removed = prev.find((session) => session.id === sessionId);
+                const next = prev.filter((session) => session.id !== sessionId);
+
+                if (removed && stats) {
+                    const removedMinutes = (removed.duration_seconds || 0) / 60;
+                    const nextCount = Math.max(0, stats.total_sessions - 1);
+                    const currentTotalMinutes = (stats.avg_session_minutes || 0) * (stats.total_sessions || 0);
+                    const nextTotalMinutes = Math.max(0, currentTotalMinutes - removedMinutes);
+
+                    const nextLiveHours = removed.session_type === 'live'
+                        ? Math.max(0, (stats.total_live_hours || 0) - removedMinutes / 60)
+                        : (stats.total_live_hours || 0);
+                    const nextRehearsalHours = removed.session_type === 'rehearsal'
+                        ? Math.max(0, (stats.total_rehearsal_hours || 0) - removedMinutes / 60)
+                        : (stats.total_rehearsal_hours || 0);
+
+                    setStats({
+                        ...stats,
+                        total_sessions: nextCount,
+                        avg_session_minutes: nextCount > 0 ? Number((nextTotalMinutes / nextCount).toFixed(1)) : 0,
+                        total_live_hours: Number(nextLiveHours.toFixed(1)),
+                        total_rehearsal_hours: Number(nextRehearsalHours.toFixed(1)),
+                    });
+                }
+
+                return next;
+            });
+            setAlert({ type: 'info', message: 'Session deleted.' });
+            setTimeout(() => setAlert(null), 3500);
+        } catch {
+            setAlert({ type: 'error', message: 'Session could not be deleted.' });
+            setTimeout(() => setAlert(null), 3500);
+        }
+    };
 
     const [plannerModalPresentation, setPlannerModalPresentation] = useState<RecentPresentation | null>(null);
     const [plannerDate, setPlannerDate] = useState(() => toDateKey(new Date()));
@@ -147,7 +191,7 @@ export default function DashboardPage() {
             }
 
             setAlert({ type: 'error', message: msg });
-            setTimeout(() => setAlert(null), 4500);
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 
@@ -192,11 +236,11 @@ export default function DashboardPage() {
             );
 
             setAlert({ type: 'info', message: 'Presentation title updated.' });
-            setTimeout(() => setAlert(null), 3000);
+            setTimeout(() => setAlert(null), 3500);
             cancelEditingPresentationTitle();
         } catch {
             setAlert({ type: 'error', message: 'Presentation title could not be updated.' });
-            setTimeout(() => setAlert(null), 4000);
+            setTimeout(() => setAlert(null), 3500);
             setIsSavingPresentationTitle(false);
         }
     };
@@ -270,7 +314,7 @@ export default function DashboardPage() {
             closePlannerModal();
         } catch {
             setAlert({ type: 'error', message: 'Presentation could not be added to planner.' });
-            setTimeout(() => setAlert(null), 4500);
+            setTimeout(() => setAlert(null), 3500);
         }
     };
 
@@ -447,7 +491,7 @@ export default function DashboardPage() {
 
             {/* Sessions Tab */}
             {activeTab === 'sessions' && (
-                <Sessions sessions={recentSessions} searchQuery={searchQuery} />
+                <Sessions sessions={recentSessions} searchQuery={searchQuery} onDeleteSession={handleDeleteSession} />
             )}
 
             {plannerModalPresentation && (
@@ -828,7 +872,7 @@ function PresentationRow({ presentation, index, onDelete }: { presentation: Rece
                 </div>
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Link href={`/analyze?id=${presentation.id}`}>
+                <Link href={`/analyze?id=${presentation.id}&returnTo=${encodeURIComponent('/dashboard?tab=overview')}`}>
                     <button className="p-2 rounded-lg bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white transition-all hover:shadow-lg">
                         <Eye size={16} />
                     </button>
@@ -872,6 +916,33 @@ function PresentationCard({
     const createdAt = new Date(presentation.created_at);
     const createdDate = `${String(createdAt.getDate()).padStart(2, '0')}/${String(createdAt.getMonth() + 1).padStart(2, '0')}/${createdAt.getFullYear()}`;
     const isEditing = editingPresentationId === presentation.id;
+    const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+    const [actionMenuPosition, setActionMenuPosition] = useState<{ top: number; left: number } | null>(null);
+
+    useEffect(() => {
+        if (!isActionMenuOpen) return;
+
+        const closeMenu = () => {
+            setIsActionMenuOpen(false);
+            setActionMenuPosition(null);
+        };
+
+        const handleOutsideClick = (event: MouseEvent) => {
+            const target = event.target as Element | null;
+            if (target?.closest('[data-presentation-menu-root]')) return;
+            closeMenu();
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        window.addEventListener('resize', closeMenu);
+        window.addEventListener('scroll', closeMenu, true);
+
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            window.removeEventListener('resize', closeMenu);
+            window.removeEventListener('scroll', closeMenu, true);
+        };
+    }, [isActionMenuOpen]);
 
     return (
         <motion.tr
@@ -944,34 +1015,93 @@ function PresentationCard({
             </td>
 
             <td className="px-8 py-5 text-right">
-                <div className="flex flex-wrap items-center justify-end gap-2">
+                <div className="inline-flex" data-presentation-menu-root>
                     <button
                         type="button"
-                        onClick={() => onAddToPlanner(presentation)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-primary/35 bg-primary/10 px-2.5 py-1.5 text-[11px] font-bold text-primary transition-colors hover:bg-primary/20"
+                        onClick={(event) => {
+                            if (isActionMenuOpen) {
+                                setIsActionMenuOpen(false);
+                                setActionMenuPosition(null);
+                                return;
+                            }
+
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            const menuWidth = 192;
+                            const margin = 8;
+                            const left = Math.min(
+                                window.innerWidth - menuWidth - margin,
+                                Math.max(margin, rect.right - menuWidth)
+                            );
+
+                            setActionMenuPosition({ top: rect.bottom + 6, left });
+                            setIsActionMenuOpen(true);
+                        }}
+                        className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white"
+                        title="Presentation actions"
+                        aria-label="Presentation actions"
                     >
-                        <CalendarDays size={12} />
-                        Add To Planner
+                        <MoreVertical size={16} />
                     </button>
-                    <Link href={`/analyze?id=${presentation.id}`}>
-                        <button className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2.5 py-1.5 text-[11px] font-bold text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white">
-                            View
-                            <Eye size={12} />
-                        </button>
-                    </Link>
-                    <Link href={`/presentation/${presentation.id}`}>
-                        <button className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-primary-hover active:scale-95">
-                            Start
-                            <Play size={12} className="fill-white" />
-                        </button>
-                    </Link>
-                    <button
-                        onClick={() => onDelete(presentation.id)}
-                        className="inline-flex items-center justify-center rounded-lg border border-white/10 bg-zinc-900 p-1.5 text-zinc-500 transition-colors hover:border-red-500/40 hover:text-red-400"
-                        title="Delete presentation"
-                    >
-                        <Trash2 size={14} />
-                    </button>
+
+                    {isActionMenuOpen && actionMenuPosition && typeof document !== 'undefined' &&
+                        createPortal(
+                            <div
+                                data-presentation-menu-root
+                                className="fixed z-[120] w-48 overflow-hidden rounded-xl border border-white/10 bg-[#111111] shadow-xl"
+                                style={{ top: actionMenuPosition.top, left: actionMenuPosition.left }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsActionMenuOpen(false);
+                                        setActionMenuPosition(null);
+                                        onAddToPlanner(presentation);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 transition-colors hover:bg-primary/15 hover:text-primary"
+                                >
+                                    <CalendarDays size={14} />
+                                    Add to planner
+                                </button>
+
+                                <Link
+                                    href={`/analyze?id=${presentation.id}&returnTo=${encodeURIComponent('/dashboard?tab=presentations')}`}
+                                    onClick={() => {
+                                        setIsActionMenuOpen(false);
+                                        setActionMenuPosition(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
+                                >
+                                    <Eye size={14} />
+                                    View
+                                </Link>
+
+                                <Link
+                                    href={`/presentation/${presentation.id}`}
+                                    onClick={() => {
+                                        setIsActionMenuOpen(false);
+                                        setActionMenuPosition(null);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
+                                >
+                                    <Play size={14} />
+                                    Present again
+                                </Link>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsActionMenuOpen(false);
+                                        setActionMenuPosition(null);
+                                        onDelete(presentation.id);
+                                    }}
+                                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                                >
+                                    <Trash2 size={14} />
+                                    Delete
+                                </button>
+                            </div>,
+                            document.body
+                        )}
                 </div>
             </td>
         </motion.tr>
