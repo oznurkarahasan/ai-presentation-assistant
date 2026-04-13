@@ -6,18 +6,26 @@ import {
     LayoutDashboard,
     Presentation,
     History,
+    CalendarDays,
+    Lightbulb,
+    MessageSquareQuote,
+    Palette,
+    Sparkles,
     Settings,
     LogOut,
     Upload,
+    Plus,
     X,
     Menu,
     Search,
     Bell,
     User,
+    BarChart,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
     return (
@@ -44,8 +52,49 @@ function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, labe
     );
 }
 
+function NavLinkItem({
+    href,
+    icon,
+    label,
+    active,
+    onNavigate,
+}: {
+    href: string;
+    icon: React.ReactNode;
+    label: string;
+    active: boolean;
+    onNavigate: () => void;
+}) {
+    return (
+        <Link
+            href={href}
+            onClick={onNavigate}
+            className={`w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-300 relative group overflow-hidden ${active
+                ? 'text-white'
+                : 'text-zinc-500 hover:text-zinc-300'
+                }`}
+        >
+            {active && (
+                <motion.div
+                    layoutId="nav-bg"
+                    className="absolute inset-0 bg-gradient-to-r from-primary/20 to-transparent border-l-4 border-primary z-0"
+                />
+            )}
+            <div className={`relative z-10 transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`}>
+                {icon}
+            </div>
+            <span className={`relative z-10 font-semibold text-sm tracking-tight transition-all duration-300 ${active ? 'ml-1' : ''}`}>
+                {label}
+            </span>
+        </Link>
+    );
+}
+
 function Sidebar() {
+    const pathname = usePathname();
     const { activeTab, setActiveTab, sidebarOpen, setSidebarOpen, handleLogout } = useDashboard();
+    /** Tab state only applies on the main dashboard page; sub-routes (e.g. planner) must not inherit a tab highlight. */
+    const onDashboardHome = pathname === '/dashboard';
 
     return (
         <AnimatePresence>
@@ -72,24 +121,66 @@ function Sidebar() {
                         <NavItem
                             icon={<LayoutDashboard size={20} />}
                             label="Overview"
-                            active={activeTab === 'overview'}
+                            active={onDashboardHome && activeTab === 'overview'}
                             onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<Presentation size={20} />}
                             label="My Presentations"
-                            active={activeTab === 'presentations'}
+                            active={onDashboardHome && activeTab === 'presentations'}
                             onClick={() => { setActiveTab('presentations'); setSidebarOpen(false); }}
                         />
+                        
                         <NavItem
                             icon={<History size={20} />}
-                            label="History"
-                            active={activeTab === 'sessions'}
+                            label="Sessions"
+                            active={onDashboardHome && activeTab === 'sessions'}
                             onClick={() => { setActiveTab('sessions'); setSidebarOpen(false); }}
+                        />
+ 
+                        <div className="pt-4 pb-2 px-4">
+                            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Ideas</span>
+                        </div>
+                        <NavItem
+                            icon={<Lightbulb size={20} />}
+                            label="Topic ideas"
+                            active={onDashboardHome && activeTab === 'ideas-topics'}
+                            onClick={() => { setActiveTab('ideas-topics'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<MessageSquareQuote size={20} />}
+                            label="Hooks & openings"
+                            active={onDashboardHome && activeTab === 'ideas-hooks'}
+                            onClick={() => { setActiveTab('ideas-hooks'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<Palette size={20} />}
+                            label="Visual direction"
+                            active={onDashboardHome && activeTab === 'ideas-visuals'}
+                            onClick={() => { setActiveTab('ideas-visuals'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<Sparkles size={20} />}
+                            label="AI Presentation"
+                            active={onDashboardHome && activeTab === 'ai-presentation'}
+                            onClick={() => { setActiveTab('ai-presentation'); setSidebarOpen(false); }}
+                        />
+                        <NavItem
+                            icon={<BarChart size={20} />}
+                            label="AI Analysis"
+                            active={onDashboardHome && activeTab === 'ai-analysis'}
+                            onClick={() => { setActiveTab('ai-analysis'); setSidebarOpen(false); }}
                         />
                         <div className="pt-4 pb-2 px-4">
                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Actions</span>
                         </div>
+                        <NavLinkItem
+                            href="/dashboard/planner"
+                            icon={<CalendarDays size={20} />}
+                            label="Planner"
+                            active={pathname === '/dashboard/planner'}
+                            onNavigate={() => setSidebarOpen(false)}
+                        />
                         <Link href="/upload" onClick={() => setSidebarOpen(false)}>
                             <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-zinc-500 hover:text-zinc-300 transition-all font-semibold text-sm h-[52px]">
                                 <Upload size={20} />
@@ -118,7 +209,10 @@ function Sidebar() {
 }
 
 function Header() {
-    const { user, searchQuery, setSearchQuery } = useDashboard();
+    const { user, activeTab, searchQuery, setSearchQuery } = useDashboard();
+    const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions';
+    const compactTitle = activeTab === 'sessions' ? 'Sessions' : 'Library';
+    const compactSearchPlaceholder = activeTab === 'sessions' ? 'Search sessions...' : 'Search presentations...';
 
     const getTimeGreeting = () => {
         const hour = new Date().getHours();
@@ -128,6 +222,46 @@ function Header() {
     };
 
     if (!user) return null;
+
+    if (isCompactHeaderTab) {
+        return (
+            <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                >
+                    <h1 className="text-base font-bold tracking-tight text-white sm:text-lg">{compactTitle}</h1>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex w-full items-center gap-2 sm:w-auto"
+                >
+                    <div className="relative w-full sm:w-72">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                        <input
+                            type="text"
+                            placeholder={compactSearchPlaceholder}
+                            className="w-full rounded-full border border-white/5 bg-[#101010] py-2.5 pl-11 pr-6 text-sm focus:border-primary/50 focus:outline-none"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <Link href="/upload" className="shrink-0">
+                        <button
+                            type="button"
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
+                            aria-label="Upload presentation"
+                            title="Upload presentation"
+                        >
+                            <Plus size={18} />
+                        </button>
+                    </Link>
+                </motion.div>
+            </header>
+        );
+    }
 
     return (
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
@@ -176,6 +310,8 @@ function Header() {
 
 function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
     const { loading, sidebarOpen, setSidebarOpen } = useDashboard();
+    const pathname = usePathname();
+    const showDashboardHeader = pathname !== '/dashboard/planner';
 
     if (loading) {
         return (
@@ -204,9 +340,11 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
 
             <Sidebar />
 
-            <main className="flex-1 overflow-y-auto relative z-10 px-6 py-8 lg:px-12">
+            <main
+                className={`flex-1 overflow-y-auto relative z-10 px-6 lg:px-12 ${showDashboardHeader ? 'py-8' : 'py-6'}`}
+            >
                 <div className="max-w-[1400px] mx-auto">
-                    <Header />
+                    {showDashboardHeader && <Header />}
                     {children}
                 </div>
             </main>

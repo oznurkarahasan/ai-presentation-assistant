@@ -43,3 +43,51 @@ async def send_password_reset_email(to_email: str, token: str) -> bool:
     except Exception as e:
         logger.error(f"Failed to send password reset email to {to_email}: {e}")
         return False
+
+
+async def send_presentation_reminder_email(
+    to_email: str,
+    presentation_title: str,
+    scheduled_at_text: str,
+    note: Optional[str] = None,
+) -> bool:
+    """Send a presentation reminder email to the user."""
+    if not settings.SMTP_HOST or not settings.SMTP_PORT:
+        logger.error("SMTP not configured; cannot send presentation reminder email")
+        return False
+
+    message = EmailMessage()
+    from_header = settings.SMTP_FROM_EMAIL or settings.SMTP_USER or "no-reply@localhost"
+    if settings.SMTP_FROM_NAME:
+        message["From"] = f"{settings.SMTP_FROM_NAME} <{from_header}>"
+    else:
+        message["From"] = from_header
+
+    message["To"] = to_email
+    message["Subject"] = "Presentation Reminder"
+
+    body_lines = [
+        "This is your scheduled presentation reminder.",
+        "",
+        f"Presentation: {presentation_title}",
+        f"Presentation Time: {scheduled_at_text}",
+    ]
+    if note:
+        body_lines.extend(["", f"Note: {note}"])
+
+    message.set_content("\n".join(body_lines))
+
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_HOST,
+            port=int(settings.SMTP_PORT),
+            start_tls=True,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+        )
+        logger.info(f"Sent presentation reminder email to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send presentation reminder email to {to_email}: {e}")
+        return False

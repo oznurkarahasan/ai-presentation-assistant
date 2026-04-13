@@ -71,8 +71,10 @@ async def client(db_session):
     try:
         from app.api.v1.presentations import get_db as pres_get_db
         from app.api.v1.chat import get_db as chat_get_db
+        from app.api.v1.dashboard.planner.planner import get_db as planner_get_db
         app.dependency_overrides[pres_get_db] = override_get_db
         app.dependency_overrides[chat_get_db] = override_get_db
+        app.dependency_overrides[planner_get_db] = override_get_db
     except ImportError:
         pass  # These modules might not exist yet
 
