@@ -33,6 +33,7 @@ export interface RecentPresentation {
 export interface RecentSession {
     id: number;
     session_type: string;
+    duration_seconds: number;
     duration_minutes: number;
     started_at: string;
     ended_at: string | null;
@@ -62,6 +63,7 @@ interface DashboardContextType {
     alert: { type: 'info' | 'error', message: string } | null;
     setStats: React.Dispatch<React.SetStateAction<DashboardStats | null>>;
     setRecentPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
+    setRecentSessions: React.Dispatch<React.SetStateAction<RecentSession[]>>;
     setPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
 }
 
@@ -96,23 +98,33 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const [userRes, allRes] = await Promise.all([
+            const [userRes, allRes, sessionsRes] = await Promise.all([
                 client.get("/api/v1/auth/me"),
-                client.get("/api/v1/presentations/")
+                client.get("/api/v1/presentations/"),
+                client.get("/api/v1/presentations/sessions/recent")
             ]);
 
             const allPresentations = allRes.data || [];
+            const allSessions: RecentSession[] = sessionsRes.data || [];
+            const totalDurationSeconds = allSessions.reduce((acc, session) => acc + (session.duration_seconds || 0), 0);
+            const liveDurationSeconds = allSessions
+                .filter((session) => session.session_type === 'live')
+                .reduce((acc, session) => acc + (session.duration_seconds || 0), 0);
+            const rehearsalDurationSeconds = allSessions
+                .filter((session) => session.session_type === 'rehearsal')
+                .reduce((acc, session) => acc + (session.duration_seconds || 0), 0);
+
             setUser(userRes.data);
             setPresentations(allPresentations);
             setRecentPresentations(allPresentations.slice(0, 5));
             setStats({
                 total_presentations: allPresentations.length,
-                total_rehearsal_hours: 0,
-                total_live_hours: 0,
-                total_sessions: 0,
-                avg_session_minutes: 0
+                total_rehearsal_hours: Number((rehearsalDurationSeconds / 3600).toFixed(1)),
+                total_live_hours: Number((liveDurationSeconds / 3600).toFixed(1)),
+                total_sessions: allSessions.length,
+                avg_session_minutes: allSessions.length > 0 ? Number(((totalDurationSeconds / 60) / allSessions.length).toFixed(1)) : 0,
             });
-            setRecentSessions([]);
+            setRecentSessions(allSessions);
         } catch (error) {
             console.error("Failed to fetch dashboard data:", error);
             localStorage.removeItem("access_token");
@@ -136,7 +148,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             user, stats, recentPresentations, recentSessions, presentations,
             loading, activeTab, setActiveTab, sidebarOpen, setSidebarOpen,
             searchQuery, setSearchQuery, handleLogout, refreshData: fetchDashboardData,
-            alert, setAlert, setStats, setRecentPresentations, setPresentations
+            alert, setAlert, setStats, setRecentPresentations, setRecentSessions, setPresentations
         }}>
             {children}
         </DashboardContext.Provider>

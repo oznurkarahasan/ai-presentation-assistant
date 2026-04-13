@@ -1,6 +1,7 @@
 'use client';
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import Typewriter from "typewriter-effect";
 import { Mic, Presentation, Zap, Sparkles, Layers, ShieldCheck, ChevronRight, Quote, Star, Users } from "lucide-react";
@@ -48,7 +49,7 @@ export default function Home() {
                 href="/login"
                 className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-10 py-4 rounded-xl font-bold text-sm sm:text-base transition-all active:scale-95 shadow-xl shadow-primary/30 group"
               >
-                <img src="/favicon.ico" alt="Icon" className="w-[18px] h-[18px]" />
+                <Image src="/favicon.ico" alt="Icon" width={18} height={18} className="w-[18px] h-[18px]" />
                 Step Into the Spotlight
                 <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </Link>
