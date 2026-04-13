@@ -104,3 +104,22 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 - [ ] Implement Ctrl+F in-document search for PDF viewer — Option A: Replace iframe with react-pdf (full renderer swap, requires re-implementing zoom/fit/layout but gives native text layer + real highlight support) or Option B: Keep iframe, add pdfjs-dist overlay layer for text coordinate extraction and draw highlight rectangles on top (no layout change, riskier coordinate mapping)
 
 - [ ] Add PPTX browser preview via LibreOffice conversion — On upload, convert PPTX to a _preview.pdf using LibreOffice headless; delete endpoint also removes the preview PDF; frontend PresentationViewer loads the converted PDF instead of showing 'coming soon'. No DB migration needed, text extraction unchanged, failure is non-breaking.
+
+## Zoom Voice Control Roadmap (Planned)
+
+- [x] Define MVP command vocabulary for zoom in both English and Turkish (`ZOOM_IN`, `ZOOM_OUT`, `RESET_ZOOM`) and document payload schema.
+- [x] Extend backend intent detection with zoom intents in [backend/app/services/intent_service.py](backend/app/services/intent_service.py).
+- [x] Extend orchestration command broadcasting for zoom intents in [backend/app/api/v1/orchestration.py](backend/app/api/v1/orchestration.py).
+- [x] Extend realtime command handler for zoom actions in [frontend/app/presentation/[id]/page.tsx](frontend/app/presentation/[id]/page.tsx).
+- [x] Expose controlled zoom actions in [frontend/app/components/PresentationViewer.tsx](frontend/app/components/PresentationViewer.tsx) so commands can trigger `zoom in/out/reset` programmatically.
+- [x] Add backend tests for zoom intent classification and command payload validity.
+- [x] Add frontend tests for zoom command handling and zoom state transitions.
+- [x] Add confidence threshold + safe fallback behavior for ambiguous voice commands.
+
+## Region/Point Zoom Evolution (Future)
+
+- [x] Implement region-based zoom (`ZOOM_TO_REGION`) first (e.g., top-right, bottom-left) as a pragmatic bridge before true point zoom.
+- [ ] Define region mapping strategy per slide (manual annotation first, optional automation later).
+- [ ] Add telemetry for command success rate, false positives, and command latency in live sessions.
+- [ ] Evaluate renderer migration from iframe to a coordinate-aware layer (e.g., PDF.js/canvas) to unlock `ZOOM_TO_POINT` with stable `(x, y, scale)` behavior.
+- [ ] Add cross-device validation (desktop/mobile viewport scaling consistency) for region/point zoom commands.

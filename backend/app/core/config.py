@@ -41,6 +41,14 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = Field(..., description="PostgreSQL database connection URL (e.g., postgresql+asyncpg://user:pass@localhost/dbname)")
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key for GPT-4 and embeddings (required for AI features)")
+    INTENT_COMMAND_CONFIDENCE_THRESHOLD: float = Field(
+        default=0.70,
+        description="Minimum confidence required to execute intent-driven presentation commands"
+    )
+    INTENT_COMMAND_CONFIDENCE_THRESHOLD: float = Field(
+        default=0.70,
+        description="Minimum confidence required to execute intent-driven presentation commands"
+    )
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 

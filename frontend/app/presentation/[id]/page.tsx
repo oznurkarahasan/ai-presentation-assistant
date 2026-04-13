@@ -17,16 +17,31 @@ import client from "../../api/client";
 import PresentationViewer from "../../components/PresentationViewer";
 
 
-type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
+type RegionType = "TOP_LEFT" | "TOP_RIGHT" | "CENTER" | "BOTTOM_LEFT" | "BOTTOM_RIGHT";
+type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE" | "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM" | "ZOOM_TO_REGION";
+type ZoomCommandIntent = "ZOOM_IN" | "ZOOM_OUT" | "RESET_ZOOM";
 
 interface CommandPayload {
     intent: CommandIntent;
-    slide_number?: number;
+    slide_number?: number | null;
+    region?: RegionType | null;
 }
 
 interface WsCommandMessage {
     type: "COMMAND";
     payload: CommandPayload;
+}
+
+interface FeedbackPayload {
+    message: string;
+    intent?: string;
+    confidence?: number;
+    executed?: boolean;
+}
+
+interface WsFeedbackMessage {
+    type: "FEEDBACK";
+    payload: FeedbackPayload;
 }
 
 interface SpeechRecognitionAlternativeLike {
@@ -76,9 +91,33 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
     if (maybe.type !== "COMMAND") return false;
     if (typeof maybe.payload !== "object" || maybe.payload === null) return false;
     const payload = maybe.payload as Partial<CommandPayload>;
-    const validIntent = payload.intent === "NEXT_SLIDE" || payload.intent === "PREVIOUS_SLIDE" || payload.intent === "JUMP_TO_SLIDE";
-    const validSlide = payload.slide_number === undefined || typeof payload.slide_number === "number";
-    return validIntent && validSlide;
+    const validIntent =
+        payload.intent === "NEXT_SLIDE" ||
+        payload.intent === "PREVIOUS_SLIDE" ||
+        payload.intent === "JUMP_TO_SLIDE" ||
+        payload.intent === "ZOOM_IN" ||
+        payload.intent === "ZOOM_OUT" ||
+        payload.intent === "RESET_ZOOM" ||
+        payload.intent === "ZOOM_TO_REGION";
+    const validSlide = payload.slide_number === undefined || payload.slide_number === null || typeof payload.slide_number === "number";
+    const validRegion =
+        payload.region === undefined ||
+        payload.region === null ||
+        payload.region === "TOP_LEFT" ||
+        payload.region === "TOP_RIGHT" ||
+        payload.region === "CENTER" ||
+        payload.region === "BOTTOM_LEFT" ||
+        payload.region === "BOTTOM_RIGHT";
+    return validIntent && validSlide && validRegion;
+}
+
+function isWsFeedbackMessage(value: unknown): value is WsFeedbackMessage {
+    if (typeof value !== "object" || value === null) return false;
+    const maybe = value as Partial<WsFeedbackMessage>;
+    if (maybe.type !== "FEEDBACK") return false;
+    if (typeof maybe.payload !== "object" || maybe.payload === null) return false;
+    const payload = maybe.payload as Partial<FeedbackPayload>;
+    return typeof payload.message === "string";
 }
 
 export default function RealTimePresentationPage() {
@@ -103,6 +142,10 @@ export default function RealTimePresentationPage() {
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
     const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+    const [zoomCommand, setZoomCommand] = useState<ZoomCommandIntent | null>(null);
+    const [zoomCommandSequence, setZoomCommandSequence] = useState(0);
+    const [regionCommand, setRegionCommand] = useState<RegionType | null>(null);
+    const [regionCommandSequence, setRegionCommandSequence] = useState(0);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -214,9 +257,9 @@ export default function RealTimePresentationPage() {
     }, []);
 
     const handleCommand = useCallback((payload: CommandPayload) => {
-        const { intent, slide_number } = payload;
+        const { intent, slide_number, region } = payload;
         const currentTotal = totalPagesRef.current;
-        console.log(`[WebSocket] Received COMMAND: ${intent} | Slide: ${slide_number} | Total: ${currentTotal}`);
+        console.log(`[WebSocket] Received COMMAND: ${intent} | Slide: ${slide_number} | Region: ${region} | Total: ${currentTotal}`);
 
         if (intent === "NEXT_SLIDE") {
             if (slide_number) {
@@ -232,6 +275,12 @@ export default function RealTimePresentationPage() {
             }
         } else if (intent === "JUMP_TO_SLIDE" && slide_number) {
             goToPage(slide_number);
+        } else if (intent === "ZOOM_IN" || intent === "ZOOM_OUT" || intent === "RESET_ZOOM") {
+            setZoomCommand(intent);
+            setZoomCommandSequence(prev => prev + 1);
+        } else if (intent === "ZOOM_TO_REGION" && region) {
+            setRegionCommand(region);
+            setRegionCommandSequence(prev => prev + 1);
         }
     }, [goToPage, handleNextPage, handlePrevPage]);
 
@@ -270,6 +319,9 @@ export default function RealTimePresentationPage() {
                     if (isWsCommandMessage(data)) {
                         console.log(`[WebSocket] [${socketId}] Message:`, data.type);
                         handleCommand(data.payload);
+                    } else if (isWsFeedbackMessage(data)) {
+                        console.warn(`[WebSocket] [${socketId}] Feedback:`, data.payload);
+                        setLiveFeedback(data.payload.message);
                     }
                 } catch (err) {
                     console.error(`[WebSocket] [${socketId}] Parse error:`, err);
@@ -510,12 +562,16 @@ export default function RealTimePresentationPage() {
                                     <CommandTip label="Sonraki Slayt" example="'Sonraki slayt', 'Devam edelim'" />
                                     <CommandTip label="Önceki Slayt" example="'Geri dön', 'Önceki slayt'" />
                                     <CommandTip label="Sayfaya Atla" example="'Slayt beşe git'" />
+                                    <CommandTip label="Zoom" example="'Yakınlaştır', 'Uzaklaştır', 'Ekrana sığdır'" />
+                                    <CommandTip label="Bölgesel Zoom" example="'Sağ üste yakınlaştır', 'Ortaya odaklan'" />
                                 </>
                             ) : (
                                 <>
                                     <CommandTip label="Next Slide" example="'Next slide', 'Moving on'" />
                                     <CommandTip label="Previous Slide" example="'Go back', 'Last slide'" />
                                     <CommandTip label="Jump to Page" example="'Go to slide five'" />
+                                    <CommandTip label="Zoom" example="'Zoom in', 'Zoom out', 'Reset zoom'" />
+                                    <CommandTip label="Region Zoom" example="'Zoom to top right', 'Focus center'" />
                                 </>
                             )}
                         </div>
@@ -549,6 +605,8 @@ export default function RealTimePresentationPage() {
                             isFullScreen={isFullScreen}
                             initialOrientation={orientation}
                             aspectRatio={aspectRatio}
+                            zoomCommand={zoomCommand ? { action: zoomCommand, sequence: zoomCommandSequence } : null}
+                            regionCommand={regionCommand ? { region: regionCommand, sequence: regionCommandSequence } : null}
                         />
 
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import {
     FileText,
     Presentation,
@@ -22,6 +22,14 @@ interface PresentationViewerProps {
     isFullScreen?: boolean;
     initialOrientation?: 'landscape' | 'portrait';
     aspectRatio?: number | null;
+    zoomCommand?: {
+        action: 'ZOOM_IN' | 'ZOOM_OUT' | 'RESET_ZOOM';
+        sequence: number;
+    } | null;
+    regionCommand?: {
+        region: 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+        sequence: number;
+    } | null;
 }
 
 export default function PresentationViewer({
@@ -34,11 +42,19 @@ export default function PresentationViewer({
     onPageChange,
     isFullScreen = false,
     initialOrientation = 'landscape',
-    aspectRatio = null
+    aspectRatio = null,
+    zoomCommand = null,
+    regionCommand = null
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
-    const [zoom, setZoom] = useState<number | null>(null); // null means "Fit"
+    const [zoom, setZoom] = useState<number>(100);
+    const [panRatio, setPanRatio] = useState({ x: 0.5, y: 0.5 });
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
+    const viewportRef = useRef<HTMLDivElement>(null);
+    const zoomAction = zoomCommand?.action;
+    const zoomSequence = zoomCommand?.sequence;
+    const region = regionCommand?.region;
+    const regionSequence = regionCommand?.sequence;
 
     useEffect(() => {
         setOrientation(initialOrientation);
@@ -48,19 +64,128 @@ export default function PresentationViewer({
         setPageInputValue(currentPage.toString());
     }, [currentPage]);
 
-    const handleZoomIn = () => {
-        if (zoom === null) setZoom(120);
-        else setZoom(prev => Math.min((prev || 100) + 20, 300));
-    };
+    const applyPanByRatio = useCallback((x: number, y: number, behavior: ScrollBehavior = 'auto') => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
 
-    const handleZoomOut = () => {
-        if (zoom === null) return;
-        const nextZoom = (zoom || 100) - 20;
-        if (nextZoom <= 100) setZoom(null);
-        else setZoom(nextZoom);
-    };
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
 
-    const resetZoom = () => setZoom(null);
+        viewport.scrollTo({
+            left: maxScrollLeft * x,
+            top: maxScrollTop * y,
+            behavior,
+        });
+    }, []);
+
+    const getCurrentPanRatio = useCallback(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return { x: 0.5, y: 0.5 };
+
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+
+        return {
+            x: maxScrollLeft > 0 ? viewport.scrollLeft / maxScrollLeft : 0.5,
+            y: maxScrollTop > 0 ? viewport.scrollTop / maxScrollTop : 0.5,
+        };
+    }, []);
+
+    const changeZoom = useCallback((delta: number) => {
+        const currentPan = getCurrentPanRatio();
+        setPanRatio(currentPan);
+        setZoom(prev => Math.max(100, Math.min(300, prev + delta)));
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                applyPanByRatio(currentPan.x, currentPan.y);
+            });
+        });
+    }, [applyPanByRatio, getCurrentPanRatio]);
+
+    const handleZoomIn = useCallback(() => {
+        changeZoom(20);
+    }, [changeZoom]);
+
+    const handleZoomOut = useCallback(() => {
+        changeZoom(-20);
+    }, [changeZoom]);
+
+    const resetZoom = useCallback(() => {
+        setZoom(100);
+        setPanRatio({ x: 0.5, y: 0.5 });
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                applyPanByRatio(0, 0, 'smooth');
+            });
+        });
+    }, [applyPanByRatio]);
+
+    useEffect(() => {
+        if (!zoomAction) return;
+
+        if (zoomAction === 'ZOOM_IN') {
+            handleZoomIn();
+        } else if (zoomAction === 'ZOOM_OUT') {
+            handleZoomOut();
+        } else if (zoomAction === 'RESET_ZOOM') {
+            resetZoom();
+        }
+    }, [zoomAction, zoomSequence, handleZoomIn, handleZoomOut, resetZoom]);
+
+    const getRegionRatio = useCallback((region: 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT') => {
+
+        const xMap: Record<string, number> = {
+            TOP_LEFT: 0,
+            TOP_RIGHT: 1,
+            CENTER: 0.5,
+            BOTTOM_LEFT: 0,
+            BOTTOM_RIGHT: 1,
+        };
+
+        const yMap: Record<string, number> = {
+            TOP_LEFT: 0,
+            TOP_RIGHT: 0,
+            CENTER: 0.5,
+            BOTTOM_LEFT: 1,
+            BOTTOM_RIGHT: 1,
+        };
+
+        return {
+            x: xMap[region],
+            y: yMap[region],
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!region) return;
+
+        const regionRatio = getRegionRatio(region);
+        setPanRatio(regionRatio);
+        setZoom(prev => Math.max(prev, 180));
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                applyPanByRatio(regionRatio.x, regionRatio.y, 'smooth');
+            });
+        });
+    }, [region, regionSequence, getRegionRatio, applyPanByRatio]);
+
+    useEffect(() => {
+        if (zoom <= 100) {
+            applyPanByRatio(0, 0);
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            applyPanByRatio(panRatio.x, panRatio.y);
+        });
+    }, [zoom, panRatio, applyPanByRatio]);
+
+    const handleViewportScroll = useCallback(() => {
+        if (zoom <= 100) return;
+        setPanRatio(getCurrentPanRatio());
+    }, [zoom, getCurrentPanRatio]);
 
     const handlePageSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,8 +215,8 @@ export default function PresentationViewer({
         return `${baseUrl}${fragments}`;
     };
 
-    // Portrait + zoomed → switch to landscape display for better viewing
-    const displayAsLandscape = orientation === 'landscape' || (orientation === 'portrait' && zoom !== null);
+    // Portrait + zoomed -> switch to landscape display for better viewing
+    const displayAsLandscape = orientation === 'landscape' || (orientation === 'portrait' && zoom > 100);
 
     // Use provided aspectRatio or fallback based on effective orientation
     const effectiveRatio = displayAsLandscape
@@ -122,7 +247,7 @@ export default function PresentationViewer({
                             <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
                                 <button
                                     onClick={handleZoomOut}
-                                    disabled={zoom === null}
+                                    disabled={zoom <= 100}
                                     className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
                                 >
                                     <Minus size={14} />
@@ -132,7 +257,7 @@ export default function PresentationViewer({
                                     className="text-[10px] font-mono font-bold text-zinc-300 w-12 text-center hover:bg-white/5 rounded py-0.5 transition-colors"
                                     title="Reset to Fit"
                                 >
-                                    {zoom ? `${zoom}%` : 'FIT'}
+                                    {zoom > 100 ? `${zoom}%` : 'FIT'}
                                 </button>
                                 <button onClick={handleZoomIn} className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400">
                                     <Plus size={14} />
@@ -173,6 +298,8 @@ export default function PresentationViewer({
 
                         {/* Page Viewport */}
                         <div
+                            ref={viewportRef}
+                            onScroll={handleViewportScroll}
                             className="flex-1 relative select-none overflow-auto"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                         >
@@ -186,8 +313,8 @@ export default function PresentationViewer({
                             <div
                                 style={{
                                     position: 'relative',
-                                    width: zoom ? `${zoom}%` : '100%',
-                                    height: zoom ? `${zoom}%` : '100%',
+                                    width: zoom > 100 ? `${zoom}%` : '100%',
+                                    height: zoom > 100 ? `${zoom}%` : '100%',
                                     overflow: 'hidden',
                                 }}
                                 className="transition-all duration-200 ease-out"

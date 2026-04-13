@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import json
 from app.services import intent_service
+from app.core.config import settings
 from app.services.session_records_service import (
     end_live_session,
     resolve_user_id_from_token,
@@ -106,15 +107,30 @@ async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
                     # Perform intent analysis with context
                     logger.info(f"Analyzing intent for presentation {presentation_id} (Slide {current_slide}/{total_slides}): {transcript}")
                     result = await intent_service.analyze_intent(transcript, current_slide, total_slides)
-                    logger.info(f"Analysis result for {presentation_id}: intent={result.intent}, target={result.slide_number}")
+                    logger.info(
+                        f"Analysis result for {presentation_id}: "
+                        f"intent={result.intent}, confidence={result.confidence:.2f}, target={result.slide_number}, region={result.region}"
+                    )
                     
                     if result.intent != intent_service.IntentType.UNKNOWN:
-                        # Broadcast the command to all listeners
-                        command_message = {
-                            "type": "COMMAND",
-                            "payload": result.to_dict()
-                        }
-                        await manager.broadcast(presentation_id, command_message)
+                        if result.confidence >= settings.INTENT_COMMAND_CONFIDENCE_THRESHOLD:
+                            # Broadcast the command to all listeners
+                            command_message = {
+                                "type": "COMMAND",
+                                "payload": result.to_dict()
+                            }
+                            await manager.broadcast(presentation_id, command_message)
+                        else:
+                            # Safe fallback: do not execute low-confidence commands.
+                            await manager.broadcast(presentation_id, {
+                                "type": "FEEDBACK",
+                                "payload": {
+                                    "message": "Low confidence command detected. Please repeat the command clearly.",
+                                    "intent": result.intent.value,
+                                    "confidence": result.confidence,
+                                    "executed": False
+                                }
+                            })
                     
                     # Persist the current state to the latest active session (no await to keep responsive)
                     try:
