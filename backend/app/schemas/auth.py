@@ -40,6 +40,27 @@ class ForgotPassword(BaseModel):
     email: EmailStr
 
 
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[EmailStr] = None
+    password: Optional[str] = Field(None, min_length=8)
+    password_confirm: Optional[str] = None
+
+    @field_validator('password_confirm')
+    @classmethod
+    def passwords_match(cls, v: str | None, info):
+        password = info.data.get('password')
+        if password and not v:
+            raise ValueError('Password confirmation is required!')
+        if password and v != password:
+            raise ValueError('Passwords do not match!')
+        return v
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(..., min_length=8)
+
+
 class ResetPassword(BaseModel):
     token: str
     new_password: str = Field(..., min_length=8)
