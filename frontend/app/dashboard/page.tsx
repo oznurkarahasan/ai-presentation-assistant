@@ -500,6 +500,15 @@ export default function DashboardPage() {
                 <Profile />
             )}
 
+            {/* Billing Tab — placeholder */}
+            {activeTab === 'billing' && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="min-h-[40vh]"
+                />
+            )}
+
             {plannerModalPresentation && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                     <div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-[#0C0C0C] p-5 sm:p-6">

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict, model_validator
 from datetime import date
 from typing import Optional
 
@@ -43,8 +43,15 @@ class ForgotPassword(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
     email: Optional[EmailStr] = None
+    current_password: Optional[str] = None
     password: Optional[str] = Field(None, min_length=8)
     password_confirm: Optional[str] = None
+
+    @model_validator(mode='after')
+    def validate_password_update_requirements(self):
+        if self.password and not self.current_password:
+            raise ValueError('Current password is required!')
+        return self
 
     @field_validator('password_confirm')
     @classmethod

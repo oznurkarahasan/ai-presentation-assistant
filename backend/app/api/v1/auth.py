@@ -137,6 +137,11 @@ async def update_me(
         current_user.email = payload.email
 
     if payload.password:
+        if not payload.current_password or not security.verify_password(payload.current_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect."
+            )
         current_user.password_hash = security.get_password_hash(payload.password)
 
     db.add(current_user)
