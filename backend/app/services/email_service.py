@@ -91,3 +91,40 @@ async def send_presentation_reminder_email(
     except Exception as e:
         logger.error(f"Failed to send presentation reminder email to {to_email}: {e}")
         return False
+
+
+async def send_email_change_verification_code(to_email: str, code: str) -> bool:
+    """Send a one-time verification code for email change confirmation."""
+    if not settings.SMTP_HOST or not settings.SMTP_PORT:
+        logger.error("SMTP not configured; cannot send email change verification email")
+        return False
+
+    message = EmailMessage()
+    from_header = settings.SMTP_FROM_EMAIL or settings.SMTP_USER or "no-reply@localhost"
+    if settings.SMTP_FROM_NAME:
+        message["From"] = f"{settings.SMTP_FROM_NAME} <{from_header}>"
+    else:
+        message["From"] = from_header
+
+    message["To"] = to_email
+    message["Subject"] = "Verify Your New Email"
+    message.set_content(
+        "Use the verification code below to confirm your email change:\n\n"
+        f"{code}\n\n"
+        "If you did not request this change, you can ignore this email."
+    )
+
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=settings.SMTP_HOST,
+            port=int(settings.SMTP_PORT),
+            start_tls=True,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+        )
+        logger.info(f"Sent email change verification code to {to_email}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to send email change verification code to {to_email}: {e}")
+        return False

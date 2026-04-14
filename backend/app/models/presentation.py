@@ -263,6 +263,26 @@ class VerificationToken(Base):
         Index('ix_token_user_type', 'user_id', 'token_type'),
     )
 
+
+class EmailChangeVerification(Base):
+    __tablename__ = "email_change_verifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    new_email = Column(String, nullable=False, index=True)
+    code_hash = Column(String(255), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False, index=True)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+    attempts = Column(Integer, default=0, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User")
+
+    __table_args__ = (
+        Index('ix_email_change_user_email', 'user_id', 'new_email'),
+        Index('ix_email_change_user_expires', 'user_id', 'expires_at'),
+    )
+
 class ActivityLog(Base):
     __tablename__ = "activity_logs"
     

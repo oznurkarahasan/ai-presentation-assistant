@@ -40,6 +40,15 @@ class ForgotPassword(BaseModel):
     email: EmailStr
 
 
+class EmailChangeCodeRequest(BaseModel):
+    new_email: EmailStr
+
+
+class EmailChangeCodeConfirm(BaseModel):
+    new_email: EmailStr
+    code: str = Field(..., min_length=6, max_length=6)
+
+
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(None, min_length=2, max_length=100)
     email: Optional[EmailStr] = None
