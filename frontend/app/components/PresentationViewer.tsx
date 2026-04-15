@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import {
     FileText,
     Presentation,
@@ -24,7 +24,13 @@ interface PresentationViewerProps {
     aspectRatio?: number | null;
 }
 
-export default function PresentationViewer({
+export interface PresentationViewerRef {
+    zoomIn: () => void;
+    zoomOut: () => void;
+    resetZoom: () => void;
+}
+
+const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerProps>(({
     fileUrl,
     fileType,
     title,
@@ -35,7 +41,7 @@ export default function PresentationViewer({
     isFullScreen = false,
     initialOrientation = 'landscape',
     aspectRatio = null
-}: PresentationViewerProps) {
+}, ref) => {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
     const [zoom, setZoom] = useState<number | null>(null); // null means "Fit"
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
@@ -48,19 +54,30 @@ export default function PresentationViewer({
         setPageInputValue(currentPage.toString());
     }, [currentPage]);
 
-    const handleZoomIn = () => {
-        if (zoom === null) setZoom(120);
-        else setZoom(prev => Math.min((prev || 100) + 20, 300));
-    };
+    const handleZoomIn = useCallback(() => {
+        setZoom(prev => {
+            if (prev === null) return 110;
+            return Math.min(prev + 10, 300);
+        });
+    }, []);
 
-    const handleZoomOut = () => {
-        if (zoom === null) return;
-        const nextZoom = (zoom || 100) - 20;
-        if (nextZoom <= 100) setZoom(null);
-        else setZoom(nextZoom);
-    };
+    const handleZoomOut = useCallback(() => {
+        setZoom(prev => {
+            if (prev === null) return null;
+            const nextZoom = prev - 10;
+            if (nextZoom <= 100) return null;
+            return nextZoom;
+        });
+    }, []);
 
-    const resetZoom = () => setZoom(null);
+    const resetZoom = useCallback(() => setZoom(null), []);
+
+    // Expose methods to parent via ref
+    useImperativeHandle(ref, () => ({
+        zoomIn: handleZoomIn,
+        zoomOut: handleZoomOut,
+        resetZoom: resetZoom
+    }), [handleZoomIn, handleZoomOut, resetZoom]);
 
     const handlePageSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -176,18 +193,12 @@ export default function PresentationViewer({
                             className="flex-1 relative select-none overflow-auto"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                         >
-                            {/*
-                              Scale container: overflow:hidden clips the browser PDF toolbar.
-                              The iframe sits at top:-56px so the ~40px browser toolbar is pushed
-                              above the container boundary and hidden. height:calc(100%+76px)
-                              fills the gap (56px top + 20px bottom). width:calc(100%+20px)
-                              clips the right scrollbar.
-                            */}
                             <div
                                 style={{
                                     position: 'relative',
                                     width: zoom ? `${zoom}%` : '100%',
                                     height: zoom ? `${zoom}%` : '100%',
+                                    margin: '0 auto',
                                     overflow: 'hidden',
                                 }}
                                 className="transition-all duration-200 ease-out"
@@ -201,7 +212,7 @@ export default function PresentationViewer({
                                         top: '-56px',
                                         left: 0,
                                         width: 'calc(100% + 20px)',
-                                        height: 'calc(100% + 56px)', // Adjusted to exactly match top offset, prevents bottom clipping
+                                        height: 'calc(100% + 56px)',
                                         display: 'block',
                                     } as React.CSSProperties}
                                 />
@@ -247,4 +258,8 @@ export default function PresentationViewer({
             )}
         </div>
     );
-}
+});
+
+PresentationViewer.displayName = 'PresentationViewer';
+
+export default PresentationViewer;
