@@ -104,7 +104,7 @@ function Sidebar() {
                     animate={{ x: 0 }}
                     exit={{ x: -300 }}
                     transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                    className={`fixed lg:static inset-y-0 left-0 w-72 z-40 bg-[#080808] border-r border-white/5 flex flex-col p-6 gap-8 shadow-2xl lg:shadow-none h-full`}
+                    className={`fixed lg:static inset-y-0 left-0 w-72 z-40 bg-[#080808] border-r border-white/5 flex flex-col p-6 gap-8 shadow-2xl lg:shadow-none h-full overflow-y-auto invisible-scrollbar`}
                 >
                     <div className="flex items-center gap-3 px-2">
                         <div className="w-10 h-10 bg-zinc-900 border border-white/10 rounded-xl flex items-center justify-center shadow-lg rotate-3 overflow-hidden transition-transform hover:rotate-0">
@@ -130,14 +130,14 @@ function Sidebar() {
                             active={onDashboardHome && activeTab === 'presentations'}
                             onClick={() => { setActiveTab('presentations'); setSidebarOpen(false); }}
                         />
-                        
+
                         <NavItem
                             icon={<History size={20} />}
                             label="Sessions"
                             active={onDashboardHome && activeTab === 'sessions'}
                             onClick={() => { setActiveTab('sessions'); setSidebarOpen(false); }}
                         />
- 
+
                         <div className="pt-4 pb-2 px-4">
                             <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Ideas</span>
                         </div>
@@ -225,7 +225,7 @@ function Header() {
             ? 'Profile'
             : activeTab === 'billing'
                 ? 'Billing'
-            : 'Library';
+                : 'Library';
     const compactSearchPlaceholder = activeTab === 'sessions' ? 'Search sessions...' : 'Search presentations...';
     const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions';
     const profileDisplayName = user?.full_name?.trim() || user?.email?.split('@')[0] || 'User';
