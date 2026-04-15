@@ -217,7 +217,7 @@ function Sidebar() {
 }
 
 function Header() {
-    const { user, activeTab, searchQuery, setSearchQuery } = useDashboard();
+    const { user, activeTab, searchQuery, setSearchQuery, setActiveTab } = useDashboard();
     const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing';
     const compactTitle = activeTab === 'sessions'
         ? 'Sessions'
@@ -228,6 +228,7 @@ function Header() {
             : 'Library';
     const compactSearchPlaceholder = activeTab === 'sessions' ? 'Search sessions...' : 'Search presentations...';
     const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions';
+    const profileDisplayName = user?.full_name?.trim() || user?.email?.split('@')[0] || 'User';
 
     const getTimeGreeting = () => {
         const hour = new Date().getHours();
@@ -314,12 +315,18 @@ function Header() {
                     <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-black"></span>
                 </button>
                 <div className="h-10 w-[1px] bg-white/5 mx-2 hidden sm:block"></div>
-                <div className="flex items-center gap-3 bg-[#101010] p-1 pr-4 rounded-full border border-white/5">
+                <button
+                    type="button"
+                    onClick={() => setActiveTab('profile')}
+                    className="flex items-center gap-3 bg-[#101010] p-1 pr-4 rounded-full border border-white/5 hover:border-primary/40 transition-colors"
+                    aria-label="Go to profile"
+                    title="Go to profile"
+                >
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                         <User size={18} />
                     </div>
-                    <span className="text-sm font-medium hidden sm:block">Profile</span>
-                </div>
+                    <span className="text-sm font-medium hidden sm:block">{profileDisplayName}</span>
+                </button>
             </motion.div>
         </header>
     );
