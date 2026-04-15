@@ -1,5 +1,6 @@
 from typing import Any
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -144,6 +145,102 @@ async def update_me(
             )
         current_user.password_hash = security.get_password_hash(payload.password)
 
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+
+    return current_user
+
+
+@router.post("/me/email-change/request-code")
+async def request_email_change_code(
+    payload: schemas.EmailChangeCodeRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Send a one-time verification code to the new email address."""
+    normalized_email = str(payload.new_email).strip().lower()
+
+    if normalized_email == current_user.email:
+        raise HTTPException(status_code=400, detail="New email must be different from current email.")
+
+    existing_user_result = await db.execute(select(models.User).where(models.User.email == normalized_email))
+    existing_user = existing_user_result.scalar_one_or_none()
+    if existing_user and existing_user.id != current_user.id:
+        raise HTTPException(status_code=400, detail="This email is already registered.")
+
+    # Invalidate previous active codes for this user and target email.
+    pending_result = await db.execute(
+        select(models.EmailChangeVerification).where(
+            models.EmailChangeVerification.user_id == current_user.id,
+            models.EmailChangeVerification.new_email == normalized_email,
+            models.EmailChangeVerification.used_at.is_(None)
+        )
+    )
+    pending_records = pending_result.scalars().all()
+    now_utc = datetime.now(timezone.utc)
+    for record in pending_records:
+        record.used_at = now_utc
+        db.add(record)
+
+    code = f"{secrets.randbelow(1000000):06d}"
+    verification = models.EmailChangeVerification(
+        user_id=current_user.id,
+        new_email=normalized_email,
+        code_hash=security.get_password_hash(code),
+        expires_at=now_utc + timedelta(minutes=10),
+    )
+
+    db.add(verification)
+    await db.commit()
+
+    background_tasks.add_task(email_service.send_email_change_verification_code, normalized_email, code)
+
+    return {"msg": "Verification code sent to your new email."}
+
+
+@router.post("/me/email-change/confirm", response_model=schemas.UserResponse)
+async def confirm_email_change(
+    payload: schemas.EmailChangeCodeConfirm,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Confirm the verification code and update the user's email."""
+    normalized_email = str(payload.new_email).strip().lower()
+    now_utc = datetime.now(timezone.utc)
+
+    existing_user_result = await db.execute(select(models.User).where(models.User.email == normalized_email))
+    existing_user = existing_user_result.scalar_one_or_none()
+    if existing_user and existing_user.id != current_user.id:
+        raise HTTPException(status_code=400, detail="This email is already registered.")
+
+    verification_result = await db.execute(
+        select(models.EmailChangeVerification).where(
+            models.EmailChangeVerification.user_id == current_user.id,
+            models.EmailChangeVerification.new_email == normalized_email,
+            models.EmailChangeVerification.used_at.is_(None),
+            models.EmailChangeVerification.expires_at > now_utc,
+        ).order_by(models.EmailChangeVerification.created_at.desc())
+    )
+    verification = verification_result.scalars().first()
+
+    if not verification:
+        raise HTTPException(status_code=400, detail="Verification code is invalid or expired.")
+
+    if not security.verify_password(payload.code, verification.code_hash):
+        verification.attempts += 1
+        if verification.attempts >= 5:
+            verification.used_at = now_utc
+        db.add(verification)
+        await db.commit()
+        raise HTTPException(status_code=400, detail="Verification code is invalid or expired.")
+
+    verification.used_at = now_utc
+    current_user.email = normalized_email
+    current_user.email_verified = False
+
+    db.add(verification)
     db.add(current_user)
     await db.commit()
     await db.refresh(current_user)

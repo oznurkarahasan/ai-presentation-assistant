@@ -228,3 +228,115 @@ async def test_delete_me_wrong_password(client: AsyncClient):
         headers={"Authorization": f"Bearer {token}"}
     )
     assert delete_response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_email_change_verification_flow(client: AsyncClient, monkeypatch):
+    """Test requesting and confirming email change via verification code."""
+    await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "email-change@example.com",
+            "password": "testpassword123",
+            "password_confirm": "testpassword123",
+            "full_name": "Email Change User",
+            "birth_date": "1990-01-01"
+        }
+    )
+
+    login_response = await client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "email-change@example.com",
+            "password": "testpassword123"
+        }
+    )
+    token = login_response.json()["access_token"]
+
+    captured = {}
+
+    async def fake_send_email_code(to_email: str, code: str) -> bool:
+        captured["to_email"] = to_email
+        captured["code"] = code
+        return True
+
+    monkeypatch.setattr(
+        "app.services.email_service.send_email_change_verification_code",
+        fake_send_email_code
+    )
+
+    request_response = await client.post(
+        "/api/v1/auth/me/email-change/request-code",
+        json={"new_email": "updated-by-code@example.com"},
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert request_response.status_code == 200
+    assert captured["to_email"] == "updated-by-code@example.com"
+    assert len(captured["code"]) == 6
+
+    confirm_response = await client.post(
+        "/api/v1/auth/me/email-change/confirm",
+        json={
+            "new_email": "updated-by-code@example.com",
+            "code": captured["code"]
+        },
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert confirm_response.status_code == 200
+    assert confirm_response.json()["email"] == "updated-by-code@example.com"
+
+
+@pytest.mark.asyncio
+async def test_email_change_wrong_code(client: AsyncClient, monkeypatch):
+    """Test email change confirmation fails when verification code is wrong."""
+    await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "email-change-fail@example.com",
+            "password": "testpassword123",
+            "password_confirm": "testpassword123",
+            "full_name": "Email Change Fail",
+            "birth_date": "1990-01-01"
+        }
+    )
+
+    login_response = await client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "email-change-fail@example.com",
+            "password": "testpassword123"
+        }
+    )
+    token = login_response.json()["access_token"]
+
+    async def fake_send_email_code(to_email: str, code: str) -> bool:
+        return True
+
+    monkeypatch.setattr(
+        "app.services.email_service.send_email_change_verification_code",
+        fake_send_email_code
+    )
+
+    request_response = await client.post(
+        "/api/v1/auth/me/email-change/request-code",
+        json={"new_email": "will-not-update@example.com"},
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert request_response.status_code == 200
+
+    confirm_response = await client.post(
+        "/api/v1/auth/me/email-change/confirm",
+        json={
+            "new_email": "will-not-update@example.com",
+            "code": "999999"
+        },
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert confirm_response.status_code == 400
+
+    me_response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert me_response.status_code == 200
+    assert me_response.json()["email"] == "email-change-fail@example.com"
