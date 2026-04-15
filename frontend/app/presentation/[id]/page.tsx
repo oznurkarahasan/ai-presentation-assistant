@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import client from "../../api/client";
-import PresentationViewer from "../../components/PresentationViewer";
+import PresentationViewer, { PresentationViewerRef } from "../../components/PresentationViewer";
 
 
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
@@ -106,6 +106,7 @@ export default function RealTimePresentationPage() {
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+    const viewerRef = useRef<PresentationViewerRef>(null);
     const viewerContainerRef = useRef<HTMLDivElement>(null);
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(totalPages);
@@ -367,9 +368,41 @@ export default function RealTimePresentationPage() {
             let finalTranscript = '';
 
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcriptText = event.results[i][0].transcript.toLowerCase().trim();
+                
                 if (event.results[i].isFinal) {
                     finalTranscript += event.results[i][0].transcript;
-                    // Send final to backend
+                    
+                    // Local Command Detection (if-else structure as requested)
+                    if (transcriptText.includes("yakınlaştır") || 
+                        transcriptText.includes("zoom yap") || 
+                        transcriptText.includes("büyüt") || 
+                        transcriptText.includes("yüzde 10") || 
+                        transcriptText.includes("zoom in") ||
+                        transcriptText.includes("yüze on") || // common STT misstep for %10
+                        (transcriptText.includes("daha") && (transcriptText.includes("yakın") || transcriptText.includes("büyük")))
+                    ) {
+                        console.log("[LocalCommand] Triggered ZOOM_IN");
+                        viewerRef.current?.zoomIn();
+                    } 
+                    else if (transcriptText.includes("uzaklaştır") || 
+                             transcriptText.includes("küçült") || 
+                             transcriptText.includes("zoom out") || 
+                             transcriptText.includes("shrink")
+                    ) {
+                        console.log("[LocalCommand] Triggered ZOOM_OUT");
+                        viewerRef.current?.zoomOut();
+                    }
+                    else if (transcriptText.includes("sıfırla") || 
+                             transcriptText.includes("reset") || 
+                             transcriptText.includes("normal boyuta") || 
+                             transcriptText.includes("başlangıç boyutu")
+                    ) {
+                        console.log("[LocalCommand] Triggered ZOOM_RESET");
+                        viewerRef.current?.resetZoom();
+                    }
+
+                    // Send final to backend for navigation/content analysis
                     if (socketRef.current?.readyState === WebSocket.OPEN) {
                         socketRef.current.send(JSON.stringify({
                             transcript: event.results[i][0].transcript,
@@ -510,12 +543,14 @@ export default function RealTimePresentationPage() {
                                     <CommandTip label="Sonraki Slayt" example="'Sonraki slayt', 'Devam edelim'" />
                                     <CommandTip label="Önceki Slayt" example="'Geri dön', 'Önceki slayt'" />
                                     <CommandTip label="Sayfaya Atla" example="'Slayt beşe git'" />
+                                    <CommandTip label="Zoom (YENİ)" example="'Yakınlaştır', 'Küçült', 'Sıfırla'" />
                                 </>
                             ) : (
                                 <>
                                     <CommandTip label="Next Slide" example="'Next slide', 'Moving on'" />
                                     <CommandTip label="Previous Slide" example="'Go back', 'Last slide'" />
                                     <CommandTip label="Jump to Page" example="'Go to slide five'" />
+                                    <CommandTip label="Zoom (NEW)" example="'Zoom in', 'Shrink', 'Reset'" />
                                 </>
                             )}
                         </div>
@@ -534,6 +569,7 @@ export default function RealTimePresentationPage() {
 
 
                         <PresentationViewer
+                            ref={viewerRef}
                             fileUrl={presentationFile}
                             fileType={fileType}
                             title={presentationTitle}
