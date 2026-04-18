@@ -10,7 +10,10 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    Globe
+    Globe,
+    PanelLeftOpen,
+    PanelLeftClose,
+    Square
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import client from "../../api/client";
@@ -103,6 +106,8 @@ export default function RealTimePresentationPage() {
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
     const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+    const [isSessionActive, setIsSessionActive] = useState(false);
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -339,14 +344,27 @@ export default function RealTimePresentationPage() {
     }, [currentPage, isPageLoading]);
 
     // Speech Recognition Logic
-    const toggleListening = () => {
-        if (isListening) {
-            recognitionRef.current?.stop();
-            setIsListening(false);
-        } else {
-            setSttError(null);
+    const startListening = () => {
+        setSttError(null);
+        if (!isSessionActive) {
             sendSessionEvent("START");
-            startSpeechRecognition();
+            setIsSessionActive(true);
+        }
+        startSpeechRecognition();
+    };
+
+    const pauseListening = () => {
+        recognitionRef.current?.stop();
+        setIsListening(false);
+    };
+
+    const stopPresentationFully = () => {
+        recognitionRef.current?.stop();
+        setIsListening(false);
+        setLiveFeedback("");
+        if (isSessionActive) {
+            sendSessionEvent("END");
+            setIsSessionActive(false);
         }
     };
 
@@ -457,7 +475,15 @@ export default function RealTimePresentationPage() {
             <div className="bg-grid" />
 
             {/* Sidebar / Controls */}
-            <aside className="w-80 border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl flex flex-col relative z-20">
+            <AnimatePresence>
+                {!isFullScreen && isSidebarVisible && (
+                    <motion.aside
+                        initial={{ x: -24, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: -24, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="w-80 border-r border-white/5 bg-zinc-900/50 backdrop-blur-xl flex flex-col relative z-20"
+                    >
                 <header className="p-6 border-b border-white/5">
                     <div className="flex items-center gap-3 mb-6">
                         <button
@@ -467,19 +493,15 @@ export default function RealTimePresentationPage() {
                             <ArrowLeft size={18} />
                         </button>
                         <h1 className="text-sm font-bold tracking-tight uppercase italic truncate">{presentationTitle}</h1>
+                        <button
+                            onClick={() => setIsSidebarVisible(false)}
+                            className="ml-auto p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400"
+                            title="Yan menuyu gizle"
+                            aria-label="Yan menuyu gizle"
+                        >
+                            <PanelLeftClose size={18} />
+                        </button>
                     </div>
-
-                    <button
-                        onClick={toggleListening}
-                        className={`w-full py-4 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all shadow-lg active:scale-95 ${isListening ? 'bg-red-500 shadow-red-500/20' : 'bg-primary shadow-primary/20'
-                            }`}
-                    >
-                        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                        {isListening
-                            ? (sttLanguage === 'tr-TR' ? 'Sunumu Durdur' : 'Stop Presentation')
-                            : (sttLanguage === 'tr-TR' ? 'Sunuma Başla' : 'Start Presentation')
-                        }
-                    </button>
 
                     {/* Language Toggle */}
                     <button
@@ -560,12 +582,71 @@ export default function RealTimePresentationPage() {
                 <footer className="p-6 border-t border-white/5 text-[10px] text-zinc-600 font-bold uppercase tracking-widest text-center">
                     PreCue.ai Real-time Engine
                 </footer>
-            </aside>
+                    </motion.aside>
+                )}
+            </AnimatePresence>
 
             {/* Main Slide Viewer */}
             <main className="flex-1 relative flex flex-col bg-[#050505] z-10">
                 <div className="flex-1 p-4 md:p-8 flex items-center justify-center relative overflow-hidden">
-                    <div ref={viewerContainerRef} className="w-full h-full max-w-[95vw] relative shadow-[0_0_100px_rgba(0,0,0,0.8)] flex items-center justify-center bg-[#050505]">
+                    <div
+                        ref={viewerContainerRef}
+                        className={`w-full h-full max-w-[95vw] relative shadow-[0_0_100px_rgba(0,0,0,0.8)] flex justify-center bg-[#050505] ${isFullScreen ? 'items-center' : 'items-start pt-14 md:pt-16'}`}
+                    >
+
+                        {!isFullScreen && (
+                            <div className="absolute top-4 left-4 right-4 z-[60] flex items-start justify-between pointer-events-none">
+                                <div className="pointer-events-auto">
+                                    {!isSidebarVisible && (
+                                        <button
+                                            onClick={() => setIsSidebarVisible(true)}
+                                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-zinc-200 backdrop-blur hover:bg-black/80"
+                                        >
+                                            <PanelLeftOpen size={14} />
+                                            Menu
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="pointer-events-auto flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 p-1.5 backdrop-blur-md shadow-xl">
+                                    <button
+                                        onClick={startListening}
+                                        disabled={isListening}
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all ${isListening
+                                            ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                                            : 'bg-red-600 hover:bg-red-500 text-white'
+                                            }`}
+                                    >
+                                        <Mic size={13} />
+                                        {sttLanguage === 'tr-TR' ? 'Baslat' : 'Start'}
+                                    </button>
+
+                                    <button
+                                        onClick={pauseListening}
+                                        disabled={!isListening}
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all ${!isListening
+                                            ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                                            : 'bg-amber-600 hover:bg-amber-500 text-white'
+                                            }`}
+                                    >
+                                        <MicOff size={13} />
+                                        {sttLanguage === 'tr-TR' ? 'Durdur' : 'Pause'}
+                                    </button>
+
+                                    <button
+                                        onClick={stopPresentationFully}
+                                        disabled={!isListening && !isSessionActive}
+                                        className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider transition-all ${!isListening && !isSessionActive
+                                            ? 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                                            : 'bg-zinc-900 hover:bg-zinc-800 text-white border border-red-500/40'
+                                            }`}
+                                    >
+                                        <Square size={13} />
+                                        {sttLanguage === 'tr-TR' ? 'Tamamen Durdur' : 'End'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
 
 
                         <PresentationViewer
@@ -613,7 +694,8 @@ export default function RealTimePresentationPage() {
 
 
                 {/* Status Bar */}
-                <div className="h-20 border-t border-white/5 px-12 flex items-center justify-between bg-black/40 backdrop-blur-md">
+                {!isFullScreen && (
+                    <div className="h-20 border-t border-white/5 px-12 flex items-center justify-between bg-black/40 backdrop-blur-md">
                     <div className="flex items-center gap-6">
                         <div className="flex flex-col">
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">Slide</span>
@@ -639,7 +721,8 @@ export default function RealTimePresentationPage() {
                             {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
                         </button>
                     </div>
-                </div>
+                    </div>
+                )}
             </main>
         </div>
     );

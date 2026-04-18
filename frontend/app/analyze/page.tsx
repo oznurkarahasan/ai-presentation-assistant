@@ -31,13 +31,32 @@ interface Message {
     timestamp: Date;
 }
 
+function MrBeeAvatar({ size = 24 }: { size?: number }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <ellipse cx="32" cy="36" rx="18" ry="14" fill="#FACC15" />
+            <rect x="18" y="32" width="28" height="4" fill="#111827" opacity="0.85" />
+            <rect x="18" y="40" width="28" height="4" fill="#111827" opacity="0.85" />
+            <circle cx="24" cy="30" r="7" fill="#111827" />
+            <circle cx="40" cy="30" r="7" fill="#111827" />
+            <rect x="30" y="28" width="4" height="3" fill="#111827" />
+            <circle cx="24" cy="30" r="2" fill="#9CA3AF" />
+            <circle cx="40" cy="30" r="2" fill="#9CA3AF" />
+            <path d="M22 49C24.8 51 27.8 52 32 52C36.2 52 39.2 51 42 49" stroke="#111827" strokeWidth="2" strokeLinecap="round" />
+            <ellipse cx="22" cy="21" rx="5" ry="7" fill="#E5E7EB" fillOpacity="0.9" />
+            <ellipse cx="42" cy="21" rx="5" ry="7" fill="#E5E7EB" fillOpacity="0.9" />
+            <circle cx="32" cy="19" r="3" fill="#111827" />
+        </svg>
+    );
+}
+
 export default function AnalyzePage() {
     const router = useRouter();
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
             role: 'assistant',
-            content: "Hi! How can I help you with this presentation today? I can analyze the content, extract key takeaways, or provide suggestions for your rehearsing session.",
+            content: "Hi, I am Mr Bee. I will analyze your presentation and help you with key insights, concise summaries, and practical improvement tips.",
             timestamp: new Date()
         }
     ]);
@@ -337,12 +356,12 @@ export default function AnalyzePage() {
                                 <div className="flex items-center gap-3">
                                     <div className={`w-10 h-10 border rounded-xl flex items-center justify-center overflow-hidden
                                         ${chatTheme === 'dark' ? 'bg-zinc-900 border-white/10' : 'bg-white border-zinc-200'}`}>
-                                        <Image src="/favicon.ico" alt="PreCue.ai Logo" width={24} height={24} className="object-contain" />
+                                        <MrBeeAvatar size={24} />
                                     </div>
                                     <div>
-                                        <h2 className={`text-sm font-black italic uppercase tracking-wider ${chatTheme === 'light' ? 'text-zinc-900' : ''}`}>PreCue<span className="text-primary">.ai</span></h2>
+                                        <h2 className={`text-sm font-black italic uppercase tracking-wider ${chatTheme === 'light' ? 'text-zinc-900' : ''}`}>Mr Bee will help you</h2>
                                         <div className="flex items-center gap-1.5 mt-0.5">
-                                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Master the Preparation, Control the Cue</span>
+                                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Mr Bee is hardworking like a bee</span>
                                         </div>
                                     </div>
                                 </div>
@@ -377,7 +396,7 @@ export default function AnalyzePage() {
                                                 {message.role === 'user' ? (
                                                     <User size={16} />
                                                 ) : (
-                                                    <Image src="/favicon.ico" alt="AI" width={20} height={20} className="object-contain" />
+                                                    <MrBeeAvatar size={20} />
                                                 )}
                                             </div>
                                             <div className={`max-w-[85%] space-y-1.5 ${message.role === 'user' ? 'text-right' : ''}`}>
@@ -390,7 +409,7 @@ export default function AnalyzePage() {
                                                     {message.role === 'assistant' ? renderMessageContent(message.content) : message.content}
                                                 </div>
                                                 <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-1">
-                                                    {message.role === 'assistant' ? 'AI Assistant' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {message.role === 'assistant' ? 'Mr Bee' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
                                         </motion.div>
