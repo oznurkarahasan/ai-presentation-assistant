@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useCallback, useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import {
     FileText,
     Presentation,
@@ -9,6 +9,14 @@ import {
     Plus,
     Minus
 } from "lucide-react";
+
+type RegionType = 'TOP_LEFT' | 'TOP_RIGHT' | 'CENTER' | 'BOTTOM_LEFT' | 'BOTTOM_RIGHT';
+
+type RegionCoord = {
+    x: number;
+    y: number;
+    minZoom?: number;
+};
 
 interface PresentationViewerProps {
     fileUrl: string | null;
@@ -22,15 +30,24 @@ interface PresentationViewerProps {
     isFullScreen?: boolean;
     initialOrientation?: 'landscape' | 'portrait';
     aspectRatio?: number | null;
+    zoomCommand?: {
+        action: 'ZOOM_IN' | 'ZOOM_OUT' | 'RESET_ZOOM';
+        sequence: number;
+    } | null;
+    regionCommand?: {
+        region: RegionType;
+        sequence: number;
+    } | null;
+    focusCommand?: {
+        coord: RegionCoord;
+        sequence: number;
+    } | null;
+    regionMapping?: Partial<Record<number, Partial<Record<RegionType, RegionCoord>>>>;
+    enableCoordinatePick?: boolean;
+    onCoordinatePick?: (coord: RegionCoord) => void;
 }
 
-export interface PresentationViewerRef {
-    zoomIn: () => void;
-    zoomOut: () => void;
-    resetZoom: () => void;
-}
-
-const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerProps>(({
+export default function PresentationViewer({
     fileUrl,
     fileType,
     title,
@@ -40,11 +57,41 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
     onPageChange,
     isFullScreen = false,
     initialOrientation = 'landscape',
-    aspectRatio = null
-}, ref) => {
+    aspectRatio = null,
+    zoomCommand = null,
+    regionCommand = null,
+    focusCommand = null,
+    regionMapping = {},
+    enableCoordinatePick = false,
+    onCoordinatePick
+}: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
-    const [zoom, setZoom] = useState<number | null>(null); // null means "Fit"
+    const [zoom, setZoom] = useState<number>(100);
+    const [panRatio, setPanRatio] = useState({ x: 0.5, y: 0.5 });
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
+    const viewportRef = useRef<HTMLDivElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const zoomAction = zoomCommand?.action;
+    const zoomSequence = zoomCommand?.sequence;
+    const region = regionCommand?.region;
+    const regionSequence = regionCommand?.sequence;
+    const focusCoord = focusCommand?.coord;
+    const focusSequence = focusCommand?.sequence;
+    const [pdfDoc, setPdfDoc] = useState<any>(null);
+    const [isRenderingPdf, setIsRenderingPdf] = useState(false);
+    const [renderTrigger, setRenderTrigger] = useState(0);
+    const [renderedPageSize, setRenderedPageSize] = useState({ width: 0, height: 0 });
+    const renderTaskRef = useRef<any>(null);
+    const panRatioRef = useRef({ x: 0.5, y: 0.5 });
+    const focusPointRef = useRef<{ x: number; y: number } | null>(null);
+
+    const REGION_DEFAULTS: Record<RegionType, RegionCoord> = {
+        TOP_LEFT: { x: 0.18, y: 0.18, minZoom: 180 },
+        TOP_RIGHT: { x: 0.82, y: 0.18, minZoom: 180 },
+        CENTER: { x: 0.5, y: 0.5, minZoom: 180 },
+        BOTTOM_LEFT: { x: 0.18, y: 0.82, minZoom: 180 },
+        BOTTOM_RIGHT: { x: 0.82, y: 0.82, minZoom: 180 },
+    };
 
     useEffect(() => {
         setOrientation(initialOrientation);
@@ -54,30 +101,312 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
         setPageInputValue(currentPage.toString());
     }, [currentPage]);
 
-    const handleZoomIn = useCallback(() => {
-        setZoom(prev => {
-            if (prev === null) return 110;
-            return Math.min(prev + 10, 300);
+    const applyPanByRatio = useCallback((x: number, y: number, behavior: ScrollBehavior = 'auto') => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+
+        viewport.scrollTo({
+            left: maxScrollLeft * x,
+            top: maxScrollTop * y,
+            behavior,
         });
     }, []);
+
+    const getCurrentPanRatio = useCallback(() => {
+        const viewport = viewportRef.current;
+        if (!viewport) return { x: 0.5, y: 0.5 };
+
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+
+        return {
+            x: maxScrollLeft > 0 ? viewport.scrollLeft / maxScrollLeft : 0.5,
+            y: maxScrollTop > 0 ? viewport.scrollTop / maxScrollTop : 0.5,
+        };
+    }, []);
+
+    const clampRatio = useCallback((value: number) => {
+        return Math.min(1, Math.max(0, value));
+    }, []);
+
+    const changeZoom = useCallback((delta: number) => {
+        const currentPan = getCurrentPanRatio();
+        setPanRatio(currentPan);
+        panRatioRef.current = currentPan;
+        setZoom(prev => Math.max(100, Math.min(300, prev + delta)));
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                applyPanByRatio(currentPan.x, currentPan.y);
+            });
+        });
+    }, [applyPanByRatio, getCurrentPanRatio]);
+
+    const handleZoomIn = useCallback(() => {
+        changeZoom(20);
+    }, [changeZoom]);
 
     const handleZoomOut = useCallback(() => {
-        setZoom(prev => {
-            if (prev === null) return null;
-            const nextZoom = prev - 10;
-            if (nextZoom <= 100) return null;
-            return nextZoom;
+        changeZoom(-20);
+    }, [changeZoom]);
+
+    const resetZoom = useCallback(() => {
+        setZoom(100);
+        const defaultPan = { x: 0.5, y: 0.5 };
+        setPanRatio(defaultPan);
+        panRatioRef.current = defaultPan;
+        focusPointRef.current = null;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                applyPanByRatio(0, 0, 'smooth');
+            });
         });
+    }, [applyPanByRatio]);
+
+    useEffect(() => {
+        if (!zoomAction) return;
+
+        if (zoomAction === 'ZOOM_IN') {
+            handleZoomIn();
+        } else if (zoomAction === 'ZOOM_OUT') {
+            handleZoomOut();
+        } else if (zoomAction === 'RESET_ZOOM') {
+            resetZoom();
+        }
+    }, [zoomAction, zoomSequence, handleZoomIn, handleZoomOut, resetZoom]);
+
+    const centerOnNormalizedPoint = useCallback((nx: number, ny: number, behavior: ScrollBehavior = 'smooth') => {
+        const viewport = viewportRef.current;
+        if (!viewport) return;
+
+        const clampedX = clampRatio(nx);
+        const clampedY = clampRatio(ny);
+        const targetLeft = clampedX * viewport.scrollWidth - viewport.clientWidth / 2;
+        const targetTop = clampedY * viewport.scrollHeight - viewport.clientHeight / 2;
+
+        const maxScrollLeft = Math.max(0, viewport.scrollWidth - viewport.clientWidth);
+        const maxScrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+
+        viewport.scrollTo({
+            left: Math.max(0, Math.min(targetLeft, maxScrollLeft)),
+            top: Math.max(0, Math.min(targetTop, maxScrollTop)),
+            behavior,
+        });
+    }, [clampRatio]);
+
+    const zoomToPoint = useCallback((coord: RegionCoord) => {
+        const nx = clampRatio(coord.x);
+        const ny = clampRatio(coord.y);
+        const minZoom = coord.minZoom ?? 180;
+
+        setPanRatio({ x: nx, y: ny });
+        panRatioRef.current = { x: nx, y: ny };
+        focusPointRef.current = { x: nx, y: ny };
+        setZoom(prev => Math.max(prev, minZoom));
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                centerOnNormalizedPoint(nx, ny, 'smooth');
+            });
+        });
+    }, [centerOnNormalizedPoint, clampRatio]);
+
+    useEffect(() => {
+        if (!region) return;
+
+        const slideMapping = regionMapping[currentPage]?.[region];
+        const coords = slideMapping ?? REGION_DEFAULTS[region];
+        zoomToPoint(coords);
+    }, [region, regionSequence, currentPage, regionMapping, zoomToPoint]);
+
+    useEffect(() => {
+        if (!focusCoord) return;
+        zoomToPoint(focusCoord);
+    }, [focusCoord, focusSequence, zoomToPoint]);
+
+    useEffect(() => {
+        if (!fileUrl || fileType !== 'pdf') return;
+
+        let cancelled = false;
+
+        const loadPdf = async () => {
+            try {
+                let pdfjsLib: any;
+                try {
+                    pdfjsLib = await import('pdfjs-dist');
+                } catch (importErr) {
+                    console.warn('[PDFViewer] Local pdfjs-dist not found, falling back to CDN import.', importErr);
+                    // @ts-ignore
+                    pdfjsLib = await import(
+                        /* webpackIgnore: true */
+                        'https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.min.mjs'
+                    );
+                }
+
+                if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+                }
+
+                const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
+                const doc = await pdfjsLib.getDocument(url).promise;
+                if (!cancelled) {
+                    setPdfDoc(doc);
+                    setRenderTrigger(t => t + 1);
+                }
+            } catch (e) {
+                console.error('[PDFViewer] Failed to load document:', e);
+            }
+        };
+
+        loadPdf();
+        return () => {
+            cancelled = true;
+            setPdfDoc(null);
+        };
+    }, [fileUrl, fileType]);
+
+    useEffect(() => {
+        if (pdfDoc) setRenderTrigger(t => t + 1);
+    }, [currentPage, pdfDoc]);
+
+    useEffect(() => {
+        if (!pdfDoc || fileType !== 'pdf') return;
+
+        let cancelled = false;
+
+        const renderPage = async () => {
+            const canvas = canvasRef.current;
+            const viewportEl = viewportRef.current;
+            if (!canvas || !viewportEl) return;
+
+            setIsRenderingPdf(true);
+            try {
+                if (renderTaskRef.current) {
+                    try {
+                        renderTaskRef.current.cancel();
+                        await renderTaskRef.current.promise.catch(() => undefined);
+                    } finally {
+                        renderTaskRef.current = null;
+                    }
+                }
+
+                const page = await pdfDoc.getPage(currentPage);
+                if (cancelled) return;
+
+                const baseViewport = page.getViewport({ scale: 1 });
+                const availableWidth = Math.max(320, viewportEl.clientWidth - 8);
+                const availableHeight = Math.max(180, viewportEl.clientHeight - 8);
+                const fitScale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
+                const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+
+                const displayViewport = page.getViewport({ scale: fitScale });
+                const renderViewport = page.getViewport({ scale: fitScale * dpr });
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                canvas.width = Math.floor(renderViewport.width);
+                canvas.height = Math.floor(renderViewport.height);
+                canvas.style.width = `${displayViewport.width}px`;
+                canvas.style.height = `${displayViewport.height}px`;
+                setRenderedPageSize({ width: displayViewport.width, height: displayViewport.height });
+
+                const renderTask = page.render({
+                    canvasContext: ctx,
+                    viewport: renderViewport,
+                });
+
+                renderTaskRef.current = renderTask;
+                await renderTask.promise;
+
+                if (renderTaskRef.current === renderTask) {
+                    renderTaskRef.current = null;
+                }
+
+                if (focusPointRef.current) {
+                    const { x, y } = focusPointRef.current;
+                    requestAnimationFrame(() => {
+                        centerOnNormalizedPoint(x, y, 'auto');
+                    });
+                    focusPointRef.current = null;
+                }
+            } catch (e) {
+                const errorName = (e as { name?: string } | null)?.name;
+                if (!cancelled && errorName !== 'RenderingCancelledException') {
+                    console.error('[PDFViewer] Render error:', e);
+                }
+            } finally {
+                if (!cancelled) setIsRenderingPdf(false);
+            }
+        };
+
+        renderPage();
+        return () => {
+            cancelled = true;
+            if (renderTaskRef.current) {
+                renderTaskRef.current.cancel();
+            }
+        };
+    }, [renderTrigger, pdfDoc, fileType, currentPage, centerOnNormalizedPoint]);
+
+    useEffect(() => {
+        return () => {
+            if (renderTaskRef.current) {
+                renderTaskRef.current.cancel();
+                renderTaskRef.current = null;
+            }
+        };
     }, []);
 
-    const resetZoom = useCallback(() => setZoom(null), []);
+    useEffect(() => {
+        if (!pdfDoc) return;
+        const onResize = () => setRenderTrigger(t => t + 1);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [pdfDoc]);
 
-    // Expose methods to parent via ref
-    useImperativeHandle(ref, () => ({
-        zoomIn: handleZoomIn,
-        zoomOut: handleZoomOut,
-        resetZoom: resetZoom
-    }), [handleZoomIn, handleZoomOut, resetZoom]);
+    const handleCanvasClick = useCallback((event: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!enableCoordinatePick || !onCoordinatePick) return;
+
+        const rect = event.currentTarget.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
+        const nx = clampRatio((event.clientX - rect.left) / rect.width);
+        const ny = clampRatio((event.clientY - rect.top) / rect.height);
+        onCoordinatePick({ x: nx, y: ny, minZoom: Math.max(zoom, 180) });
+    }, [enableCoordinatePick, onCoordinatePick, clampRatio, zoom]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (zoom <= 100) return;
+            const nextPan = panRatioRef.current;
+            applyPanByRatio(clampRatio(nextPan.x), clampRatio(nextPan.y));
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [zoom, applyPanByRatio, clampRatio]);
+
+    useEffect(() => {
+        if (zoom <= 100) {
+            applyPanByRatio(0, 0);
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            const nextPan = panRatioRef.current;
+            applyPanByRatio(nextPan.x, nextPan.y);
+        });
+    }, [zoom, applyPanByRatio]);
+
+    const handleViewportScroll = useCallback(() => {
+        if (zoom <= 100) return;
+        const currentPan = getCurrentPanRatio();
+        panRatioRef.current = currentPan;
+        setPanRatio(currentPan);
+    }, [zoom, getCurrentPanRatio]);
 
     const handlePageSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -101,19 +430,14 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
         }
     }, [currentPage, onPageChange]);
 
-    const getIframeSrc = () => {
-        const baseUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
-        const fragments = `#page=${currentPage}&view=Fit&toolbar=0&navpanes=0&scrollbar=0&statusbar=0&messages=0`;
-        return `${baseUrl}${fragments}`;
-    };
+    // Portrait + zoomed -> switch to landscape display for better viewing
+    const displayAsLandscape = orientation === 'landscape' || (orientation === 'portrait' && zoom > 100);
 
-    // Portrait + zoomed → switch to landscape display for better viewing
-    const displayAsLandscape = orientation === 'landscape' || (orientation === 'portrait' && zoom !== null);
-
-    // Use provided aspectRatio or fallback based on effective orientation
-    const effectiveRatio = displayAsLandscape
-        ? (aspectRatio && aspectRatio >= 1 ? aspectRatio : 1.777)
-        : (aspectRatio || 0.707);
+    // Use provided aspectRatio or fallback based on detected PDF ratio or orientation
+    const detectedRatio = renderedPageSize.width > 0 ? renderedPageSize.width / renderedPageSize.height : null;
+    const effectiveRatio = aspectRatio
+        ? aspectRatio
+        : (detectedRatio || (displayAsLandscape ? 1.777 : 0.707));
 
     // containerStyle ensures the viewer maintains its aspect ratio while fitting within its parent
     const containerStyle: React.CSSProperties = {
@@ -123,6 +447,10 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
         maxWidth: '100%',
         maxHeight: '100%',
     };
+
+    const zoomScale = zoom / 100;
+    const scaledCanvasWidth = renderedPageSize.width > 0 ? renderedPageSize.width * zoomScale : 0;
+    const scaledCanvasHeight = renderedPageSize.height > 0 ? renderedPageSize.height * zoomScale : 0;
 
     return (
         <div
@@ -139,7 +467,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                             <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
                                 <button
                                     onClick={handleZoomOut}
-                                    disabled={zoom === null}
+                                    disabled={zoom <= 100}
                                     className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
                                 >
                                     <Minus size={14} />
@@ -149,7 +477,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                                     className="text-[10px] font-mono font-bold text-zinc-300 w-12 text-center hover:bg-white/5 rounded py-0.5 transition-colors"
                                     title="Reset to Fit"
                                 >
-                                    {zoom ? `${zoom}%` : 'FIT'}
+                                    {zoom > 100 ? `${zoom}%` : 'FIT'}
                                 </button>
                                 <button onClick={handleZoomIn} className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400">
                                     <Plus size={14} />
@@ -190,45 +518,50 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
 
                         {/* Page Viewport */}
                         <div
-                            className="flex-1 relative select-none overflow-auto"
+                            ref={viewportRef}
+                            onScroll={handleViewportScroll}
+                            className="flex-1 relative select-none overflow-auto flex items-center justify-center bg-[#050505]"
                             style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}
                         >
                             <div
                                 style={{
                                     position: 'relative',
-                                    width: zoom ? `${zoom}%` : '100%',
-                                    height: zoom ? `${zoom}%` : '100%',
-                                    margin: '0 auto',
-                                    overflow: 'hidden',
+                                    width: scaledCanvasWidth > 0 ? `${scaledCanvasWidth}px` : '100%',
+                                    height: scaledCanvasHeight > 0 ? `${scaledCanvasHeight}px` : '100%',
                                 }}
-                                className="transition-all duration-200 ease-out"
+                                className="transition-all duration-200 ease-out shrink-0 m-auto"
                             >
-                                <iframe
-                                    key={`${currentPage}-${displayAsLandscape ? 'landscape' : 'portrait'}`}
-                                    src={getIframeSrc()}
-                                    className="border-none pointer-events-none absolute"
-                                    title="Presentation Preview"
+                                <canvas
+                                    ref={canvasRef}
+                                    onClick={handleCanvasClick}
+                                    className={enableCoordinatePick ? 'cursor-crosshair' : 'cursor-default'}
+                                    title={enableCoordinatePick ? 'Click to capture normalized coordinates' : 'Presentation Preview'}
                                     style={{
-                                        top: '-56px',
+                                        position: 'absolute',
+                                        top: 0,
                                         left: 0,
-                                        width: 'calc(100% + 20px)',
-                                        height: 'calc(100% + 56px)',
-                                        display: 'block',
-                                    } as React.CSSProperties}
+                                        transformOrigin: 'top left',
+                                        transform: `scale(${zoomScale})`,
+                                    }}
                                 />
                             </div>
                         </div>
 
                         {/* Loading overlay */}
                         <AnimatePresence mode="wait">
-                            {isLoading && (
+                            {(isLoading || isRenderingPdf) && (
                                 <motion.div
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     exit={{ opacity: 0 }}
                                     className="absolute inset-0 bg-[#050505] flex items-center justify-center z-40"
                                 >
-                                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    <div className="text-center">
+                                        <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                                        <p className="mt-3 text-xs text-zinc-400 uppercase tracking-widest">
+                                            {isRenderingPdf ? 'Rendering...' : 'Loading...'}
+                                        </p>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -258,8 +591,4 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
             )}
         </div>
     );
-});
-
-PresentationViewer.displayName = 'PresentationViewer';
-
-export default PresentationViewer;
+}
