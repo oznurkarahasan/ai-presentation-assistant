@@ -46,6 +46,14 @@ interface PresentationViewerProps {
     enableCoordinatePick?: boolean;
     onCoordinatePick?: (coord: RegionCoord) => void;
 }
+const REGION_DEFAULTS: Record<RegionType, RegionCoord> = {
+    TOP_LEFT: { x: 0.18, y: 0.18, minZoom: 180 },
+    TOP_RIGHT: { x: 0.82, y: 0.18, minZoom: 180 },
+    CENTER: { x: 0.5, y: 0.5, minZoom: 180 },
+    BOTTOM_LEFT: { x: 0.18, y: 0.82, minZoom: 180 },
+    BOTTOM_RIGHT: { x: 0.82, y: 0.82, minZoom: 180 },
+};
+
 
 export default function PresentationViewer({
     fileUrl,
@@ -67,7 +75,6 @@ export default function PresentationViewer({
 }: PresentationViewerProps) {
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
     const [zoom, setZoom] = useState<number>(100);
-    const [panRatio, setPanRatio] = useState({ x: 0.5, y: 0.5 });
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
     const viewportRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,21 +84,13 @@ export default function PresentationViewer({
     const regionSequence = regionCommand?.sequence;
     const focusCoord = focusCommand?.coord;
     const focusSequence = focusCommand?.sequence;
-    const [pdfDoc, setPdfDoc] = useState<any>(null);
+    const [pdfDoc, setPdfDoc] = useState<unknown>(null);
     const [isRenderingPdf, setIsRenderingPdf] = useState(false);
     const [renderTrigger, setRenderTrigger] = useState(0);
     const [renderedPageSize, setRenderedPageSize] = useState({ width: 0, height: 0 });
-    const renderTaskRef = useRef<any>(null);
+    const renderTaskRef = useRef<unknown>(null);
     const panRatioRef = useRef({ x: 0.5, y: 0.5 });
     const focusPointRef = useRef<{ x: number; y: number } | null>(null);
-
-    const REGION_DEFAULTS: Record<RegionType, RegionCoord> = {
-        TOP_LEFT: { x: 0.18, y: 0.18, minZoom: 180 },
-        TOP_RIGHT: { x: 0.82, y: 0.18, minZoom: 180 },
-        CENTER: { x: 0.5, y: 0.5, minZoom: 180 },
-        BOTTOM_LEFT: { x: 0.18, y: 0.82, minZoom: 180 },
-        BOTTOM_RIGHT: { x: 0.82, y: 0.82, minZoom: 180 },
-    };
 
     useEffect(() => {
         setOrientation(initialOrientation);
@@ -134,7 +133,6 @@ export default function PresentationViewer({
 
     const changeZoom = useCallback((delta: number) => {
         const currentPan = getCurrentPanRatio();
-        setPanRatio(currentPan);
         panRatioRef.current = currentPan;
         setZoom(prev => Math.max(100, Math.min(300, prev + delta)));
 
@@ -156,7 +154,6 @@ export default function PresentationViewer({
     const resetZoom = useCallback(() => {
         setZoom(100);
         const defaultPan = { x: 0.5, y: 0.5 };
-        setPanRatio(defaultPan);
         panRatioRef.current = defaultPan;
         focusPointRef.current = null;
         requestAnimationFrame(() => {
@@ -202,7 +199,6 @@ export default function PresentationViewer({
         const ny = clampRatio(coord.y);
         const minZoom = coord.minZoom ?? 180;
 
-        setPanRatio({ x: nx, y: ny });
         panRatioRef.current = { x: nx, y: ny };
         focusPointRef.current = { x: nx, y: ny };
         setZoom(prev => Math.max(prev, minZoom));
@@ -216,7 +212,6 @@ export default function PresentationViewer({
 
     useEffect(() => {
         if (!region) return;
-
         const slideMapping = regionMapping[currentPage]?.[region];
         const coords = slideMapping ?? REGION_DEFAULTS[region];
         zoomToPoint(coords);
@@ -234,16 +229,22 @@ export default function PresentationViewer({
 
         const loadPdf = async () => {
             try {
-                let pdfjsLib: any;
+                // pdfjsLib is dynamically imported and may be from CDN or local
+                // pdfjsLib is dynamically imported from local or CDN, so type safety cannot be guaranteed
+                let pdfjsLib: {
+                    GlobalWorkerOptions: { workerSrc: string };
+                    version: string;
+                    getDocument: (url: string) => { promise: Promise<{ getPage: (n: number) => Promise<unknown> }> };
+                };
                 try {
-                    pdfjsLib = await import('pdfjs-dist');
+                    pdfjsLib = (await import('pdfjs-dist')) as unknown as typeof pdfjsLib;
                 } catch (importErr) {
                     console.warn('[PDFViewer] Local pdfjs-dist not found, falling back to CDN import.', importErr);
-                    // @ts-ignore
-                    pdfjsLib = await import(
+                    pdfjsLib = (await import(
                         /* webpackIgnore: true */
+                        // @ts-expect-error: TypeScript cannot resolve CDN imports
                         'https://unpkg.com/pdfjs-dist@4.10.38/build/pdf.min.mjs'
-                    );
+                    )) as unknown as typeof pdfjsLib;
                 }
 
                 if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
@@ -251,7 +252,7 @@ export default function PresentationViewer({
                 }
 
                 const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/${fileUrl}`;
-                const doc = await pdfjsLib.getDocument(url).promise;
+                const doc = await (pdfjsLib.getDocument(url)).promise;
                 if (!cancelled) {
                     setPdfDoc(doc);
                     setRenderTrigger(t => t + 1);
@@ -285,25 +286,22 @@ export default function PresentationViewer({
             setIsRenderingPdf(true);
             try {
                 if (renderTaskRef.current) {
-                    try {
-                        renderTaskRef.current.cancel();
-                        await renderTaskRef.current.promise.catch(() => undefined);
-                    } finally {
-                        renderTaskRef.current = null;
-                    }
+                    (renderTaskRef.current as unknown as { cancel: () => void; promise: Promise<unknown> }).cancel();
+                    await (renderTaskRef.current as unknown as { promise: Promise<unknown> }).promise.catch(() => undefined);
+                    renderTaskRef.current = null;
                 }
 
-                const page = await pdfDoc.getPage(currentPage);
+                const page = await (pdfDoc as unknown as { getPage: (n: number) => Promise<unknown> }).getPage(currentPage);
                 if (cancelled) return;
 
-                const baseViewport = page.getViewport({ scale: 1 });
+                const baseViewport = (page as unknown as { getViewport: (opts: { scale: number }) => { width: number; height: number } }).getViewport({ scale: 1 });
                 const availableWidth = Math.max(320, viewportEl.clientWidth - 8);
                 const availableHeight = Math.max(180, viewportEl.clientHeight - 8);
                 const fitScale = Math.min(availableWidth / baseViewport.width, availableHeight / baseViewport.height);
                 const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
 
-                const displayViewport = page.getViewport({ scale: fitScale });
-                const renderViewport = page.getViewport({ scale: fitScale * dpr });
+                const displayViewport = (page as unknown as { getViewport: (opts: { scale: number }) => { width: number; height: number } }).getViewport({ scale: fitScale });
+                const renderViewport = (page as unknown as { getViewport: (opts: { scale: number }) => { width: number; height: number } }).getViewport({ scale: fitScale * dpr });
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return;
 
@@ -313,13 +311,13 @@ export default function PresentationViewer({
                 canvas.style.height = `${displayViewport.height}px`;
                 setRenderedPageSize({ width: displayViewport.width, height: displayViewport.height });
 
-                const renderTask = page.render({
+                const renderTask = (page as unknown as { render: (opts: unknown) => { promise: Promise<unknown> } }).render({
                     canvasContext: ctx,
                     viewport: renderViewport,
                 });
 
                 renderTaskRef.current = renderTask;
-                await renderTask.promise;
+                await (renderTask as unknown as { promise: Promise<unknown> }).promise;
 
                 if (renderTaskRef.current === renderTask) {
                     renderTaskRef.current = null;
@@ -346,6 +344,7 @@ export default function PresentationViewer({
         return () => {
             cancelled = true;
             if (renderTaskRef.current) {
+                // @ts-expect-error: cancel is a dynamic property from pdfjs
                 renderTaskRef.current.cancel();
             }
         };
@@ -354,6 +353,7 @@ export default function PresentationViewer({
     useEffect(() => {
         return () => {
             if (renderTaskRef.current) {
+                // @ts-expect-error: cancel is a dynamic property from pdfjs
                 renderTaskRef.current.cancel();
                 renderTaskRef.current = null;
             }
@@ -405,7 +405,6 @@ export default function PresentationViewer({
         if (zoom <= 100) return;
         const currentPan = getCurrentPanRatio();
         panRatioRef.current = currentPan;
-        setPanRatio(currentPan);
     }, [zoom, getCurrentPanRatio]);
 
     const handlePageSubmit = (e: React.FormEvent) => {

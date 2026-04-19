@@ -41,7 +41,7 @@ vi.mock('framer-motion', () => ({
 }))
 
 // 4. Mock API Client
-vi.mock('../../api/client', () => ({
+vi.mock('../app/api/client', () => ({
     default: {
         post: vi.fn(),
     },

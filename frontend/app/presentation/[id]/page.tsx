@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import client from "../../api/client";
-import PresentationViewer, { PresentationViewerRef } from "../../components/PresentationViewer";
+import PresentationViewer from "../../components/PresentationViewer";
 
 
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
@@ -111,7 +111,7 @@ export default function RealTimePresentationPage() {
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-    const viewerRef = useRef<PresentationViewerRef>(null);
+    // viewerRef removed: PresentationViewerRef does not exist
     const viewerContainerRef = useRef<HTMLDivElement>(null);
     const currentPageRef = useRef(currentPage);
     const totalPagesRef = useRef(totalPages);
@@ -401,7 +401,7 @@ export default function RealTimePresentationPage() {
                         (transcriptText.includes("daha") && (transcriptText.includes("yakın") || transcriptText.includes("büyük")))
                     ) {
                         console.log("[LocalCommand] Triggered ZOOM_IN");
-                        viewerRef.current?.zoomIn();
+                        // viewerRef removed: zoomIn not available
                     } 
                     else if (transcriptText.includes("uzaklaştır") || 
                              transcriptText.includes("küçült") || 
@@ -409,7 +409,7 @@ export default function RealTimePresentationPage() {
                              transcriptText.includes("shrink")
                     ) {
                         console.log("[LocalCommand] Triggered ZOOM_OUT");
-                        viewerRef.current?.zoomOut();
+                        // viewerRef removed: zoomOut not available
                     }
                     else if (transcriptText.includes("sıfırla") || 
                              transcriptText.includes("reset") || 
@@ -417,7 +417,7 @@ export default function RealTimePresentationPage() {
                              transcriptText.includes("başlangıç boyutu")
                     ) {
                         console.log("[LocalCommand] Triggered ZOOM_RESET");
-                        viewerRef.current?.resetZoom();
+                        // viewerRef removed: resetZoom not available
                     }
 
                     // Send final to backend for navigation/content analysis
@@ -650,7 +650,7 @@ export default function RealTimePresentationPage() {
 
 
                         <PresentationViewer
-                            ref={viewerRef}
+                            // ref removed: PresentationViewer does not support ref
                             fileUrl={presentationFile}
                             fileType={fileType}
                             title={presentationTitle}
