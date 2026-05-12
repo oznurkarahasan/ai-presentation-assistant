@@ -297,5 +297,19 @@
     "noInternet": "İnternet bağlantısı yok. Lütfen bağlantınızı kontrol edin.",
     "authRequired": "Bu özellik için kimlik doğrulama gereklidir. Sunum yüklemek için giriş yapın.",
     "uploadFailed": "Sunum yüklenemedi ve işlenemedi."
+  },
+  "analyze": {
+    "assistantGreeting": "Merhaba, ben Mr Bee. Sunumunu analiz edip temel icgoru, oz ve faydali gelistirme onerileri sunacagim.",
+    "loadingPresentation": "Sunum yukleniyor...",
+    "loadingError": "Sunum yuklenirken hata olustu",
+    "chatError": "Uzgunum, yanit olustururken bir hata meydana geldi. Lutfen tekrar deneyin.",
+    "analysisMode": "Sunum Analiz Modu",
+    "realtimeMode": "Gercek Zamanli Mod",
+    "assistantHeader": "Mr Bee yardimci olur",
+    "assistantSubheader": "Mr Bee arilar gibi caliskan",
+    "assistantLabel": "Mr Bee",
+    "userLabel": "Sen",
+    "askPlaceholder": "Sunumun hakkinda PreCue.ai'ya her seyi sor...",
+    "disclaimer": "PreCue.ai hata yapabilir. Onemli bilgileri dogrulayin."
   }
 }

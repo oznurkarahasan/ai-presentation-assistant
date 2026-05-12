@@ -23,6 +23,8 @@ import Link from "next/link";
 import Image from "next/image";
 import client from "../api/client";
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 interface Message {
     id: string;
@@ -52,17 +54,18 @@ function MrBeeAvatar({ size = 24 }: { size?: number }) {
 
 export default function AnalyzePage() {
     const router = useRouter();
+    const t = useTranslations("analyze");
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
             role: 'assistant',
-            content: "Hi, I am Mr Bee. I will analyze your presentation and help you with key insights, concise summaries, and practical improvement tips.",
+            content: t("assistantGreeting"),
             timestamp: new Date()
         }
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
-    const [presentationTitle, setPresentationTitle] = useState("Loading Presentation...");
+    const [presentationTitle, setPresentationTitle] = useState(t("loadingPresentation"));
     const [presentationFile, setPresentationFile] = useState<string | null>(null);
     const [fileType, setFileType] = useState<string | null>(null);
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
@@ -114,7 +117,7 @@ export default function AnalyzePage() {
 
                 } catch (error) {
                     console.error("Failed to fetch presentation:", error);
-                    setPresentationTitle("Error loading presentation");
+                    setPresentationTitle(t("loadingError"));
                 }
             };
             fetchPresentation();
@@ -157,7 +160,7 @@ export default function AnalyzePage() {
             const errorMessage: Message = {
                 id: Date.now().toString(),
                 role: 'assistant',
-                content: "I'm sorry, I encountered an error while generating a response. Please try again.",
+                content: t("chatError"),
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMessage]);
@@ -286,18 +289,19 @@ export default function AnalyzePage() {
                                 </div>
                                 <div>
                                     <h2 className="text-sm font-bold tracking-tight uppercase italic truncate max-w-[200px] md:max-w-xs">{presentationTitle}</h2>
-                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-none mt-0.5">Presentation Analysis Mode</p>
+                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-none mt-0.5">{t("analysisMode")}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2">
+                            <LanguageSwitcher />
                             <Link
                                 href={`/presentation/${presentationId}`}
                                 className="px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-all text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2 hidden md:flex"
                             >
                                 <Presentation size={16} />
-                                Real-Time Mode
+                                {t("realtimeMode")}
                             </Link>
 
                             <button
@@ -359,9 +363,9 @@ export default function AnalyzePage() {
                                         <MrBeeAvatar size={24} />
                                     </div>
                                     <div>
-                                        <h2 className={`text-sm font-black italic uppercase tracking-wider ${chatTheme === 'light' ? 'text-zinc-900' : ''}`}>Mr Bee will help you</h2>
+                                        <h2 className={`text-sm font-black italic uppercase tracking-wider ${chatTheme === 'light' ? 'text-zinc-900' : ''}`}>{t("assistantHeader")}</h2>
                                         <div className="flex items-center gap-1.5 mt-0.5">
-                                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Mr Bee is hardworking like a bee</span>
+                                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{t("assistantSubheader")}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -409,7 +413,7 @@ export default function AnalyzePage() {
                                                     {message.role === 'assistant' ? renderMessageContent(message.content) : message.content}
                                                 </div>
                                                 <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-1">
-                                                    {message.role === 'assistant' ? 'Mr Bee' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {message.role === 'assistant' ? t("assistantLabel") : t("userLabel")} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
                                         </motion.div>
@@ -440,7 +444,7 @@ export default function AnalyzePage() {
                                         type="text"
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
-                                        placeholder="Ask PreCue.ai anything about your deck..."
+                                        placeholder={t("askPlaceholder")}
                                         className={`w-full border rounded-2xl py-4 pl-6 pr-14 text-sm transition-all relative z-10 
                                             ${chatTheme === 'dark'
                                                 ? 'bg-white/5 border-white/10 text-zinc-100 focus:border-primary/50 focus:bg-white/[0.08] placeholder:text-zinc-600'
@@ -455,7 +459,7 @@ export default function AnalyzePage() {
                                     </button>
                                 </form>
                                 <p className="text-[9px] text-zinc-600 text-center mt-4 font-bold uppercase tracking-[0.2em]">
-                                    PreCue.ai can make errors. Verify important information.
+                                    {t("disclaimer")}
                                 </p>
                             </div>
                         </motion.aside>

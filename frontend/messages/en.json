@@ -297,5 +297,19 @@
     "noInternet": "No internet connection. Please check your connectivity.",
     "authRequired": "This feature requires authentication. Please sign in to upload presentations.",
     "uploadFailed": "Failed to upload and process the presentation."
+  },
+  "analyze": {
+    "assistantGreeting": "Hi, I am Mr Bee. I will analyze your presentation and help you with key insights, concise summaries, and practical improvement tips.",
+    "loadingPresentation": "Loading Presentation...",
+    "loadingError": "Error loading presentation",
+    "chatError": "I'm sorry, I encountered an error while generating a response. Please try again.",
+    "analysisMode": "Presentation Analysis Mode",
+    "realtimeMode": "Real-Time Mode",
+    "assistantHeader": "Mr Bee will help you",
+    "assistantSubheader": "Mr Bee is hardworking like a bee",
+    "assistantLabel": "Mr Bee",
+    "userLabel": "You",
+    "askPlaceholder": "Ask PreCue.ai anything about your deck...",
+    "disclaimer": "PreCue.ai can make errors. Verify important information."
   }
 }
