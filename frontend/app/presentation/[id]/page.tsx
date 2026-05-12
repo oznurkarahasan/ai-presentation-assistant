@@ -10,14 +10,15 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    Globe,
     PanelLeftOpen,
     PanelLeftClose,
     Square
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocale } from "next-intl";
 import client from "../../api/client";
 import PresentationViewer, { PresentationViewerRef } from "../../components/PresentationViewer";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
@@ -87,6 +88,7 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
 export default function RealTimePresentationPage() {
     const params = useParams();
     const router = useRouter();
+    const locale = useLocale();
     const presentationId = params.id as string;
 
     const [presentationTitle, setPresentationTitle] = useState("Loading...");
@@ -104,7 +106,7 @@ export default function RealTimePresentationPage() {
     const [isPageLoading, setIsPageLoading] = useState(false);
     const [sttError, setSttError] = useState<string | null>(null);
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
-    const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
+    const sttLanguage = locale === "tr" ? "tr-TR" : "en-US";
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [isSessionActive, setIsSessionActive] = useState(false);
@@ -504,25 +506,9 @@ export default function RealTimePresentationPage() {
                     </div>
 
                     {/* Language Toggle */}
-                    <button
-                        onClick={() => {
-                            const newLang = sttLanguage === 'en-US' ? 'tr-TR' : 'en-US';
-                            setSttLanguage(newLang);
-                            // If currently listening, restart recognition with new language
-                            if (isListening) {
-                                recognitionRef.current?.stop();
-                                setTimeout(() => startSpeechRecognition(), 300);
-                            }
-                        }}
-                        disabled={isListening}
-                        className={`w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all border ${isListening
-                            ? 'border-white/5 bg-white/[0.02] text-zinc-600 cursor-not-allowed'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white'
-                            }`}
-                    >
-                        <Globe size={16} />
-                        <span className="text-sm">{sttLanguage === 'tr-TR' ? '🇹🇷 Türkçe' : '🇺🇸 English'}</span>
-                    </button>
+                    <div className="mt-3 flex justify-end">
+                        <LanguageSwitcher />
+                    </div>
 
                     <AnimatePresence>
                         {sttError && (
