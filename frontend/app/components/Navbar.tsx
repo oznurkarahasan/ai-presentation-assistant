@@ -28,7 +28,7 @@ export default function Navbar() {
 
     return (
         <div className="fixed top-0 left-0 right-0 z-50 px-6 py-8 pointer-events-none">
-            <nav className="max-w-[1600px] mx-auto bg-[#0a0a0c]/60 backdrop-blur-xl border border-white/10 rounded-[24px] pointer-events-auto shadow-2xl overflow-hidden">
+            <nav className="max-w-[1600px] mx-auto bg-[#0a0a0c]/60 backdrop-blur-xl border border-white/10 rounded-[24px] pointer-events-auto shadow-2xl">
                 <div className="px-6 lg:px-12">
                     <div className="flex justify-between items-center h-[64px]">
                         {/* Left Section: Logo & Main Links */}
@@ -109,7 +109,7 @@ export default function Navbar() {
 
                 {/* Mobile Menu */}
                 {mobileMenuOpen && (
-                    <div className="lg:hidden bg-[#0a0a0c]/95 border-t border-white/5 overflow-hidden p-6 space-y-6 animate-in slide-in-from-top duration-300">
+                    <div className="lg:hidden bg-[#0a0a0c]/95 border-t border-white/5 rounded-b-[24px] overflow-hidden p-6 space-y-6 animate-in slide-in-from-top duration-300">
                         <div className="grid grid-cols-2 gap-8">
                             <div className="space-y-4">
                                 <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{t("product")}</p>

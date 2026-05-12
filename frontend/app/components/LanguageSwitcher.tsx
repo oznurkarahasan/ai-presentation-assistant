@@ -1,37 +1,61 @@
 "use client";
 
 import { useLocale } from "next-intl";
+import { useState, useRef, useEffect } from "react";
+
+const LOCALES = [
+  { code: "en", flag: "🇬🇧", label: "English" },
+  { code: "tr", flag: "🇹🇷", label: "Türkçe" },
+];
 
 export default function LanguageSwitcher() {
   const locale = useLocale();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const current = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
 
   const switchLocale = (newLocale: string) => {
     document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000;SameSite=Lax`;
     window.location.reload();
   };
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   return (
-    <div className="flex items-center gap-0.5 bg-white/5 border border-white/10 rounded-lg p-1">
+    <div ref={ref} className="relative">
       <button
-        onClick={() => switchLocale("en")}
-        className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
-          locale === "en"
-            ? "bg-primary text-white"
-            : "text-zinc-400 hover:text-white"
-        }`}
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-base"
       >
-        EN
+        {current.flag}
+        <span className="text-zinc-400 text-[10px]">▾</span>
       </button>
-      <button
-        onClick={() => switchLocale("tr")}
-        className={`px-2 py-0.5 rounded text-[11px] font-bold transition-all ${
-          locale === "tr"
-            ? "bg-primary text-white"
-            : "text-zinc-400 hover:text-white"
-        }`}
-      >
-        TR
-      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-1 w-32 rounded-lg bg-zinc-900 border border-white/10 shadow-lg overflow-hidden z-50">
+          {LOCALES.map((l) => (
+            <button
+              key={l.code}
+              onClick={() => switchLocale(l.code)}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors hover:bg-white/10 ${
+                locale === l.code ? "text-white font-medium" : "text-zinc-400"
+              }`}
+            >
+              <span className="text-base">{l.flag}</span>
+              {l.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
