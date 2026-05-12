@@ -3,6 +3,7 @@
  * Setting an empty `turbopack` config silences the build-time error
  * while keeping default Turbopack behavior.
  */
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const createNextIntlPlugin = require("next-intl/plugin");
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");

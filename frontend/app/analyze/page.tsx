@@ -122,7 +122,7 @@ export default function AnalyzePage() {
             };
             fetchPresentation();
         }
-    }, [router, presentationId]);
+    }, [router, presentationId, t]);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
