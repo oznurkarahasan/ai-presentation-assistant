@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
     return (
@@ -93,6 +94,7 @@ function NavLinkItem({
 function Sidebar() {
     const pathname = usePathname();
     const { activeTab, setActiveTab, sidebarOpen, setSidebarOpen, handleLogout } = useDashboard();
+    const t = useTranslations("dashboard");
     /** Tab state only applies on the main dashboard page; sub-routes (e.g. planner) must not inherit a tab highlight. */
     const onDashboardHome = pathname === '/dashboard';
 
@@ -120,82 +122,82 @@ function Sidebar() {
                     <nav className="flex-1 space-y-1">
                         <NavItem
                             icon={<LayoutDashboard size={20} />}
-                            label="Overview"
+                            label={t("overview")}
                             active={onDashboardHome && activeTab === 'overview'}
                             onClick={() => { setActiveTab('overview'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<Presentation size={20} />}
-                            label="My Presentations"
+                            label={t("myPresentations")}
                             active={onDashboardHome && activeTab === 'presentations'}
                             onClick={() => { setActiveTab('presentations'); setSidebarOpen(false); }}
                         />
 
                         <NavItem
                             icon={<History size={20} />}
-                            label="Sessions"
+                            label={t("sessions")}
                             active={onDashboardHome && activeTab === 'sessions'}
                             onClick={() => { setActiveTab('sessions'); setSidebarOpen(false); }}
                         />
 
                         <div className="pt-4 pb-2 px-4">
-                            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Ideas</span>
+                            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{t("ideas")}</span>
                         </div>
                         <NavItem
                             icon={<Lightbulb size={20} />}
-                            label="Topic ideas"
+                            label={t("topicIdeas")}
                             active={onDashboardHome && activeTab === 'ideas-topics'}
                             onClick={() => { setActiveTab('ideas-topics'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<MessageSquareQuote size={20} />}
-                            label="Hooks & openings"
+                            label={t("hooksOpenings")}
                             active={onDashboardHome && activeTab === 'ideas-hooks'}
                             onClick={() => { setActiveTab('ideas-hooks'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<Palette size={20} />}
-                            label="Visual direction"
+                            label={t("visualDirection")}
                             active={onDashboardHome && activeTab === 'ideas-visuals'}
                             onClick={() => { setActiveTab('ideas-visuals'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<Sparkles size={20} />}
-                            label="AI Presentation"
+                            label={t("aiPresentation")}
                             active={onDashboardHome && activeTab === 'ai-presentation'}
                             onClick={() => { setActiveTab('ai-presentation'); setSidebarOpen(false); }}
                         />
                         <NavItem
                             icon={<BarChart size={20} />}
-                            label="AI Analysis"
+                            label={t("aiAnalysis")}
                             active={onDashboardHome && activeTab === 'ai-analysis'}
                             onClick={() => { setActiveTab('ai-analysis'); setSidebarOpen(false); }}
                         />
                         <div className="pt-4 pb-2 px-4">
-                            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Actions</span>
+                            <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{t("actions")}</span>
                         </div>
                         <NavLinkItem
                             href="/dashboard/planner"
                             icon={<CalendarDays size={20} />}
-                            label="Planner"
+                            label={t("planner")}
                             active={pathname === '/dashboard/planner'}
                             onNavigate={() => setSidebarOpen(false)}
                         />
                         <NavItem
                             icon={<CreditCard size={20} />}
-                            label="Billing"
+                            label={t("billing")}
                             active={onDashboardHome && activeTab === 'billing'}
                             onClick={() => { setActiveTab('billing'); setSidebarOpen(false); }}
                         />
                         <Link href="/upload" onClick={() => setSidebarOpen(false)}>
                             <button className="w-full p-4 rounded-2xl flex items-center gap-4 text-zinc-500 hover:text-zinc-300 transition-all font-semibold text-sm h-[52px]">
                                 <Upload size={20} />
-                                New Presentation
+                                {t("newPresentation")}
                             </button>
                         </Link>
                         <NavItem
                             icon={<User size={20} />}
-                            label="Profile"
+                            label={t("profile")}
                             active={onDashboardHome && activeTab === 'profile'}
                             onClick={() => { setActiveTab('profile'); setSidebarOpen(false); }}
                         />
@@ -207,7 +209,7 @@ function Sidebar() {
                             className="w-full p-4 rounded-xl flex items-center gap-3 text-zinc-500 hover:text-white hover:bg-white/5 transition-all text-sm font-medium border border-transparent hover:border-white/5"
                         >
                             <LogOut size={18} />
-                            Log Out
+                            {t("logOut")}
                         </button>
                     </div>
                 </motion.aside>
@@ -218,23 +220,24 @@ function Sidebar() {
 
 function Header() {
     const { user, activeTab, searchQuery, setSearchQuery, setActiveTab } = useDashboard();
+    const t = useTranslations("dashboard");
     const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing';
     const compactTitle = activeTab === 'sessions'
-        ? 'Sessions'
+        ? t("sessions")
         : activeTab === 'profile'
-            ? 'Profile'
+            ? t("profile")
             : activeTab === 'billing'
-                ? 'Billing'
-                : 'Library';
-    const compactSearchPlaceholder = activeTab === 'sessions' ? 'Search sessions...' : 'Search presentations...';
+                ? t("billing")
+                : t("library");
+    const compactSearchPlaceholder = activeTab === 'sessions' ? t("searchSessions") : t("searchPresentations");
     const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions';
     const profileDisplayName = user?.full_name?.trim() || user?.email?.split('@')[0] || 'User';
 
     const getTimeGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return "Good Morning";
-        if (hour < 18) return "Good Afternoon";
-        return "Good Evening";
+        if (hour < 12) return t("goodMorning");
+        if (hour < 18) return t("goodAfternoon");
+        return t("goodEvening");
     };
 
     if (!user) return null;
@@ -269,8 +272,8 @@ function Header() {
                             <button
                                 type="button"
                                 className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
-                                aria-label="Upload presentation"
-                                title="Upload presentation"
+                                aria-label={t("newPresentation")}
+                                title={t("newPresentation")}
                             >
                                 <Plus size={18} />
                             </button>
@@ -291,7 +294,7 @@ function Header() {
                     {getTimeGreeting()}, <span className="text-primary">{user.full_name?.split(' ')[0] || 'User'}</span>
                 </h1>
                 <p className="text-zinc-500 text-sm sm:text-base max-w-md">
-                    Your presentation assistant is ready to work with you today.
+                    {t("subtitle")}
                 </p>
             </motion.div>
 
@@ -304,7 +307,7 @@ function Header() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-primary transition-colors" size={18} />
                     <input
                         type="text"
-                        placeholder="Search presentations..."
+                        placeholder={t("searchPresentations")}
                         className="bg-[#101010] border border-white/5 rounded-full pl-11 pr-6 py-2.5 text-sm focus:outline-none focus:border-primary/50 w-64 transition-all"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
@@ -319,8 +322,8 @@ function Header() {
                     type="button"
                     onClick={() => setActiveTab('profile')}
                     className="flex items-center gap-3 bg-[#101010] p-1 pr-4 rounded-full border border-white/5 hover:border-primary/40 transition-colors"
-                    aria-label="Go to profile"
-                    title="Go to profile"
+                    aria-label={t("profile")}
+                    title={t("profile")}
                 >
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
                         <User size={18} />

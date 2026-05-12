@@ -40,7 +40,28 @@ vi.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
-// 4. Mock API Client
+// 4. Mock next-intl
+vi.mock('next-intl', () => ({
+    useTranslations: () => (key: string) => {
+        const map: Record<string, string> = {
+            signIn: 'Sign In',
+            signingIn: 'Signing In...',
+            loginFailed: 'Login failed. Please check your credentials.',
+            email: 'Email',
+            password: 'Password',
+            forgotPassword: 'Forgot password?',
+            orContinueWith: 'Or continue with',
+            noAccount: "Don't have an account?",
+            signUpFree: 'Sign up for free',
+            successMessage: 'Successfully registered! You can now sign in.',
+            subtitle: 'Master the Preparation, Control the Cue',
+        };
+        return map[key] ?? key;
+    },
+    useLocale: () => 'en',
+}))
+
+// 5. Mock API Client
 vi.mock('../../api/client', () => ({
     default: {
         post: vi.fn(),

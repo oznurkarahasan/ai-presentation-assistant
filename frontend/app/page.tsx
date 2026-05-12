@@ -7,8 +7,11 @@ import Typewriter from "typewriter-effect";
 import { Mic, Presentation, Zap, Sparkles, Layers, ShieldCheck, ChevronRight, Quote, Star, Users } from "lucide-react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import { useTranslations } from "next-intl";
 
 export default function Home() {
+  const t = useTranslations("home");
+
   return (
     <div className="flex flex-col min-h-screen bg-black relative selection:bg-primary/30">
       <div className="bg-grid" />
@@ -24,12 +27,12 @@ export default function Home() {
             className="space-y-8 max-w-4xl mx-auto"
           >
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.1]">
-              <span className="text-white">While Presenting</span>
+              <span className="text-white">{t("hero.while")}</span>
               <br />
               <span className="text-primary truncate block min-h-[1.2em]">
                 <Typewriter
                   options={{
-                    strings: ['Trust the AI.', 'Forget the Slides.', 'Focus on the Stage.'],
+                    strings: [t("hero.typewriter1"), t("hero.typewriter2"), t("hero.typewriter3")],
                     autoStart: true,
                     loop: true,
                     deleteSpeed: 50,
@@ -40,8 +43,7 @@ export default function Home() {
             </h1>
 
             <p className="text-secondary-text text-sm sm:text-lg max-w-2xl mx-auto leading-relaxed px-4">
-              Ditch the remote. You speak, AI listens and switches your slides at the perfect moment.
-              Rehearse, get analytics, and dominate the stage.
+              {t("hero.description")}
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mt-10 px-6 sm:px-0">
@@ -50,7 +52,7 @@ export default function Home() {
                 className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-10 py-4 rounded-xl font-bold text-sm sm:text-base transition-all active:scale-95 shadow-xl shadow-primary/30 group"
               >
                 <Image src="/favicon.ico" alt="Icon" width={18} height={18} className="w-[18px] h-[18px]" />
-                Step Into the Spotlight
+                {t("hero.cta")}
                 <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
               </Link>
             </div>
@@ -61,40 +63,40 @@ export default function Home() {
         <section id="features" className="py-24 px-6 relative">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">Powerful Features for the Stage</h2>
-              <p className="text-secondary-text max-w-2xl mx-auto text-sm sm:text-base px-4">PreCue is equipped with advanced AI tools that transform your presentation experience from start to finish.</p>
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white tracking-tight">{t("features.title")}</h2>
+              <p className="text-secondary-text max-w-2xl mx-auto text-sm sm:text-base px-4">{t("features.description")}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               <FeatureCard
                 icon={<Mic className="text-primary" size={24} />}
-                title="AI Voice Control"
-                desc="Leave the remote behind. Just speak, and AI understands the context to switch slides for you."
+                title={t("features.voiceControl.title")}
+                desc={t("features.voiceControl.desc")}
               />
               <FeatureCard
                 icon={<Presentation className="text-blue-400" size={24} />}
-                title="Rehearsal Analytics"
-                desc="Track your speaking pace, duration, and pauses. See all your mistakes before you step on stage."
+                title={t("features.rehearsalAnalytics.title")}
+                desc={t("features.rehearsalAnalytics.desc")}
               />
               <FeatureCard
                 icon={<Zap className="text-purple-400" size={24} />}
-                title="Smart Insights"
-                desc="Upload your presentation and let AI generate summaries, key points, and Q&A sets automatically."
+                title={t("features.smartInsights.title")}
+                desc={t("features.smartInsights.desc")}
               />
               <FeatureCard
                 icon={<Sparkles className="text-amber-400" size={24} />}
-                title="Real-time Feedback"
-                desc="Get instant tips on tonality, energy, and flow during rehearsals to sharpen your performance."
+                title={t("features.realtimeFeedback.title")}
+                desc={t("features.realtimeFeedback.desc")}
               />
               <FeatureCard
                 icon={<Layers className="text-emerald-400" size={24} />}
-                title="Presentation Archive"
-                desc="Store all your rehearsals and live presentations in one place, and track your progress over time."
+                title={t("features.archive.title")}
+                desc={t("features.archive.desc")}
               />
               <FeatureCard
                 icon={<ShieldCheck className="text-rose-400" size={24} />}
-                title="Secure & Fast"
-                desc="Your presentations are encrypted end-to-end. Access them instantly from any device, anywhere."
+                title={t("features.secure.title")}
+                desc={t("features.secure.desc")}
               />
             </div>
           </div>
@@ -106,28 +108,28 @@ export default function Home() {
             <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
               <div className="flex-1 space-y-8 w-full">
                 <div className="space-y-4 text-center lg:text-left">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-white">How It Works</h2>
-                  <p className="text-secondary-text">Mastering your stage presence in three simple steps.</p>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-white">{t("howItWorks.title")}</h2>
+                  <p className="text-secondary-text">{t("howItWorks.subtitle")}</p>
                 </div>
 
                 <div className="space-y-10">
                   <StepItem
                     number="1"
                     color="bg-primary/20 border-primary/40 text-primary"
-                    title="Upload Your Deck"
-                    desc="Import your presentation in PDF or PPTX format in seconds."
+                    title={t("howItWorks.step1.title")}
+                    desc={t("howItWorks.step1.desc")}
                   />
                   <StepItem
                     number="2"
                     color="bg-blue-500/20 border-blue-500/40 text-blue-400"
-                    title="Train the AI"
-                    desc="Set keywords for slide transitions or let the AI decide based on context."
+                    title={t("howItWorks.step2.title")}
+                    desc={t("howItWorks.step2.desc")}
                   />
                   <StepItem
                     number="3"
                     color="bg-purple-500/20 border-purple-500/40 text-purple-400"
-                    title="Own the Stage"
-                    desc="Focus entirely on your storytelling; PreCue handles the rest seamlessly."
+                    title={t("howItWorks.step3.title")}
+                    desc={t("howItWorks.step3.desc")}
                   />
                 </div>
               </div>
@@ -156,31 +158,31 @@ export default function Home() {
             <div className="text-center mb-20 space-y-4">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-xs font-bold text-zinc-400 uppercase tracking-widest mb-4">
                 <Users size={12} className="text-primary" />
-                Community Loved
+                {t("testimonials.badge")}
               </div>
-              <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">Trusted by Leading Speakers</h2>
-              <p className="text-secondary-text max-w-2xl mx-auto text-sm sm:text-base">Join the professionals who have transformed their presentation style with PreCue.</p>
+              <h2 className="text-3xl sm:text-5xl font-bold text-white tracking-tight">{t("testimonials.title")}</h2>
+              <p className="text-secondary-text max-w-2xl mx-auto text-sm sm:text-base">{t("testimonials.subtitle")}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               <TestimonialCard
                 name="Sarah Jenkins"
                 role="Marketing Director @ TechFlow"
-                content="PreCue changed the way I present. No more awkward fumbling for the remote. It's like having a silent assistant on stage with me."
+                content={t("testimonials.sarah.content")}
                 rating={5}
                 avatar="SJ"
               />
               <TestimonialCard
                 name="Marcus Thorne"
                 role="Professional Keynote Speaker"
-                content="The rehearsal analytics are a game-changer. Being able to track my pace and filler words helped me land my biggest contract yet."
+                content={t("testimonials.marcus.content")}
                 rating={5}
                 avatar="MT"
               />
               <TestimonialCard
                 name="Elena Rossi"
                 role="Graduate Researcher"
-                content="I used to be terrified of stage fright. PreCue handles the technical side flawlessly, so I can just focus on my data and storytelling."
+                content={t("testimonials.elena.content")}
                 rating={5}
                 avatar="ER"
               />

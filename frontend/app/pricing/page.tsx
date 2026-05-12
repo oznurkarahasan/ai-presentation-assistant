@@ -5,8 +5,15 @@ import { Check, ChevronRight } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 export default function PricingPage() {
+    const t = useTranslations("pricing");
+
+    const freeFeatures = [t("freeFeature0"), t("freeFeature1"), t("freeFeature2"), t("freeFeature3")];
+    const proFeatures = [t("proFeature0"), t("proFeature1"), t("proFeature2"), t("proFeature3"), t("proFeature4"), t("proFeature5")];
+    const enterpriseFeatures = [t("enterpriseFeature0"), t("enterpriseFeature1"), t("enterpriseFeature2"), t("enterpriseFeature3"), t("enterpriseFeature4"), t("enterpriseFeature5")];
+
     return (
         <div className="flex flex-col min-h-screen bg-black relative selection:bg-primary/30">
             <div className="bg-grid" />
@@ -20,76 +27,61 @@ export default function PricingPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
                         >
-                            <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight">Simple, Transparent Pricing</h1>
-                            <p className="text-secondary-text max-w-2xl mx-auto text-lg pt-4">
-                                Choose the plan that&apos;s right for your presentation goals. No hidden fees.
-                            </p>
+                            <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight">{t("title")}</h1>
+                            <p className="text-secondary-text max-w-2xl mx-auto text-lg pt-4">{t("subtitle")}</p>
                         </motion.div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
                         {/* Free Tier */}
                         <PricingCard
-                            tier="Free"
+                            tier={t("freeName")}
                             price="0"
-                            desc="Perfect for trying out PreCue&apos;s core features."
-                            features={[
-                                "3 Presentations per month",
-                                "Basic AI Voice Control",
-                                "Standard Analytics",
-                                "Email Support"
-                            ]}
-                            buttonText="Get Started"
+                            desc={t("freeDesc")}
+                            features={freeFeatures}
+                            buttonText={t("freeButton")}
                             href="/register"
+                            mostPopular={t("mostPopular")}
+                            perMonth={t("perMonth")}
                         />
 
                         {/* Pro Tier */}
                         <PricingCard
-                            tier="Pro"
+                            tier={t("proName")}
                             price="9.99"
-                            desc="The power user&apos;s choice for professional speaking."
-                            features={[
-                                "Unlimited Presentations",
-                                "Advanced AI Voice Control",
-                                "Full Rehearsal Analytics",
-                                "Smart Q&A Generation",
-                                "Priority Support",
-                                "Early Access to Beta Features"
-                            ]}
-                            buttonText="Start Pro Trial"
+                            desc={t("proDesc")}
+                            features={proFeatures}
+                            buttonText={t("proButton")}
                             featured={true}
                             href="/register?plan=pro"
+                            mostPopular={t("mostPopular")}
+                            perMonth={t("perMonth")}
                         />
 
                         {/* Enterprise Tier */}
                         <PricingCard
-                            tier="Enterprise"
+                            tier={t("enterpriseName")}
                             price="49.99"
-                            desc="Global scale tools for teams and top-tier speakers."
-                            features={[
-                                "Everything in Pro",
-                                "Team Collaboration Tools",
-                                "Custom AI Training",
-                                "Dedicated Account Manager",
-                                "White-label Options",
-                                "Custom Integration Support"
-                            ]}
-                            buttonText="Contact Sales"
+                            desc={t("enterpriseDesc")}
+                            features={enterpriseFeatures}
+                            buttonText={t("enterpriseButton")}
                             href="/contact"
+                            mostPopular={t("mostPopular")}
+                            perMonth={t("perMonth")}
                         />
                     </div>
 
                     {/* FAQ/Notice Section */}
                     <div className="mt-32 text-center max-w-3xl mx-auto p-12 rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-sm">
-                        <h2 className="text-2xl font-bold text-white mb-4">Frequently Asked Questions</h2>
+                        <h2 className="text-2xl font-bold text-white mb-4">{t("faqTitle")}</h2>
                         <div className="text-left space-y-8 mt-10">
                             <div>
-                                <h4 className="text-white font-semibold mb-2">Can I cancel anytime?</h4>
-                                <p className="text-secondary-text text-sm">Yes, you can cancel your subscription at any time. You&apos;ll keep your features until the end of your billing cycle.</p>
+                                <h4 className="text-white font-semibold mb-2">{t("cancelTitle")}</h4>
+                                <p className="text-secondary-text text-sm">{t("cancelAnswer")}</p>
                             </div>
                             <div>
-                                <h4 className="text-white font-semibold mb-2">What format of presentations are supported?</h4>
-                                <p className="text-secondary-text text-sm">We currently support PDF and PPTX (PowerPoint) formats. Google Slides support is coming soon.</p>
+                                <h4 className="text-white font-semibold mb-2">{t("formatsTitle")}</h4>
+                                <p className="text-secondary-text text-sm">{t("formatsAnswer")}</p>
                             </div>
                         </div>
                     </div>
@@ -101,14 +93,16 @@ export default function PricingPage() {
     );
 }
 
-function PricingCard({ tier, price, desc, features, buttonText, featured = false, href }: {
+function PricingCard({ tier, price, desc, features, buttonText, featured = false, href, mostPopular, perMonth }: {
     tier: string,
     price: string,
     desc: string,
     features: string[],
     buttonText: string,
     featured?: boolean,
-    href: string
+    href: string,
+    mostPopular: string,
+    perMonth: string
 }) {
     return (
         <motion.div
@@ -121,7 +115,7 @@ function PricingCard({ tier, price, desc, features, buttonText, featured = false
         >
             {featured && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-black uppercase tracking-[0.2em] px-4 py-1.5 rounded-full shadow-lg">
-                    Most Popular
+                    {mostPopular}
                 </div>
             )}
 
@@ -129,7 +123,7 @@ function PricingCard({ tier, price, desc, features, buttonText, featured = false
                 <h3 className={`text-xl font-bold mb-2 ${featured ? 'text-primary' : 'text-white'}`}>{tier}</h3>
                 <div className="flex items-baseline gap-1">
                     <span className="text-5xl font-black text-white">${price}</span>
-                    <span className="text-secondary-text">/month</span>
+                    <span className="text-secondary-text">{perMonth}</span>
                 </div>
                 <p className="text-secondary-text text-sm mt-4 leading-relaxed">{desc}</p>
             </div>

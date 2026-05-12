@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, User, Calendar, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import client from "../../api/client";
 
 export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const t = useTranslations("register");
 
     const [formData, setFormData] = useState({
         full_name: "",
@@ -37,19 +39,19 @@ export default function RegisterPage() {
         setError(null);
 
         if (formData.password !== formData.confirm_password) {
-            setError("Passwords do not match!");
+            setError(t("passwordMismatch"));
             setLoading(false);
             return;
         }
 
         if (formData.password.length < 8) {
-            setError("Password must be at least 8 characters.");
+            setError(t("passwordTooShort"));
             setLoading(false);
             return;
         }
 
         if (!formData.birth_date) {
-            setError("Birth date is required.");
+            setError(t("birthDateRequired"));
             setLoading(false);
             return;
         }
@@ -68,7 +70,7 @@ export default function RegisterPage() {
 
         } catch (err: unknown) {
             console.error("Register Error:", err);
-            let message = "Registration failed. Please try again.";
+            let message = t("registrationFailed");
 
             if (err && typeof err === 'object') {
                 // Network error (backend not reachable)
@@ -119,7 +121,7 @@ export default function RegisterPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                 >
-                    Join us and master your preparation today
+                    {t("subtitle")}
                 </motion.p>
             </div>
 
@@ -140,7 +142,7 @@ export default function RegisterPage() {
             <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-6 rounded-2xl shadow-2xl">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Full Name</label>
+                        <label className="text-sm font-medium text-zinc-300 ml-1">{t("fullName")}</label>
                         <div className="relative group">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                             <input
@@ -156,7 +158,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Email</label>
+                        <label className="text-sm font-medium text-zinc-300 ml-1">{t("email")}</label>
                         <div className="relative group">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                             <input
@@ -172,7 +174,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Birth Date</label>
+                        <label className="text-sm font-medium text-zinc-300 ml-1">{t("birthDate")}</label>
                         <div className="relative group">
                             <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                             <input
@@ -188,7 +190,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Password</label>
+                        <label className="text-sm font-medium text-zinc-300 ml-1">{t("password")}</label>
                         <div className="relative group">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                             <input
@@ -204,7 +206,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Confirm Password</label>
+                        <label className="text-sm font-medium text-zinc-300 ml-1">{t("confirmPassword")}</label>
                         <div className="relative group">
                             <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                             <input
@@ -227,11 +229,11 @@ export default function RegisterPage() {
                         {loading ? (
                             <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Creating Account...
+                                {t("creatingAccount")}
                             </div>
                         ) : (
                             <>
-                                Create Account
+                                {t("createAccount")}
                                 <ArrowRight className="w-4 h-4" />
                             </>
                         )}
@@ -244,7 +246,7 @@ export default function RegisterPage() {
                             <div className="w-full border-t border-zinc-800"></div>
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-zinc-900 px-2 text-zinc-500">Already have an account?</span>
+                            <span className="bg-zinc-900 px-2 text-zinc-500">{t("alreadyHaveAccount")}</span>
                         </div>
                     </div>
 
@@ -253,17 +255,17 @@ export default function RegisterPage() {
                             href="/login"
                             className="flex items-center justify-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all active:scale-[0.98]"
                         >
-                            Sign back in
+                            {t("signBackIn")}
                         </Link>
                     </div>
                 </div>
             </div>
 
             <p className="text-center text-xs text-zinc-500 px-8">
-                By clicking continue, you agree to our{" "}
-                <Link href="/legal/terms" className="underline hover:text-zinc-300">Terms of Service</Link>{" "}
-                and{" "}
-                <Link href="/legal/privacy" className="underline hover:text-zinc-300">Privacy Policy</Link>.
+                {t("termsText")}{" "}
+                <Link href="/legal/terms" className="underline hover:text-zinc-300">{t("termsOfService")}</Link>{" "}
+                {t("and")}{" "}
+                <Link href="/legal/privacy" className="underline hover:text-zinc-300">{t("privacyPolicy")}</Link>.
             </p>
         </motion.div>
     );
