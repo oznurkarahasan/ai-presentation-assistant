@@ -27,6 +27,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
     return (
@@ -116,6 +117,7 @@ function Sidebar() {
                             <span className="text-xl font-bold font-display tracking-tight">
                                 PreCue<span className="text-primary">.ai</span>
                             </span>
+                            <LanguageSwitcher />
                         </div>
                     </div>
 
