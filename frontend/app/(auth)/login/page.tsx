@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, Lock, ArrowRight, Github, Chrome, CheckCircle2, AlertCircle } from "lucide-react";
+import { useTranslations } from "next-intl";
 import client from "../../api/client";
 
 export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const t = useTranslations("login");
 
     const [formData, setFormData] = useState({
         email: "",
@@ -58,7 +60,7 @@ export default function LoginPage() {
 
         } catch (err: unknown) {
             console.error("Login Error:", err);
-            let message = "Login failed. Please check your credentials.";
+            let message = t("loginFailed");
             if (err && typeof err === 'object' && 'response' in err) {
                 const axiosError = err as { response: { data: { detail?: string } } };
                 message = axiosError.response?.data?.detail || message;
@@ -91,7 +93,7 @@ export default function LoginPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                 >
-                    Master the Preparation, Control the Cue
+                    {t("subtitle")}
                 </motion.p>
             </div>
 
@@ -104,7 +106,7 @@ export default function LoginPage() {
                         className="bg-green-500/10 border border-green-500/20 text-green-400 p-4 rounded-xl flex items-center gap-3 text-sm"
                     >
                         <CheckCircle2 className="w-5 h-5 shrink-0" />
-                        Successfully registered! You can now sign in.
+                        {t("successMessage")}
                     </motion.div>
                 )}
 
@@ -124,7 +126,7 @@ export default function LoginPage() {
             <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-8 rounded-2xl shadow-2xl">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Email</label>
+                        <label className="text-sm font-medium text-zinc-300 ml-1">{t("email")}</label>
                         <div className="relative group">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                             <input
@@ -142,12 +144,12 @@ export default function LoginPage() {
 
                     <div className="space-y-2">
                         <div className="flex items-center justify-between ml-1">
-                            <label className="text-sm font-medium text-zinc-300">Password</label>
+                            <label className="text-sm font-medium text-zinc-300">{t("password")}</label>
                             <Link
                                 href="/forgot-password"
                                 className="text-xs text-primary hover:text-primary-hover transition-colors"
                             >
-                                Forgot password?
+                                {t("forgotPassword")}
                             </Link>
                         </div>
                         <div className="relative group">
@@ -173,11 +175,11 @@ export default function LoginPage() {
                         {loading ? (
                             <div className="flex items-center gap-2">
                                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Signing In...
+                                {t("signingIn")}
                             </div>
                         ) : (
                             <>
-                                Sign In
+                                {t("signIn")}
                                 <ArrowRight className="w-4 h-4" />
                             </>
                         )}
@@ -190,7 +192,7 @@ export default function LoginPage() {
                             <div className="w-full border-t border-zinc-800"></div>
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-zinc-900 px-2 text-zinc-500">Or continue with</span>
+                            <span className="bg-zinc-900 px-2 text-zinc-500">{t("orContinueWith")}</span>
                         </div>
                     </div>
 
@@ -208,12 +210,12 @@ export default function LoginPage() {
             </div>
 
             <p className="text-center text-sm text-zinc-500">
-                Don&apos;t have an account?{" "}
+                {t("noAccount")}{" "}
                 <Link
                     href="/register"
                     className="text-primary hover:text-primary-hover font-medium transition-colors"
                 >
-                    Sign up for free
+                    {t("signUpFree")}
                 </Link>
             </p>
         </motion.div>

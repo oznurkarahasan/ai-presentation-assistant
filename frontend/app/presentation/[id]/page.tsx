@@ -10,14 +10,15 @@ import {
     ChevronRight,
     Maximize2,
     Minimize2,
-    Globe,
     PanelLeftOpen,
     PanelLeftClose,
     Square
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocale, useTranslations } from "next-intl";
 import client from "../../api/client";
 import PresentationViewer, { PresentationViewerRef } from "../../components/PresentationViewer";
+import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
@@ -87,6 +88,8 @@ function isWsCommandMessage(value: unknown): value is WsCommandMessage {
 export default function RealTimePresentationPage() {
     const params = useParams();
     const router = useRouter();
+    const locale = useLocale();
+    const t = useTranslations('presentation');
     const presentationId = params.id as string;
 
     const [presentationTitle, setPresentationTitle] = useState("Loading...");
@@ -104,7 +107,7 @@ export default function RealTimePresentationPage() {
     const [isPageLoading, setIsPageLoading] = useState(false);
     const [sttError, setSttError] = useState<string | null>(null);
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
-    const [sttLanguage, setSttLanguage] = useState<"en-US" | "tr-TR">("tr-TR");
+    const sttLanguage = locale === "tr" ? "tr-TR" : "en-US";
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [isSessionActive, setIsSessionActive] = useState(false);
@@ -371,7 +374,7 @@ export default function RealTimePresentationPage() {
     const startSpeechRecognition = () => {
         const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognitionCtor) {
-            alert("Speech recognition not supported in this browser.");
+            alert(t('speechNotSupported'));
             return;
         }
 
@@ -452,13 +455,13 @@ export default function RealTimePresentationPage() {
             setIsListening(false);
 
             if (event.error === 'network') {
-                setSttError("Network error: Browsers like Chrome require an internet connection to reach Google's speech services. Please check if they are blocked.");
+                setSttError(t('networkError'));
             } else if (event.error === 'not-allowed') {
-                setSttError("Permission denied: Please ensure microphone access is allowed in your site settings.");
+                setSttError(t('permissionDenied'));
             } else if (event.error === 'no-speech') {
-                setSttError("Silence detected: No audio was picked up. Check your microphone sensitivity.");
+                setSttError(t('noSpeech'));
             } else {
-                setSttError(`Error: ${event.error}`);
+                setSttError(`${t('errorPrefix')} ${event.error}`);
             }
         };
 
@@ -496,33 +499,17 @@ export default function RealTimePresentationPage() {
                         <button
                             onClick={() => setIsSidebarVisible(false)}
                             className="ml-auto p-2 hover:bg-white/5 rounded-full transition-colors text-zinc-400"
-                            title="Yan menuyu gizle"
-                            aria-label="Yan menuyu gizle"
+                            title={t('hideSidebar')}
+                            aria-label={t('hideSidebar')}
                         >
                             <PanelLeftClose size={18} />
                         </button>
                     </div>
 
                     {/* Language Toggle */}
-                    <button
-                        onClick={() => {
-                            const newLang = sttLanguage === 'en-US' ? 'tr-TR' : 'en-US';
-                            setSttLanguage(newLang);
-                            // If currently listening, restart recognition with new language
-                            if (isListening) {
-                                recognitionRef.current?.stop();
-                                setTimeout(() => startSpeechRecognition(), 300);
-                            }
-                        }}
-                        disabled={isListening}
-                        className={`w-full mt-3 py-3 rounded-2xl flex items-center justify-center gap-3 font-bold transition-all border ${isListening
-                            ? 'border-white/5 bg-white/[0.02] text-zinc-600 cursor-not-allowed'
-                            : 'border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 hover:text-white'
-                            }`}
-                    >
-                        <Globe size={16} />
-                        <span className="text-sm">{sttLanguage === 'tr-TR' ? '🇹🇷 Türkçe' : '🇺🇸 English'}</span>
-                    </button>
+                    <div className="mt-3 flex justify-end">
+                        <LanguageSwitcher />
+                    </div>
 
                     <AnimatePresence>
                         {sttError && (
@@ -532,7 +519,7 @@ export default function RealTimePresentationPage() {
                                 exit={{ opacity: 0, height: 0 }}
                                 className="mt-4 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs"
                             >
-                                <p className="mb-2 font-medium">Error: {sttError}</p>
+                                <p className="mb-2 font-medium">{t('errorPrefix')} {sttError}</p>
                                 <button
                                     onClick={() => {
                                         setSttError(null);
@@ -540,7 +527,7 @@ export default function RealTimePresentationPage() {
                                     }}
                                     className="text-white hover:underline font-bold"
                                 >
-                                    Retry Connection
+                                    {t('retryConnection')}
                                 </button>
                             </motion.div>
                         )}
@@ -549,7 +536,7 @@ export default function RealTimePresentationPage() {
 
                 <div className="flex-1 p-6 space-y-6 overflow-y-auto">
                     <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Live Transcript</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">{t('liveTranscript')}</h3>
                         <div className="p-4 rounded-2xl bg-white/5 border border-white/5 min-h-[150px] text-sm leading-relaxed relative overflow-hidden">
                             <div className="absolute top-0 left-0 w-1 h-full bg-primary/30" />
                             <p className="text-zinc-400 opacity-60 italic">{transcript}</p>
@@ -558,29 +545,18 @@ export default function RealTimePresentationPage() {
                     </div>
 
                     <div>
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">Voice Commands</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-4">{t('voiceCommands')}</h3>
                         <div className="space-y-2">
-                            {sttLanguage === 'tr-TR' ? (
-                                <>
-                                    <CommandTip label="Sonraki Slayt" example="'Sonraki slayt', 'Devam edelim'" />
-                                    <CommandTip label="Önceki Slayt" example="'Geri dön', 'Önceki slayt'" />
-                                    <CommandTip label="Sayfaya Atla" example="'Slayt beşe git'" />
-                                    <CommandTip label="Zoom (YENİ)" example="'Yakınlaştır', 'Küçült', 'Sıfırla'" />
-                                </>
-                            ) : (
-                                <>
-                                    <CommandTip label="Next Slide" example="'Next slide', 'Moving on'" />
-                                    <CommandTip label="Previous Slide" example="'Go back', 'Last slide'" />
-                                    <CommandTip label="Jump to Page" example="'Go to slide five'" />
-                                    <CommandTip label="Zoom (NEW)" example="'Zoom in', 'Shrink', 'Reset'" />
-                                </>
-                            )}
+                            <CommandTip label={t('nextSlide')} example={t('nextSlideExample')} try={t('try')} />
+                            <CommandTip label={t('prevSlide')} example={t('prevSlideExample')} try={t('try')} />
+                            <CommandTip label={t('jumpToPage')} example={t('jumpToPageExample')} try={t('try')} />
+                            <CommandTip label={t('zoom')} example={t('zoomExample')} try={t('try')} />
                         </div>
                     </div>
                 </div>
 
                 <footer className="p-6 border-t border-white/5 text-[10px] text-zinc-600 font-bold uppercase tracking-widest text-center">
-                    PreCue.ai Real-time Engine
+                    {t('engine')}
                 </footer>
                     </motion.aside>
                 )}
@@ -603,7 +579,7 @@ export default function RealTimePresentationPage() {
                                             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/60 px-3 py-2 text-xs font-bold uppercase tracking-wider text-zinc-200 backdrop-blur hover:bg-black/80"
                                         >
                                             <PanelLeftOpen size={14} />
-                                            Menu
+                                            {t('menu')}
                                         </button>
                                     )}
                                 </div>
@@ -618,7 +594,7 @@ export default function RealTimePresentationPage() {
                                             }`}
                                     >
                                         <Mic size={13} />
-                                        {sttLanguage === 'tr-TR' ? 'Baslat' : 'Start'}
+                                        {t('start')}
                                     </button>
 
                                     <button
@@ -630,7 +606,7 @@ export default function RealTimePresentationPage() {
                                             }`}
                                     >
                                         <MicOff size={13} />
-                                        {sttLanguage === 'tr-TR' ? 'Durdur' : 'Pause'}
+                                        {t('pause')}
                                     </button>
 
                                     <button
@@ -642,7 +618,7 @@ export default function RealTimePresentationPage() {
                                             }`}
                                     >
                                         <Square size={13} />
-                                        {sttLanguage === 'tr-TR' ? 'Tamamen Durdur' : 'End'}
+                                        {t('end')}
                                     </button>
                                 </div>
                             </div>
@@ -698,17 +674,17 @@ export default function RealTimePresentationPage() {
                     <div className="h-20 border-t border-white/5 px-12 flex items-center justify-between bg-black/40 backdrop-blur-md">
                     <div className="flex items-center gap-6">
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">Slide</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">{t('slide')}</span>
                             <span className="text-lg font-black tracking-tighter"><span className="text-primary">{currentPage}</span> / {totalPages}</span>
                         </div>
                         <div className="h-8 w-[1px] bg-white/10" />
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">Pages</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">{t('pages')}</span>
                             <span className="text-xs font-bold uppercase">{currentPage} / {totalPages}</span>
                         </div>
                         <div className="h-8 w-[1px] bg-white/10" />
                         <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">Engine</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">{t('engineStatus')}</span>
                             <span className="text-xs font-bold uppercase flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${wsStatus === 'connected' ? 'bg-green-500' : wsStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' : 'bg-red-500'}`} />
                                 {wsStatus}
@@ -728,11 +704,11 @@ export default function RealTimePresentationPage() {
     );
 }
 
-function CommandTip({ label, example }: { label: string, example: string }) {
+function CommandTip({ label, example, try: tryLabel }: { label: string, example: string, try: string }) {
     return (
         <div className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
             <p className="text-[10px] font-extrabold text-primary uppercase tracking-widest mb-1">{label}</p>
-            <p className="text-xs text-zinc-400 italic">Try: {example}</p>
+            <p className="text-xs text-zinc-400 italic">{tryLabel} {example}</p>
         </div>
     );
 }

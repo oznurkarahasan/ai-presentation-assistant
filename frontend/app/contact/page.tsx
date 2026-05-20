@@ -4,8 +4,11 @@ import { motion } from "framer-motion";
 import { Mail, MessageSquare, Send, MapPin, Github, Twitter, Linkedin } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
+import { useTranslations } from "next-intl";
 
 export default function ContactPage() {
+    const t = useTranslations("contact");
+
     return (
         <div className="flex flex-col min-h-screen bg-black relative selection:bg-primary/30">
             <div className="bg-grid" />
@@ -19,9 +22,9 @@ export default function ContactPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5 }}
                         >
-                            <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight">Get in Touch</h1>
+                            <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight">{t("title")}</h1>
                             <p className="text-secondary-text max-w-2xl mx-auto text-lg pt-4">
-                                Have questions about PreCue? Our team is here to help you master your stage performance.
+                                {t("subtitle")}
                             </p>
                         </motion.div>
                     </div>
@@ -35,31 +38,31 @@ export default function ContactPage() {
                             className="space-y-8"
                         >
                             <div className="glass-card p-8 rounded-[2.5rem] bg-zinc-900/40 border-white/5 space-y-8">
-                                <h2 className="text-2xl font-bold text-white">Contact Information</h2>
+                                <h2 className="text-2xl font-bold text-white">{t("infoTitle")}</h2>
 
                                 <div className="space-y-6">
                                     <ContactInfoItem
                                         icon={<Mail className="text-primary" />}
-                                        title="Email us"
+                                        title={t("items.email.title")}
                                         detail="hello@precue.ai"
-                                        sub="We usually reply within 24 hours."
+                                        sub={t("items.email.subtitle")}
                                     />
                                     <ContactInfoItem
                                         icon={<MessageSquare className="text-blue-400" />}
-                                        title="Live Support"
-                                        detail="Available for Pro users"
-                                        sub="Monday - Friday, 9am - 6pm EST."
+                                        title={t("items.support.title")}
+                                        detail={t("items.support.detail")}
+                                        sub={t("items.support.subtitle")}
                                     />
                                     <ContactInfoItem
                                         icon={<MapPin className="text-purple-400" />}
-                                        title="Office"
-                                        detail="Innovation Hub"
-                                        sub="Tech District, San Francisco, CA"
+                                        title={t("items.office.title")}
+                                        detail={t("items.office.detail")}
+                                        sub={t("items.office.subtitle")}
                                     />
                                 </div>
 
                                 <div className="pt-8 border-t border-white/5">
-                                    <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-widest">Follow Us</h3>
+                                    <h3 className="text-white font-semibold mb-4 text-sm uppercase tracking-widest">{t("followUs")}</h3>
                                     <div className="flex gap-4">
                                         <SocialLink icon={<Twitter size={20} />} href="https://twitter.com" />
                                         <SocialLink icon={<Github size={20} />} href="https://github.com" />
@@ -81,38 +84,38 @@ export default function ContactPage() {
                                 <div className="space-y-6 relative z-10">
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">Full Name</label>
+                                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">{t("form.fullName")}</label>
                                             <input
                                                 type="text"
-                                                placeholder="John Doe"
+                                                placeholder={t("form.fullNamePlaceholder")}
                                                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">Email Address</label>
+                                            <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">{t("form.email")}</label>
                                             <input
                                                 type="email"
-                                                placeholder="john@example.com"
+                                                placeholder={t("form.emailPlaceholder")}
                                                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">Subject</label>
+                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">{t("form.subject")}</label>
                                         <select className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white appearance-none focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all cursor-pointer">
-                                            <option className="bg-zinc-900">General Inquiry</option>
-                                            <option className="bg-zinc-900">Technical Support</option>
-                                            <option className="bg-zinc-900">Billing Question</option>
-                                            <option className="bg-zinc-900">Partnership</option>
+                                            <option className="bg-zinc-900">{t("form.subjectOptions.general")}</option>
+                                            <option className="bg-zinc-900">{t("form.subjectOptions.support")}</option>
+                                            <option className="bg-zinc-900">{t("form.subjectOptions.billing")}</option>
+                                            <option className="bg-zinc-900">{t("form.subjectOptions.partnership")}</option>
                                         </select>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">Message</label>
+                                        <label className="text-xs font-bold text-zinc-500 uppercase tracking-widest ml-1">{t("form.message")}</label>
                                         <textarea
                                             rows={5}
-                                            placeholder="How can we help you?"
+                                            placeholder={t("form.messagePlaceholder")}
                                             className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all resize-none"
                                         ></textarea>
                                     </div>
@@ -122,7 +125,7 @@ export default function ContactPage() {
                                         onClick={(e) => e.preventDefault()}
                                         className="w-full bg-primary hover:bg-primary-hover text-white font-bold py-5 rounded-2xl flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg shadow-primary/20"
                                     >
-                                        Send Message
+                                        {t("form.submit")}
                                         <Send size={18} />
                                     </button>
                                 </div>
