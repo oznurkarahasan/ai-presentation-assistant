@@ -19,6 +19,7 @@ export default function LanguageSwitcher() {
   const switchLocale = (newLocale: string) => {
     // eslint-disable-next-line react-hooks/immutability
     document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000;SameSite=Lax`;
+    // eslint-disable-next-line react-hooks/immutability
     document.cookie = "LOCALE_PREFERENCE=1;path=/;max-age=31536000;SameSite=Lax";
     window.location.reload();
   };
