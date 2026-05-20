@@ -5,9 +5,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, Plus, Search, Clock, StickyNot
 import { useDashboard, RecentPresentation } from '../DashboardContext';
 import { motion } from 'framer-motion';
 import client from '../../api/client';
-
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
-const WEEKDAYS_SHORT = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'] as const;
+import { useLocale, useTranslations } from 'next-intl';
 
 type PlannerView = 'day' | 'week' | 'month';
 
@@ -213,6 +211,8 @@ function TimeDropdown({ value, options, onChange, ariaLabel }: TimeDropdownProps
 }
 
 export default function PlannerCalendar() {
+    const t = useTranslations('planner');
+    const locale = useLocale();
     const [plannerView, setPlannerView] = useState<PlannerView>('month');
     const [cursor, setCursor] = useState(() => {
         const n = new Date();
@@ -232,10 +232,28 @@ export default function PlannerCalendar() {
     const [hasSelectedPresentationTime, setHasSelectedPresentationTime] = useState(false);
     const [editingEventId, setEditingEventId] = useState<string | null>(null);
     const [editingDateKey, setEditingDateKey] = useState<string | null>(null);
+    const weekdayLabels = useMemo(() => [
+        t('weekMon'),
+        t('weekTue'),
+        t('weekWed'),
+        t('weekThu'),
+        t('weekFri'),
+        t('weekSat'),
+        t('weekSun'),
+    ], [t]);
+    const weekdayShortLabels = useMemo(() => [
+        t('weekMonShort'),
+        t('weekTueShort'),
+        t('weekWedShort'),
+        t('weekThuShort'),
+        t('weekFriShort'),
+        t('weekSatShort'),
+        t('weekSunShort'),
+    ], [t]);
 
     const filteredPresentations = useMemo(() => {
         return [...presentations]
-            .reverse() // Sondan başa
+            .reverse() // Latest first
             .filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()));
     }, [presentations, searchTerm]);
 
@@ -249,11 +267,11 @@ export default function PlannerCalendar() {
 
     const monthLabel = useMemo(
         () =>
-            cursor.toLocaleDateString('en-US', {
+            cursor.toLocaleDateString(locale, {
                 month: 'long',
                 year: 'numeric',
             }),
-        [cursor]
+        [cursor, locale]
     );
 
     const goPrev = useCallback(() => {
@@ -323,20 +341,20 @@ export default function PlannerCalendar() {
 
     const navLabel = useMemo(() => {
         if (plannerView === 'month') {
-            return cursor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            return cursor.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
         }
         if (plannerView === 'week') {
             const end = addDays(weekStart, 6);
-            return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            return `${weekStart.toLocaleDateString(locale, { month: 'short', day: 'numeric' })} – ${end.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })}`;
         }
         const d = selected ?? startOfDay(new Date());
-        return d.toLocaleDateString('en-US', {
+        return d.toLocaleDateString(locale, {
             weekday: 'long',
             month: 'long',
             day: 'numeric',
             year: 'numeric',
         });
-    }, [plannerView, cursor, weekStart, selected]);
+    }, [plannerView, cursor, weekStart, selected, locale]);
 
     const handleAddEvent = () => {
         if (!selected) return;
@@ -409,10 +427,10 @@ export default function PlannerCalendar() {
             }, {});
             setEvents(grouped);
         } catch {
-            setAlert({ type: 'error', message: 'Planner events could not be loaded.' });
+            setAlert({ type: 'error', message: t('plannerEventsError') });
             setTimeout(() => setAlert(null), 3500);
         }
-    }, [setAlert, toScheduledEvent]);
+    }, [setAlert, toScheduledEvent, t]);
 
     useEffect(() => {
         const frameId = window.requestAnimationFrame(() => {
@@ -470,10 +488,10 @@ export default function PlannerCalendar() {
             setIsAdding(false);
             setEditingEventId(null);
             setEditingDateKey(null);
-            setAlert({ type: 'info', message: editingEventId ? 'Event updated.' : 'Event saved to planner.' });
+            setAlert({ type: 'info', message: editingEventId ? t('eventUpdated') : t('eventSaved') });
             setTimeout(() => setAlert(null), 3500);
         } catch {
-            setAlert({ type: 'error', message: editingEventId ? 'Event could not be updated.' : 'Event could not be saved.' });
+            setAlert({ type: 'error', message: editingEventId ? t('eventUpdateFailed') : t('eventSaveFailed') });
             setTimeout(() => setAlert(null), 3500);
         }
     };
@@ -489,10 +507,10 @@ export default function PlannerCalendar() {
                         : event
                 ),
             }));
-            setAlert({ type: 'info', message: 'Reminder removed.' });
+            setAlert({ type: 'info', message: t('reminderRemoved') });
             setTimeout(() => setAlert(null), 3500);
         } catch {
-            setAlert({ type: 'error', message: 'Reminder could not be removed.' });
+            setAlert({ type: 'error', message: t('reminderRemoveFailed') });
             setTimeout(() => setAlert(null), 3500);
         }
     };
@@ -512,10 +530,10 @@ export default function PlannerCalendar() {
                     [dateKey]: updatedDayEvents,
                 };
             });
-            setAlert({ type: 'info', message: 'Scheduled presentation removed.' });
+            setAlert({ type: 'info', message: t('scheduledRemoved') });
             setTimeout(() => setAlert(null), 3500);
         } catch {
-            setAlert({ type: 'error', message: 'Scheduled presentation could not be removed.' });
+            setAlert({ type: 'error', message: t('scheduledRemoveFailed') });
             setTimeout(() => setAlert(null), 3500);
         }
     };
@@ -602,7 +620,7 @@ export default function PlannerCalendar() {
             <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <h1 className="text-base font-bold tracking-tight text-white sm:text-lg">
-                        Planner
+                        {t('title')}
                     </h1>
                     <div className="mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
                         <button
@@ -610,10 +628,10 @@ export default function PlannerCalendar() {
                             onClick={goPrev}
                             aria-label={
                                 plannerView === 'month'
-                                    ? 'Previous month'
+                                    ? t('prevMonth')
                                     : plannerView === 'week'
-                                        ? 'Previous week'
-                                        : 'Previous day'
+                                        ? t('prevWeek')
+                                        : t('prevDay')
                             }
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-700 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-white"
                         >
@@ -627,10 +645,10 @@ export default function PlannerCalendar() {
                             onClick={goNext}
                             aria-label={
                                 plannerView === 'month'
-                                    ? 'Next month'
+                                    ? t('nextMonth')
                                     : plannerView === 'week'
-                                        ? 'Next week'
-                                        : 'Next day'
+                                        ? t('nextWeek')
+                                        : t('nextDay')
                             }
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-700 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-white"
                         >
@@ -639,7 +657,7 @@ export default function PlannerCalendar() {
                         <button
                             type="button"
                             onClick={goToday}
-                            aria-label="Go to today"
+                            aria-label={t('goToday')}
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-zinc-700 text-zinc-400 transition-colors hover:border-zinc-600 hover:text-white"
                         >
                             <CalendarDays className="h-4 w-4" />
@@ -650,7 +668,7 @@ export default function PlannerCalendar() {
                     <div
                         className="inline-flex overflow-hidden rounded-md border border-zinc-700"
                         role="group"
-                        aria-label="Calendar view"
+                        aria-label={t('calendarView')}
                     >
                         {(['day', 'week', 'month'] as const).map((v) => (
                             <button
@@ -662,7 +680,7 @@ export default function PlannerCalendar() {
                                     : 'bg-transparent text-zinc-300 hover:bg-white/[0.06] hover:text-white'
                                     }`}
                             >
-                                {v.toUpperCase()}
+                                {v === 'day' ? t('viewDay') : v === 'week' ? t('viewWeek') : t('viewMonth')}
                             </button>
                         ))}
                     </div>
@@ -679,13 +697,13 @@ export default function PlannerCalendar() {
                                     role="row"
                                     aria-hidden
                                 >
-                                    {WEEKDAYS.map((wd, idx) => (
+                                    {weekdayLabels.map((wd, idx) => (
                                         <div
                                             key={wd}
                                             className="py-1 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-500 sm:text-xs"
                                         >
                                             <span className="hidden sm:inline">{wd}</span>
-                                            <span className="sm:hidden">{WEEKDAYS_SHORT[idx]}</span>
+                                            <span className="sm:hidden">{weekdayShortLabels[idx]}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -693,7 +711,7 @@ export default function PlannerCalendar() {
                                 <div
                                     className="grid grid-cols-7 gap-1 sm:gap-2"
                                     role="grid"
-                                    aria-label={`Calendar for ${monthLabel}`}
+                                    aria-label={t('calendarFor', { month: monthLabel })}
                                 >
                                     {cells.map((day, i) =>
                                         day === null ? (
@@ -729,7 +747,7 @@ export default function PlannerCalendar() {
                                                     ))}
                                                     {(events[toDateKey(new Date(viewYear, viewMonth, day))] || []).length > 2 && (
                                                         <div className="text-[8px] text-zinc-500 pl-1">
-                                                            +{(events[toDateKey(new Date(viewYear, viewMonth, day))] || []).length - 2} more
+                                                            +{(events[toDateKey(new Date(viewYear, viewMonth, day))] || []).length - 2} {t('more')}
                                                         </div>
                                                     )}
                                                 </div>
@@ -755,20 +773,20 @@ export default function PlannerCalendar() {
                                     role="row"
                                     aria-hidden
                                 >
-                                    {WEEKDAYS.map((wd, idx) => (
+                                    {weekdayLabels.map((wd, idx) => (
                                         <div
                                             key={wd}
                                             className="py-1 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-500 sm:text-xs"
                                         >
                                             <span className="hidden sm:inline">{wd}</span>
-                                            <span className="sm:hidden">{WEEKDAYS_SHORT[idx]}</span>
+                                            <span className="sm:hidden">{weekdayShortLabels[idx]}</span>
                                         </div>
                                     ))}
                                 </div>
                                 <div
                                     className="grid grid-cols-7 gap-1 sm:gap-2"
                                     role="grid"
-                                    aria-label={`Week of ${navLabel}`}
+                                    aria-label={t('weekOf', { range: navLabel })}
                                 >
                                     {weekDays.map((d) => {
                                         const sel =
@@ -801,7 +819,7 @@ export default function PlannerCalendar() {
                                                     ))}
                                                     {(events[toDateKey(d)] || []).length > 2 && (
                                                         <div className="text-[8px] text-zinc-500 pl-1">
-                                                            +{(events[toDateKey(d)] || []).length - 2} more
+                                                            +{(events[toDateKey(d)] || []).length - 2} {t('more')}
                                                         </div>
                                                     )}
                                                 </div>
@@ -824,7 +842,7 @@ export default function PlannerCalendar() {
                             <div
                                 className="flex min-h-[280px] flex-col items-center justify-center gap-4 p-6 sm:min-h-[320px]"
                                 role="region"
-                                aria-label="Day view"
+                                aria-label={t('dayViewLabel')}
                             >
                                 <button
                                     type="button"
@@ -842,18 +860,18 @@ export default function PlannerCalendar() {
                                         <div key={ev.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5">
                                             <div className="flex flex-col items-center justify-center h-10 w-12 rounded-lg bg-primary/10 text-primary font-bold text-xs">
                                                 <span>{ev.time.split(':')[0]}</span>
-                                                <span className="text-[9px] opacity-70">HRS</span>
+                                                <span className="text-[9px] opacity-70">{t('hoursShort')}</span>
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-semibold text-white truncate">{ev.presentation.title}</p>
-                                                <p className="text-xs text-zinc-500 truncate">{ev.note || 'No notes added'}</p>
+                                                <p className="text-xs text-zinc-500 truncate">{ev.note || t('noNotes')}</p>
                                             </div>
                                             <div className="flex items-center gap-1.5">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEditEvent(toDateKey(dayFocus), ev)}
                                                     className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-                                                    title="Edit scheduled presentation"
+                                                    title={t('editScheduled')}
                                                 >
                                                     <Pencil className="h-3.5 w-3.5" />
                                                 </button>
@@ -861,7 +879,7 @@ export default function PlannerCalendar() {
                                                     type="button"
                                                     onClick={() => removeEvent(toDateKey(dayFocus), ev.id)}
                                                     className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
-                                                    title="Remove scheduled presentation"
+                                                    title={t('removeScheduled')}
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </button>
@@ -870,7 +888,7 @@ export default function PlannerCalendar() {
                                     ))}
                                     {(events[toDateKey(dayFocus)] || []).length === 0 && (
                                         <p className="text-center text-sm text-zinc-500">
-                                            No presentations scheduled for this day.
+                                            {t('noPresentationsDay')}
                                         </p>
                                     )}
                                 </div>
@@ -882,13 +900,13 @@ export default function PlannerCalendar() {
                 <aside className="relative flex min-h-[400px] flex-col rounded-[1.5rem] border border-white/5 bg-[#0C0C0C] p-5 sm:p-6 lg:min-h-0 sm:rounded-[2rem]">
                     <div className="flex items-center justify-between mb-4">
                         <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
-                            Selected day
+                            {t('selectedDay')}
                         </h4>
                         {selected && (
                             <button
                                 onClick={handleAddEvent}
                                 className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                                title="Add Presentation"
+                                title={t('addPresentation')}
                             >
                                 <Plus className="h-4 w-4" />
                             </button>
@@ -898,7 +916,7 @@ export default function PlannerCalendar() {
                         <div className="flex-1 space-y-4">
                             <div>
                                 <p className="text-xl font-bold font-display text-white">
-                                    {selected.toLocaleDateString('en-US', {
+                                    {selected.toLocaleDateString(locale, {
                                         weekday: 'long',
                                         month: 'long',
                                         day: 'numeric',
@@ -919,20 +937,20 @@ export default function PlannerCalendar() {
                                                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-zinc-500">
                                                         <div className="flex items-center gap-1">
                                                             <Clock className="h-3 w-3" />
-                                                            <span>Present: {ev.time}</span>
+                                                            <span>{t('present')} {ev.time}</span>
                                                         </div>
                                                         {ev.notificationTime && (
                                                             <div className="flex items-center gap-1 text-primary/70">
                                                                 <Zap className="h-3 w-3" />
-                                                                <span>Alert: {ev.notificationTime}</span>
+                                                                <span>{t('alert')} {ev.notificationTime}</span>
                                                                 <button
                                                                     type="button"
                                                                     onClick={() => removeReminder(toDateKey(selected), ev.id)}
                                                                     className="ml-1 inline-flex items-center gap-1 rounded-md border border-primary/25 px-1.5 py-0.5 text-[10px] font-semibold text-primary transition-colors hover:bg-primary/10"
-                                                                    title="Remove reminder"
+                                                                    title={t('removeReminder')}
                                                                 >
                                                                     <BellOff className="h-3 w-3" />
-                                                                    Remove
+                                                                    {t('remove')}
                                                                 </button>
                                                             </div>
                                                         )}
@@ -943,7 +961,7 @@ export default function PlannerCalendar() {
                                                         type="button"
                                                         onClick={() => handleEditEvent(toDateKey(selected), ev)}
                                                         className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-                                                        title="Edit scheduled presentation"
+                                                        title={t('editScheduled')}
                                                     >
                                                         <Pencil className="h-3.5 w-3.5" />
                                                     </button>
@@ -951,7 +969,7 @@ export default function PlannerCalendar() {
                                                         type="button"
                                                         onClick={() => removeEvent(toDateKey(selected), ev.id)}
                                                         className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 text-zinc-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-300"
-                                                        title="Remove scheduled presentation"
+                                                        title={t('removeScheduled')}
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
                                                     </button>
@@ -967,14 +985,14 @@ export default function PlannerCalendar() {
                                     ))
                                 ) : (
                                     <p className="text-sm text-zinc-600 leading-relaxed">
-                                        No events yet. Click the + button to schedule a presentation.
+                                        {t('noEvents')}
                                     </p>
                                 )}
                             </div>
                         </div>
                     ) : (
                         <p className="text-sm text-zinc-600 leading-relaxed mt-1">
-                            Tap a date on the calendar to see it here.
+                            {t('tapDate')}
                         </p>
                     )}
 
@@ -983,7 +1001,13 @@ export default function PlannerCalendar() {
                         <div className="absolute inset-0 z-20 flex flex-col bg-[#0C0C0C] p-5 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem]">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-sm font-bold text-white">
-                                    {editingEventId ? 'Edit Planner Event' : addingStep === 'select' ? 'Select Presentation' : addingStep === 'time' ? 'Select Time' : 'Add Note'}
+                                    {editingEventId
+                                        ? t('editEvent')
+                                        : addingStep === 'select'
+                                            ? t('selectPresentation')
+                                            : addingStep === 'time'
+                                                ? t('selectTime')
+                                                : t('addNote')}
                                 </h3>
                                 <button
                                     onClick={() => {
@@ -1003,7 +1027,7 @@ export default function PlannerCalendar() {
                                         <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-500" />
                                         <input
                                             type="text"
-                                            placeholder="Search presentations..."
+                                            placeholder={t('searchPresentations')}
                                             value={searchTerm}
                                             onChange={(e) => setSearchTerm(e.target.value)}
                                             className="w-full rounded-lg bg-white/5 border border-white/10 py-2 pl-8 pr-3 text-xs text-white placeholder-zinc-500 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
@@ -1021,11 +1045,11 @@ export default function PlannerCalendar() {
                                                     className="w-full text-left rounded-lg border border-white/5 bg-white/[0.03] p-2.5 hover:bg-white/[0.08] transition-colors"
                                                 >
                                                     <p className="text-xs font-semibold text-white truncate">{p.title}</p>
-                                                    <p className="text-[10px] text-zinc-500 mt-0.5">{p.slide_count} slides • {new Date(p.created_at).toLocaleDateString()}</p>
+                                                    <p className="text-[10px] text-zinc-500 mt-0.5">{p.slide_count} {t('slides')} • {new Date(p.created_at).toLocaleDateString(locale)}</p>
                                                 </button>
                                             ))
                                         ) : (
-                                            <p className="text-center text-xs text-zinc-600 mt-8">No presentations found.</p>
+                                            <p className="text-center text-xs text-zinc-600 mt-8">{t('noPresentationsFound')}</p>
                                         )}
                                     </div>
                                 </div>
@@ -1037,10 +1061,10 @@ export default function PlannerCalendar() {
                                         <section>
                                             <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                 <Presentation className="h-3 w-3" />
-                                                Presentation Time
+                                                {t('presentationTime')}
                                             </h4>
                                             <p className="mb-3 text-xs text-zinc-300">
-                                                This is the start time of your presentation.
+                                                {t('presentationTimeDesc')}
                                             </p>
                                             <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                                 <div>
@@ -1050,20 +1074,20 @@ export default function PlannerCalendar() {
                                                                 value={selectedHour}
                                                                 options={HOUR_OPTIONS}
                                                                 onChange={updatePresentationHour}
-                                                                ariaLabel="Presentation hour"
+                                                                ariaLabel={t('presentationHourLabel')}
                                                             />
                                                             <span className="text-sm font-semibold text-primary">:</span>
                                                             <TimeDropdown
                                                                 value={selectedMinute}
                                                                 options={MINUTE_OPTIONS}
                                                                 onChange={updatePresentationMinute}
-                                                                ariaLabel="Presentation minute"
+                                                                ariaLabel={t('presentationMinuteLabel')}
                                                             />
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <p className="text-[10px] text-zinc-500">Presentation starts at: <span className="font-semibold text-zinc-200">{tempEvent.time || `${selectedHour}:${selectedMinute}`}</span></p>
+                                                <p className="text-[10px] text-zinc-500">{t('presentationStartsAt')} <span className="font-semibold text-zinc-200">{tempEvent.time || `${selectedHour}:${selectedMinute}`}</span></p>
                                             </div>
                                         </section>
 
@@ -1071,10 +1095,10 @@ export default function PlannerCalendar() {
                                             <section>
                                                 <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-2">
                                                     <Zap className="h-3 w-3" />
-                                                    Email Reminder
+                                                    {t('emailReminder')}
                                                 </h4>
                                                 <p className="text-xs text-zinc-300">
-                                                    This setting is only for the reminder email delivery time.
+                                                    {t('reminderDesc')}
                                                 </p>
 
                                                 <div className="mt-3 space-y-3 rounded-xl border border-white/10 bg-white/[0.02] p-3">
@@ -1083,7 +1107,7 @@ export default function PlannerCalendar() {
                                                         onClick={applyReminderThirtyMinutesAgo}
                                                         className="w-full rounded-lg border border-primary/35 bg-primary/12 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary/20"
                                                     >
-                                                        Email reminder 30 minutes ago
+                                                        {t('thirtyMinReminder')}
                                                     </button>
 
                                                     <div className="rounded-lg border border-primary/25 bg-transparent p-3">
@@ -1092,20 +1116,20 @@ export default function PlannerCalendar() {
                                                                 value={selectedReminderHour}
                                                                 options={HOUR_OPTIONS}
                                                                 onChange={updateReminderHour}
-                                                                ariaLabel="Reminder hour"
+                                                                ariaLabel={t('reminderHourLabel')}
                                                             />
                                                             <span className="text-sm font-semibold text-primary">:</span>
                                                             <TimeDropdown
                                                                 value={selectedReminderMinute}
                                                                 options={MINUTE_OPTIONS}
                                                                 onChange={updateReminderMinute}
-                                                                ariaLabel="Reminder minute"
+                                                                ariaLabel={t('reminderMinuteLabel')}
                                                             />
                                                         </div>
                                                     </div>
 
                                                     <div className="text-[10px] text-zinc-500">
-                                                        Email will be sent at: <span className="font-semibold text-zinc-200">{useReminder ? (tempEvent.notificationTime || defaultReminderTime) : 'No reminder'}</span>
+                                                        {t('emailSentAt')} <span className="font-semibold text-zinc-200">{useReminder ? (tempEvent.notificationTime || defaultReminderTime) : t('noReminder')}</span>
                                                     </div>
 
                                                     <button
@@ -1116,7 +1140,7 @@ export default function PlannerCalendar() {
                                                             : 'border-white/10 text-zinc-300 hover:border-white/25 hover:text-white'
                                                             }`}
                                                     >
-                                                        {useReminder ? 'Disable reminder' : 'Enable reminder'}
+                                                        {useReminder ? t('disableReminder') : t('enableReminder')}
                                                     </button>
                                                 </div>
                                             </section>
@@ -1124,7 +1148,7 @@ export default function PlannerCalendar() {
 
                                         {!hasSelectedPresentationTime && (
                                             <p className="text-[11px] text-zinc-500">
-                                                Select presentation time first. Email reminder options appear after that.
+                                                {t('selectTimeFirst')}
                                             </p>
                                         )}
                                     </div>
@@ -1134,14 +1158,14 @@ export default function PlannerCalendar() {
                                             onClick={() => setAddingStep('select')}
                                             className="flex-1 py-2 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
                                         >
-                                            Back
+                                            {t('back')}
                                         </button>
                                         <button
                                             disabled={!hasSelectedPresentationTime || !isValid24HourTime(tempEvent.time)}
                                             onClick={proceedToNote}
                                             className="flex-[2] py-2 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            Next: Add Note
+                                            {t('nextAddNote')}
                                         </button>
                                     </div>
                                 </div>
@@ -1151,7 +1175,7 @@ export default function PlannerCalendar() {
                                 <div className="flex flex-col flex-1 gap-4">
                                     <textarea
                                         autoFocus
-                                        placeholder="Add a note... (optional)"
+                                        placeholder={t('addNotePlaceholder')}
                                         value={tempEvent.note || ''}
                                         onChange={(e) => setTempEvent({ ...tempEvent, note: e.target.value })}
                                         className="w-full flex-1 rounded-xl bg-white/5 border border-white/10 p-4 text-sm text-white placeholder-zinc-500 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
@@ -1161,14 +1185,14 @@ export default function PlannerCalendar() {
                                             onClick={() => setAddingStep('time')}
                                             className="flex-1 py-3 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
                                         >
-                                            Back
+                                            {t('back')}
                                         </button>
                                         <button
                                             onClick={confirmEvent}
                                             className="flex-[2] py-3 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-all shadow-[0_4px_20px_-4px_rgba(234,88,12,0.45)] flex items-center justify-center gap-2"
                                         >
                                             <Check className="h-4 w-4" />
-                                            {editingEventId ? 'Save Changes' : 'Confirm Schedule'}
+                                            {editingEventId ? t('saveChanges') : t('confirmSchedule')}
                                         </button>
                                     </div>
                                 </div>

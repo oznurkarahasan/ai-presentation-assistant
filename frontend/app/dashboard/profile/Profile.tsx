@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../DashboardContext';
 import client from '@/app/api/client';
+import { useTranslations } from 'next-intl';
 
 export default function Profile() {
+	const t = useTranslations('profile');
 	const router = useRouter();
 	const { user, setAlert, refreshData, setActiveTab } = useDashboard();
 	const [fullName, setFullName] = useState('');
@@ -42,13 +44,13 @@ export default function Profile() {
 	if (!user) {
 		return (
 			<section className="mt-8 rounded-[2rem] border border-white/10 bg-[#0C0C0C] p-6 sm:p-8">
-				<p className="text-sm text-zinc-400">Profile information is not available.</p>
+				<p className="text-sm text-zinc-400">{t('notAvailable')}</p>
 			</section>
 		);
 	}
 
 	const hasPasswordDraft = currentPassword || newPassword || confirmPassword;
-	const currentPlan = 'Free Plan';
+	const currentPlan = t('freePlan');
 	const normalizedEmail = email.trim().toLowerCase();
 	const currentEmail = (user.email || '').trim().toLowerCase();
 	const emailChanged = normalizedEmail !== currentEmail;
@@ -74,13 +76,13 @@ export default function Profile() {
 			await client.post('/api/v1/auth/me/email-change/request-code', { new_email: newEmail });
 			setPendingEmailVerification(newEmail);
 			setEmailVerificationCode('');
-			setAlert({ type: 'info', message: 'Verification code sent to your new email.' });
+			setAlert({ type: 'info', message: t('verificationCodeSent') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
 			const apiMessage = axios.isAxiosError(error)
 				? (error.response?.data?.detail as string | undefined)
 				: undefined;
-			setEmailVerificationError(apiMessage || 'Failed to send verification code.');
+			setEmailVerificationError(apiMessage || t('failedToSendCode'));
 		} finally {
 			setIsSendingEmailCode(false);
 		}
@@ -91,7 +93,7 @@ export default function Profile() {
 
 		const normalizedName = fullName.trim();
 		if (!normalizedName) {
-			setProfileError('Full name cannot be empty.');
+			setProfileError(t('fullNameEmpty'));
 			return;
 		}
 
@@ -111,13 +113,13 @@ export default function Profile() {
 
 			await refreshData();
 			resetEmailVerificationState();
-			setAlert({ type: 'info', message: 'Email updated successfully.' });
+			setAlert({ type: 'info', message: t('emailUpdated') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
 			const apiMessage = axios.isAxiosError(error)
 				? (error.response?.data?.detail as string | undefined)
 				: undefined;
-			setEmailVerificationError(apiMessage || 'Verification failed.');
+			setEmailVerificationError(apiMessage || t('verificationFailed'));
 		} finally {
 			setIsVerifyingEmailCode(false);
 		}
@@ -130,13 +132,13 @@ export default function Profile() {
 		const normalizedName = fullName.trim();
 
 		if (!normalizedName) {
-			setProfileError('Full name cannot be empty.');
+			setProfileError(t('fullNameEmpty'));
 			return;
 		}
 
 		if (emailChanged) {
 			if (isEmailCodeSentForCurrentInput) {
-				setProfileError('Enter the verification code below to complete email update.');
+				setProfileError(t('enterCodeToComplete'));
 				return;
 			}
 			await requestEmailVerificationCode(normalizedEmail);
@@ -152,13 +154,13 @@ export default function Profile() {
 
 			await refreshData();
 			resetEmailVerificationState();
-			setAlert({ type: 'info', message: 'Profile updated successfully.' });
+			setAlert({ type: 'info', message: t('profileUpdated') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
 			const apiMessage = axios.isAxiosError(error)
 				? (error.response?.data?.detail as string | undefined)
 				: undefined;
-			setProfileError(apiMessage || 'Failed to update profile.');
+			setProfileError(apiMessage || t('profileUpdateFailed'));
 		} finally {
 			setIsUpdatingProfile(false);
 		}
@@ -169,17 +171,17 @@ export default function Profile() {
 		if (isUpdatingPassword) return;
 
 		if (!currentPassword || !newPassword || !confirmPassword) {
-			setPasswordError('Fill in all password fields.');
+			setPasswordError(t('fillAllFields'));
 			return;
 		}
 
 		if (newPassword.length < 8) {
-			setPasswordError('New password must be at least 8 characters.');
+			setPasswordError(t('passwordTooShort'));
 			return;
 		}
 
 		if (newPassword !== confirmPassword) {
-			setPasswordError('New password and confirmation do not match.');
+			setPasswordError(t('passwordMismatch'));
 			return;
 		}
 
@@ -193,13 +195,13 @@ export default function Profile() {
 			});
 
 			resetPasswordFields();
-			setAlert({ type: 'info', message: 'Password updated successfully.' });
+			setAlert({ type: 'info', message: t('passwordUpdated') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
 			const apiMessage = axios.isAxiosError(error)
 				? (error.response?.data?.detail as string | undefined)
 				: undefined;
-			setPasswordError(apiMessage || 'Failed to update password.');
+			setPasswordError(apiMessage || t('passwordUpdateFailed'));
 		} finally {
 			setIsUpdatingPassword(false);
 		}
@@ -230,14 +232,14 @@ export default function Profile() {
 			});
 
 			localStorage.removeItem('access_token');
-			setAlert({ type: 'info', message: 'Account deleted successfully.' });
+			setAlert({ type: 'info', message: t('accountDeleted') });
 			setTimeout(() => setAlert(null), 3500);
 			router.push('/login');
 		} catch (error) {
 			const apiMessage = axios.isAxiosError(error)
 				? (error.response?.data?.detail as string | undefined)
 				: undefined;
-			setAlert({ type: 'error', message: apiMessage || 'Account deletion failed.' });
+			setAlert({ type: 'error', message: apiMessage || t('accountDeletionFailed') });
 			setTimeout(() => setAlert(null), 3500);
 		} finally {
 			setIsDeleting(false);
@@ -256,14 +258,14 @@ export default function Profile() {
 					<form onSubmit={handleUpdateProfile} className="rounded-2xl border border-white/10 bg-[#101010] p-4 sm:p-5">
 						<div className="mb-4 flex items-start justify-between gap-4">
 							<div>
-								<h3 className="text-base font-bold text-white sm:text-lg">Profile Information</h3>
-								<p className="mt-1 text-xs text-zinc-400 sm:text-sm">Keep your name and email up to date.</p>
+								<h3 className="text-base font-bold text-white sm:text-lg">{t('title')}</h3>
+								<p className="mt-1 text-xs text-zinc-400 sm:text-sm">{t('subtitle')}</p>
 							</div>
 						</div>
 
 						<div className="space-y-4">
 							<div>
-								<label htmlFor="profile-full-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Full Name</label>
+								<label htmlFor="profile-full-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('fullName')}</label>
 								<input
 									id="profile-full-name"
 									type="text"
@@ -275,7 +277,7 @@ export default function Profile() {
 							</div>
 
 							<div>
-								<label htmlFor="profile-email" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Email</label>
+								<label htmlFor="profile-email" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('email')}</label>
 								<input
 									id="profile-email"
 									type="email"
@@ -295,8 +297,8 @@ export default function Profile() {
 
 							{emailChanged && (
 								<div className="rounded-lg border border-primary/35 bg-primary/10 p-3">
-									<p className="text-xs font-semibold text-primary">Email change requires verification</p>
-									<p className="mt-1 text-xs text-zinc-300">We will send a 6-digit code to your new email address.</p>
+									<p className="text-xs font-semibold text-primary">{t('emailChangeRequired')}</p>
+									<p className="mt-1 text-xs text-zinc-300">{t('emailCodeDesc')}</p>
 
 									{isEmailCodeSentForCurrentInput && (
 										<div className="mt-3 space-y-2">
@@ -304,7 +306,7 @@ export default function Profile() {
 												type="text"
 												inputMode="numeric"
 												maxLength={6}
-												placeholder="Enter 6-digit code"
+												placeholder={t('enterCode')}
 												value={emailVerificationCode}
 												onChange={(e) => setEmailVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
 												className="w-full rounded-lg border border-white/10 bg-[#0C0C0C] px-3 py-2 text-sm text-white outline-none focus:border-primary/70"
@@ -316,7 +318,7 @@ export default function Profile() {
 													disabled={isSendingEmailCode || isVerifyingEmailCode}
 													className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
 												>
-													{isSendingEmailCode ? 'Sending...' : 'Resend Code'}
+													{isSendingEmailCode ? t('sending') : t('resendCode')}
 												</button>
 												<button
 													type="button"
@@ -324,7 +326,7 @@ export default function Profile() {
 													disabled={emailVerificationCode.trim().length !== 6 || isVerifyingEmailCode}
 													className="rounded-lg bg-primary px-3 py-2 text-xs font-bold text-black transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 												>
-													{isVerifyingEmailCode ? 'Verifying...' : 'Verify Code'}
+													{isVerifyingEmailCode ? t('verifying') : t('verifyCode')}
 												</button>
 											</div>
 										</div>
@@ -352,26 +354,32 @@ export default function Profile() {
 									disabled={!hasProfileChanges || isUpdatingProfile}
 									className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
 								>
-									Cancel
+									{t('cancel')}
 								</button>
 								<button
 									type="submit"
 									disabled={!hasProfileChanges || isUpdatingProfile || isSendingEmailCode || (emailChanged && isEmailCodeSentForCurrentInput)}
 									className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-black transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 								>
-									{isUpdatingProfile ? 'Saving...' : isSendingEmailCode ? 'Sending...' : emailChanged ? (isEmailCodeSentForCurrentInput ? 'Code Sent' : 'Send Verification Code') : 'Save Changes'}
+									{isUpdatingProfile
+										? t('saving')
+										: isSendingEmailCode
+											? t('sending')
+											: emailChanged
+												? (isEmailCodeSentForCurrentInput ? t('codeSent') : t('sendVerificationCode'))
+												: t('saveChanges')}
 								</button>
 							</div>
 						</div>
 					</form>
 
 					<form onSubmit={handleUpdatePassword} className="rounded-2xl border border-white/10 bg-[#101010] p-4 sm:p-5">
-						<h3 className="text-base font-bold text-white sm:text-lg">Security</h3>
-						<p className="mt-1 text-xs text-zinc-400 sm:text-sm">Change your password regularly to keep your account secure.</p>
+						<h3 className="text-base font-bold text-white sm:text-lg">{t('security')}</h3>
+						<p className="mt-1 text-xs text-zinc-400 sm:text-sm">{t('securitySubtitle')}</p>
 
 						<div className="mt-4 space-y-3">
 							<div>
-								<label htmlFor="current-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Current Password</label>
+								<label htmlFor="current-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('currentPassword')}</label>
 								<input
 									id="current-password"
 									type="password"
@@ -382,7 +390,7 @@ export default function Profile() {
 								/>
 							</div>
 							<div>
-								<label htmlFor="new-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">New Password</label>
+								<label htmlFor="new-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('newPassword')}</label>
 								<input
 									id="new-password"
 									type="password"
@@ -393,7 +401,7 @@ export default function Profile() {
 								/>
 							</div>
 							<div>
-								<label htmlFor="confirm-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">Confirm New Password</label>
+								<label htmlFor="confirm-password" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-zinc-500">{t('confirmNewPassword')}</label>
 								<input
 									id="confirm-password"
 									type="password"
@@ -415,14 +423,14 @@ export default function Profile() {
 									disabled={!hasPasswordDraft || isUpdatingPassword}
 									className="rounded-xl border border-white/10 px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-40"
 								>
-									Clear
+									{t('clear')}
 								</button>
 								<button
 									type="submit"
 									disabled={!hasPasswordDraft || isUpdatingPassword}
 									className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-black transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
 								>
-									{isUpdatingPassword ? 'Updating...' : 'Update Password'}
+									{isUpdatingPassword ? t('updating') : t('updatePassword')}
 								</button>
 							</div>
 						</div>
@@ -430,8 +438,8 @@ export default function Profile() {
 				</div>
 
 				<div className="border-t border-white/10 pt-5">
-					<h3 className="text-base font-bold text-white sm:text-lg">Plan</h3>
-					<p className="mt-1 text-xs text-zinc-400 sm:text-sm">Your current subscription and upgrade availability.</p>
+					<h3 className="text-base font-bold text-white sm:text-lg">{t('plan')}</h3>
+					<p className="mt-1 text-xs text-zinc-400 sm:text-sm">{t('planSubtitle')}</p>
 					<div className="mt-3 rounded-xl border border-white/10 bg-[#101010] px-4 py-3">
 						<div className="flex items-center justify-between gap-3">
 							<p className="text-sm font-bold text-zinc-100">{currentPlan}</p>
@@ -440,21 +448,21 @@ export default function Profile() {
 								onClick={() => setActiveTab('billing')}
 								className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
 							>
-								Upgrade
+								{t('upgrade')}
 							</button>
 						</div>
 					</div>
 				</div>
 
 				<div className="border-t border-white/10 pt-5">
-					<h3 className="text-base font-bold text-white sm:text-lg">Danger Zone</h3>
-					<p className="mt-1 text-xs text-zinc-400 sm:text-sm">Deleting your account permanently removes your data.</p>
+					<h3 className="text-base font-bold text-white sm:text-lg">{t('dangerZone')}</h3>
+					<p className="mt-1 text-xs text-zinc-400 sm:text-sm">{t('dangerSubtitle')}</p>
 					<button
 						type="button"
 						onClick={openDeleteModal}
 						className="mt-3 w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-left text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/15"
 					>
-						Delete Account
+						{t('deleteAccount')}
 					</button>
 				</div>
 			</motion.section>
@@ -464,9 +472,9 @@ export default function Profile() {
 					<div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-[#0C0C0C] p-5 sm:p-6">
 						{deleteStep === 'warning' ? (
 							<>
-								<h3 className="text-lg font-bold text-white">Delete Account</h3>
+								<h3 className="text-lg font-bold text-white">{t('deleteAccount')}</h3>
 								<p className="mt-2 text-sm text-zinc-300">
-									This action cannot be undone. All your account data will be permanently deleted.
+									{t('deleteWarning')}
 								</p>
 								<div className="mt-5 grid grid-cols-2 gap-3">
 									<button
@@ -474,28 +482,28 @@ export default function Profile() {
 										onClick={closeDeleteModal}
 										className="rounded-lg border border-white/10 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04]"
 									>
-										Cancel
+										{t('cancel')}
 									</button>
 									<button
 										type="button"
 										onClick={() => setDeleteStep('password')}
 										className="rounded-lg bg-red-500 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-600"
 									>
-										I Understand
+										{t('iUnderstand')}
 									</button>
 								</div>
 							</>
 						) : (
 							<>
-								<h3 className="text-lg font-bold text-white">Confirm With Password</h3>
-								<p className="mt-2 text-sm text-zinc-300">Enter your current password to permanently delete your account.</p>
+								<h3 className="text-lg font-bold text-white">{t('confirmWithPassword')}</h3>
+								<p className="mt-2 text-sm text-zinc-300">{t('confirmDeleteDesc')}</p>
 								<input
 									type="password"
 									value={deletePassword}
 									onChange={(e) => setDeletePassword(e.target.value)}
 									autoFocus
 									autoComplete="current-password"
-									placeholder="Current password"
+									placeholder={t('currentPasswordPlaceholder')}
 									className="mt-4 w-full rounded-lg border border-white/10 bg-[#101010] px-3 py-2.5 text-sm text-white outline-none focus:border-red-400/70"
 								/>
 								<div className="mt-5 grid grid-cols-2 gap-3">
@@ -505,7 +513,7 @@ export default function Profile() {
 										disabled={isDeleting}
 										className="rounded-lg border border-white/10 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-60"
 									>
-										Back
+										{t('back')}
 									</button>
 									<button
 										type="button"
@@ -513,7 +521,7 @@ export default function Profile() {
 										disabled={!deletePassword.trim() || isDeleting}
 										className="rounded-lg bg-red-500 py-2.5 text-sm font-bold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-50"
 									>
-										{isDeleting ? 'Deleting...' : 'Delete Permanently'}
+										{isDeleting ? t('deleting') : t('deletePermanently')}
 									</button>
 								</div>
 							</>

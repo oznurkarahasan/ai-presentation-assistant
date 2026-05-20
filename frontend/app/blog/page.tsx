@@ -6,57 +6,61 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Link from "next/link";
 import Image from "next/image";
-
-const BLOG_POSTS = [
-    {
-        id: 1,
-        title: "Mastering the Art of AI-Powered Presentations",
-        excerpt: "Discover how AI can enhance your delivery without losing your personal touch. We explore the balance between tech and human connection.",
-        category: "Tutorial",
-        author: "Sarah Chen",
-        date: "March 12, 2026",
-        readTime: "8 min read",
-        image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=800",
-        featured: true
-    },
-    {
-        id: 2,
-        title: "The Science of Stage Fright and How to Beat It",
-        excerpt: "Understanding why we get nervous and how real-time cues can reduce anxiety by up to 40%.",
-        category: "Psychology",
-        author: "Dr. James Wilson",
-        date: "March 10, 2026",
-        readTime: "5 min read",
-        image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=800",
-        featured: false
-    },
-    {
-        id: 3,
-        title: "PreCue v2.4: Real-time Tone Analysis is Here",
-        excerpt: "Our biggest update yet brings machine learning tone detection to help you match your energy with your message.",
-        category: "Product",
-        author: "Marco Rossi",
-        date: "March 08, 2026",
-        readTime: "4 min read",
-        image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800",
-        featured: false
-    },
-    {
-        id: 4,
-        title: "10 Tips for a Successful Remote Presentation",
-        excerpt: "Zoom fatigue is real. Learn how to keep your virtual audience engaged from start to finish.",
-        category: "Tips",
-        author: "Emma Thompson",
-        date: "March 05, 2026",
-        readTime: "6 min read",
-        image: "https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?auto=format&fit=crop&q=80&w=800",
-        featured: false
-    }
-];
+import { useTranslations } from "next-intl";
 
 export default function BlogPage() {
+    const t = useTranslations("blog");
+
+    const BLOG_POSTS = [
+        {
+            id: 1,
+            title: t("posts.1.title"),
+            excerpt: t("posts.1.excerpt"),
+            category: t("categories.tutorial"),
+            author: t("posts.1.author"),
+            date: t("posts.1.date"),
+            readTime: t("posts.1.readTime"),
+            image: "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=800",
+            featured: true
+        },
+        {
+            id: 2,
+            title: t("posts.2.title"),
+            excerpt: t("posts.2.excerpt"),
+            category: t("categories.psychology"),
+            author: t("posts.2.author"),
+            date: t("posts.2.date"),
+            readTime: t("posts.2.readTime"),
+            image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&q=80&w=800",
+            featured: false
+        },
+        {
+            id: 3,
+            title: t("posts.3.title"),
+            excerpt: t("posts.3.excerpt"),
+            category: t("categories.product"),
+            author: t("posts.3.author"),
+            date: t("posts.3.date"),
+            readTime: t("posts.3.readTime"),
+            image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=800",
+            featured: false
+        },
+        {
+            id: 4,
+            title: t("posts.4.title"),
+            excerpt: t("posts.4.excerpt"),
+            category: t("categories.tips"),
+            author: t("posts.4.author"),
+            date: t("posts.4.date"),
+            readTime: t("posts.4.readTime"),
+            image: "https://images.unsplash.com/photo-1588196749597-9ff075ee6b5b?auto=format&fit=crop&q=80&w=800",
+            featured: false
+        }
+    ];
+
     const featuredPost = BLOG_POSTS.find(p => p.featured);
     const recentPosts = BLOG_POSTS.filter(p => !p.featured);
+    const allCategoryLabel = t("categories.all");
 
     return (
         <div className="flex flex-col min-h-screen bg-black relative selection:bg-primary/30">
@@ -71,9 +75,9 @@ export default function BlogPage() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                         >
-                            <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight">Insights & Stories</h1>
+                            <h1 className="text-4xl sm:text-6xl font-bold text-white tracking-tight">{t("title")}</h1>
                             <p className="text-secondary-text max-w-2xl mx-auto text-lg pt-4">
-                                Deep dives into presentation science, product updates, and speaker success stories.
+                                {t("subtitle")}
                             </p>
                         </motion.div>
                     </div>
@@ -100,7 +104,7 @@ export default function BlogPage() {
                                     <div className="lg:w-1/2 p-8 sm:p-12 flex flex-col justify-center space-y-6">
                                         <div className="flex items-center gap-3">
                                             <span className="px-3 py-1 bg-primary/10 border border-primary/20 rounded-full text-xs font-bold text-primary uppercase tracking-widest">
-                                                Featured
+                                                {t("featured")}
                                             </span>
                                             <span className="text-zinc-500 text-sm">{featuredPost.category}</span>
                                         </div>
@@ -129,10 +133,16 @@ export default function BlogPage() {
                     {/* Filters/Search */}
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-8 mb-12">
                         <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 w-full sm:w-auto items-center no-scrollbar">
-                            {["All", "Tutorial", "Psychology", "Product", "Tips"].map((cat) => (
+                            {[
+                                allCategoryLabel,
+                                t("categories.tutorial"),
+                                t("categories.psychology"),
+                                t("categories.product"),
+                                t("categories.tips")
+                            ].map((cat) => (
                                 <button
                                     key={cat}
-                                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex-shrink-0 ${cat === "All"
+                                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all flex-shrink-0 ${cat === allCategoryLabel
                                         ? "bg-white text-black"
                                         : "bg-white/5 text-zinc-400 border border-white/5 hover:border-white/20 hover:text-white"
                                         }`}
@@ -145,7 +155,7 @@ export default function BlogPage() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search articles..."
+                                placeholder={t("searchPlaceholder")}
                                 className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-11 pr-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-primary/50 transition-all"
                             />
                         </div>
@@ -185,6 +195,7 @@ interface BlogPost {
 }
 
 function BlogCard({ post }: { post: BlogPost }) {
+    const t = useTranslations("blog");
     return (
         <Link href={`/blog/${post.id}`} className="group block h-full">
             <div className="glass-card h-full rounded-[2rem] border-white/5 bg-zinc-900/40 hover:bg-zinc-900/60 hover:border-primary/20 transition-all duration-300 overflow-hidden flex flex-col">
@@ -214,7 +225,7 @@ function BlogCard({ post }: { post: BlogPost }) {
                             <span className="text-zinc-500 text-xs font-medium">{post.readTime}</span>
                         </div>
                         <div className="flex items-center gap-1 text-primary font-bold text-xs uppercase tracking-widest group-hover:gap-2 transition-all">
-                            Read More
+                            {t("readMore")}
                             <ArrowRight size={14} />
                         </div>
                     </div>

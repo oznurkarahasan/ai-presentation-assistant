@@ -1,23 +1,25 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState, useRef, useEffect } from "react";
-
-const LOCALES = [
-  { code: "en", flag: "🇬🇧", label: "English" },
-  { code: "tr", flag: "🇹🇷", label: "Türkçe" },
-];
 
 export default function LanguageSwitcher() {
   const locale = useLocale();
+  const t = useTranslations("language");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const current = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
+  const locales = [
+    { code: "en", flag: "🇬🇧", label: t("english") },
+    { code: "tr", flag: "🇹🇷", label: t("turkish") },
+  ];
+
+  const current = locales.find((l) => l.code === locale) ?? locales[0];
 
   const switchLocale = (newLocale: string) => {
     // eslint-disable-next-line react-hooks/immutability
     document.cookie = `NEXT_LOCALE=${newLocale};path=/;max-age=31536000;SameSite=Lax`;
+    document.cookie = "LOCALE_PREFERENCE=1;path=/;max-age=31536000;SameSite=Lax";
     window.location.reload();
   };
 
@@ -43,7 +45,7 @@ export default function LanguageSwitcher() {
 
       {open && (
         <div className="absolute right-0 mt-1 w-32 rounded-lg bg-zinc-900 border border-white/10 shadow-lg overflow-hidden z-50">
-          {LOCALES.map((l) => (
+          {locales.map((l) => (
             <button
               key={l.code}
               onClick={() => switchLocale(l.code)}

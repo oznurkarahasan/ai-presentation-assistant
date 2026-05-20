@@ -6,8 +6,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Lock, ArrowRight, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import client from "../../api/client";
+import { useTranslations } from "next-intl";
 
 export default function ResetPasswordPage() {
+    const t = useTranslations("resetPassword");
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -26,11 +28,11 @@ export default function ResetPasswordPage() {
     useEffect(() => {
         const tokenParam = searchParams.get("token");
         if (!tokenParam) {
-            setError("Reset token not found. Please use the link from your email.");
+            setError(t("errors.tokenMissing"));
         } else {
             setToken(tokenParam);
         }
-    }, [searchParams]);
+    }, [searchParams, t]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -44,17 +46,17 @@ export default function ResetPasswordPage() {
         e.preventDefault();
         
         if (!token) {
-            setError("Reset token is missing.");
+            setError(t("errors.tokenMissingShort"));
             return;
         }
 
         if (formData.new_password !== formData.new_password_confirm) {
-            setError("Passwords do not match.");
+            setError(t("errors.passwordMismatch"));
             return;
         }
 
         if (formData.new_password.length < 8) {
-            setError("Password must be at least 8 characters long.");
+            setError(t("errors.passwordTooShort"));
             return;
         }
 
@@ -74,7 +76,7 @@ export default function ResetPasswordPage() {
             }, 3000);
         } catch (err: unknown) {
             console.error("Reset Password Error:", err);
-            let message = "Failed to reset password. Please try again.";
+            let message = t("errors.resetFailed");
             if (err && typeof err === 'object' && 'response' in err) {
                 const axiosError = err as { response: { data: { detail?: string } } };
                 message = axiosError.response?.data?.detail || message;
@@ -97,16 +99,16 @@ export default function ResetPasswordPage() {
                     <div className="w-16 h-16 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle2 className="w-8 h-8 text-green-400" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-3">Password Reset Successful</h2>
+                    <h2 className="text-2xl font-bold text-white mb-3">{t("success.title")}</h2>
                     <p className="text-zinc-400 mb-8">
-                        Your password has been reset successfully. Redirecting to login...
+                        {t("success.body")}
                     </p>
                     <Link
                         href="/login"
                         className="inline-flex items-center gap-2 text-primary hover:text-primary-hover transition-colors font-medium"
                     >
                         <ArrowRight size={18} />
-                        Go to Sign In
+                        {t("success.action")}
                     </Link>
                 </div>
             </motion.div>
@@ -125,16 +127,16 @@ export default function ResetPasswordPage() {
                     <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                         <AlertCircle className="w-8 h-8 text-red-400" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-3">Invalid Reset Link</h2>
+                    <h2 className="text-2xl font-bold text-white mb-3">{t("invalidLink.title")}</h2>
                     <p className="text-zinc-400 mb-8">
-                        The password reset link is missing or invalid. Please request a new one.
+                        {t("invalidLink.body")}
                     </p>
                     <Link
                         href="/forgot-password"
                         className="inline-flex items-center gap-2 text-primary hover:text-primary-hover transition-colors font-medium"
                     >
                         <ArrowRight size={18} />
-                        Request New Link
+                        {t("invalidLink.action")}
                     </Link>
                 </div>
             </motion.div>
@@ -165,7 +167,7 @@ export default function ResetPasswordPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                 >
-                    Reset Password
+                    {t("title")}
                 </motion.h1>
                 <motion.p
                     className="text-zinc-400 text-sm"
@@ -173,7 +175,7 @@ export default function ResetPasswordPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                 >
-                    Enter your new password below
+                    {t("subtitle")}
                 </motion.p>
             </div>
 
@@ -199,7 +201,7 @@ export default function ResetPasswordPage() {
                     className="space-y-2"
                 >
                     <label htmlFor="new_password" className="block text-sm font-medium text-zinc-300">
-                        New Password
+                        {t("form.newPassword")}
                     </label>
                     <div className="relative">
                         <input
@@ -208,7 +210,7 @@ export default function ResetPasswordPage() {
                             type={showPassword ? "text" : "password"}
                             value={formData.new_password}
                             onChange={handleChange}
-                            placeholder="Enter new password (min. 8 characters)"
+                            placeholder={t("form.newPasswordPlaceholder")}
                             className="w-full px-4 py-3 pr-10 bg-zinc-900/50 border border-zinc-800 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-colors"
                             required
                         />
@@ -229,7 +231,7 @@ export default function ResetPasswordPage() {
                     className="space-y-2"
                 >
                     <label htmlFor="new_password_confirm" className="block text-sm font-medium text-zinc-300">
-                        Confirm Password
+                        {t("form.confirmPassword")}
                     </label>
                     <div className="relative">
                         <input
@@ -238,7 +240,7 @@ export default function ResetPasswordPage() {
                             type={showConfirmPassword ? "text" : "password"}
                             value={formData.new_password_confirm}
                             onChange={handleChange}
-                            placeholder="Confirm your new password"
+                            placeholder={t("form.confirmPasswordPlaceholder")}
                             className="w-full px-4 py-3 pr-10 bg-zinc-900/50 border border-zinc-800 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-colors"
                             required
                         />
@@ -263,12 +265,12 @@ export default function ResetPasswordPage() {
                     {loading ? (
                         <>
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                            Resetting...
+                            {t("form.resetting")}
                         </>
                     ) : (
                         <>
                             <Lock size={18} />
-                            Reset Password
+                            {t("form.submit")}
                         </>
                     )}
                 </motion.button>
@@ -281,9 +283,9 @@ export default function ResetPasswordPage() {
                 className="text-center"
             >
                 <p className="text-zinc-400 text-sm">
-                    Remember your password?{" "}
+                    {t("footer.prompt")} {" "}
                     <Link href="/login" className="text-primary hover:text-primary-hover transition-colors font-medium">
-                        Sign In
+                        {t("footer.action")}
                     </Link>
                 </p>
             </motion.div>

@@ -4,8 +4,11 @@ import { motion } from "framer-motion";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { Cookie, Settings, BarChart, HardDrive } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function CookiesPage() {
+    const t = useTranslations("cookies");
+
     return (
         <div className="flex flex-col min-h-screen bg-black relative selection:bg-primary/30">
             <div className="bg-grid" />
@@ -19,18 +22,18 @@ export default function CookiesPage() {
                         className="space-y-12"
                     >
                         <div className="text-center space-y-4">
-                            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">Cookie Policy</h1>
-                            <p className="text-zinc-500">Last updated: March 13, 2026</p>
+                            <h1 className="text-4xl sm:text-5xl font-bold text-white tracking-tight">{t("title")}</h1>
+                            <p className="text-zinc-500">{t("lastUpdated")}</p>
                         </div>
 
                         <div className="glass-card p-8 sm:p-12 space-y-10 bg-zinc-900/50 border-white/5 backdrop-blur-md rounded-[2.5rem]">
                             <section className="space-y-4">
                                 <div className="flex items-center gap-3 text-primary">
                                     <Cookie size={24} />
-                                    <h2 className="text-xl font-bold tracking-tight">What are Cookies?</h2>
+                                    <h2 className="text-xl font-bold tracking-tight">{t("sections.definition.title")}</h2>
                                 </div>
                                 <p className="text-zinc-400 leading-relaxed">
-                                    Cookies are small text files stored on your device that help us provide a seamless and personalized experience. They allow us to remember your login state and preferences.
+                                    {t("sections.definition.body")}
                                 </p>
                             </section>
 
@@ -38,19 +41,19 @@ export default function CookiesPage() {
                                 <section className="p-6 bg-white/5 rounded-2xl border border-white/5 space-y-3">
                                     <div className="flex items-center gap-2 text-white font-bold">
                                         <HardDrive size={18} className="text-blue-400" />
-                                        Essential
+                                        {t("sections.categories.essential.title")}
                                     </div>
                                     <p className="text-zinc-500 text-sm">
-                                        Required for core site functionality like secure login and session management. Cannot be disabled.
+                                        {t("sections.categories.essential.body")}
                                     </p>
                                 </section>
                                 <section className="p-6 bg-white/5 rounded-2xl border border-white/5 space-y-3">
                                     <div className="flex items-center gap-2 text-white font-bold">
                                         <Settings size={18} className="text-amber-400" />
-                                        Preferences
+                                        {t("sections.categories.preferences.title")}
                                     </div>
                                     <p className="text-zinc-500 text-sm">
-                                        Remember your language settings and AI voice preferences for a consistent experience.
+                                        {t("sections.categories.preferences.body")}
                                     </p>
                                 </section>
                             </div>
@@ -58,17 +61,17 @@ export default function CookiesPage() {
                             <section className="space-y-4">
                                 <div className="flex items-center gap-3 text-primary">
                                     <BarChart size={24} />
-                                    <h2 className="text-xl font-bold tracking-tight">Analytics Cookies</h2>
+                                    <h2 className="text-xl font-bold tracking-tight">{t("sections.analytics.title")}</h2>
                                 </div>
                                 <p className="text-zinc-400 leading-relaxed">
-                                    We use analytics partners to understand how users interact with PreCue.ai. This helps us optimize performance and identify common technical issues.
+                                    {t("sections.analytics.body")}
                                 </p>
                             </section>
 
                             <section className="p-6 border border-dashed border-white/10 rounded-2xl bg-zinc-900/30">
-                                <h4 className="text-white font-semibold mb-2">How to manage cookies</h4>
+                                <h4 className="text-white font-semibold mb-2">{t("sections.manage.title")}</h4>
                                 <p className="text-zinc-500 text-sm">
-                                    You can control cookie settings through your browser. However, disabling essential cookies will prevent you from logging into your account.
+                                    {t("sections.manage.body")}
                                 </p>
                             </section>
                         </div>

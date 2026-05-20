@@ -233,7 +233,7 @@ function Header() {
                 : t("library");
     const compactSearchPlaceholder = activeTab === 'sessions' ? t("searchSessions") : t("searchPresentations");
     const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions';
-    const profileDisplayName = user?.full_name?.trim() || user?.email?.split('@')[0] || 'User';
+    const profileDisplayName = user?.full_name?.trim() || user?.email?.split('@')[0] || t('userFallback');
 
     const getTimeGreeting = () => {
         const hour = new Date().getHours();

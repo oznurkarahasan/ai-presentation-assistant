@@ -130,6 +130,256 @@
     "spamNote": "Didn't receive the email? Check your spam folder or try again.",
     "failedToSend": "Failed to send reset email. Please try again."
   },
+  "language": {
+    "english": "English",
+    "turkish": "Turkish"
+  },
+  "blog": {
+    "title": "Insights & Stories",
+    "subtitle": "Deep dives into presentation science, product updates, and speaker success stories.",
+    "featured": "Featured",
+    "searchPlaceholder": "Search articles...",
+    "readMore": "Read More",
+    "categories": {
+      "all": "All",
+      "tutorial": "Tutorial",
+      "psychology": "Psychology",
+      "product": "Product",
+      "tips": "Tips"
+    },
+    "posts": {
+      "1": {
+        "title": "Mastering the Art of AI-Powered Presentations",
+        "excerpt": "Discover how AI can enhance your delivery without losing your personal touch. We explore the balance between tech and human connection.",
+        "author": "Sarah Chen",
+        "date": "March 12, 2026",
+        "readTime": "8 min read"
+      },
+      "2": {
+        "title": "The Science of Stage Fright and How to Beat It",
+        "excerpt": "Understanding why we get nervous and how real-time cues can reduce anxiety by up to 40%.",
+        "author": "Dr. James Wilson",
+        "date": "March 10, 2026",
+        "readTime": "5 min read"
+      },
+      "3": {
+        "title": "PreCue v2.4: Real-time Tone Analysis is Here",
+        "excerpt": "Our biggest update yet brings machine learning tone detection to help you match your energy with your message.",
+        "author": "Marco Rossi",
+        "date": "March 08, 2026",
+        "readTime": "4 min read"
+      },
+      "4": {
+        "title": "10 Tips for a Successful Remote Presentation",
+        "excerpt": "Zoom fatigue is real. Learn how to keep your virtual audience engaged from start to finish.",
+        "author": "Emma Thompson",
+        "date": "March 05, 2026",
+        "readTime": "6 min read"
+      }
+    }
+  },
+  "contact": {
+    "title": "Get in Touch",
+    "subtitle": "Have questions about PreCue? Our team is here to help you master your stage performance.",
+    "infoTitle": "Contact Information",
+    "followUs": "Follow Us",
+    "items": {
+      "email": {
+        "title": "Email us",
+        "subtitle": "We usually reply within 24 hours."
+      },
+      "support": {
+        "title": "Live Support",
+        "detail": "Available for Pro users",
+        "subtitle": "Monday - Friday, 9am - 6pm EST."
+      },
+      "office": {
+        "title": "Office",
+        "detail": "Innovation Hub",
+        "subtitle": "Tech District, San Francisco, CA"
+      }
+    },
+    "form": {
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "John Doe",
+      "email": "Email Address",
+      "emailPlaceholder": "john@example.com",
+      "subject": "Subject",
+      "subjectOptions": {
+        "general": "General Inquiry",
+        "support": "Technical Support",
+        "billing": "Billing Question",
+        "partnership": "Partnership"
+      },
+      "message": "Message",
+      "messagePlaceholder": "How can we help you?",
+      "submit": "Send Message"
+    }
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: March 13, 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "body": "By accessing or using PreCue.ai, you agree to be bound by these Terms of Service. If you do not agree, please do not use our services."
+      },
+      "responsibilities": {
+        "title": "User Responsibilities",
+        "body": "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree not to upload any content that violates third-party rights or applicable laws."
+      },
+      "ip": {
+        "title": "Intellectual Property",
+        "body": "The \"PreCue.ai\" platform, its UI, algorithms, and AI models are the exclusive property of PreCue.ai. However, you retain all ownership rights to the presentation files and content you upload."
+      },
+      "liability": {
+        "title": "Limitation of Liability",
+        "body": "PreCue.ai is provided \"as is\". While we strive for 100% accuracy, we are not liable for any presentation failures, slide sync delays, or data loss occurring during live events."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: March 13, 2026",
+    "sections": {
+      "introduction": {
+        "title": "Introduction",
+        "body": "At PreCue.ai, we take your privacy seriously. This policy describes how we collect, use, and handle your data when you use our AI-powered presentation assistant."
+      },
+      "data": {
+        "title": "Data We Collect",
+        "items": {
+          "account": {
+            "label": "Account Info:",
+            "body": "Email address and name provided during registration."
+          },
+          "files": {
+            "label": "Presentation Files:",
+            "body": "Documents (PDF, PPTX) you upload for processing."
+          },
+          "voice": {
+            "label": "Voice Data:",
+            "body": "Real-time speech processed locally or on our secure servers for slide control."
+          },
+          "usage": {
+            "label": "Usage Data:",
+            "body": "Analytics on how you interact with the application."
+          }
+        }
+      },
+      "protection": {
+        "title": "How We Protect Your Data",
+        "body": "Your files are encrypted using 256-bit AES encryption. We do not store raw voice recordings unless explicitly enabled for rehearsal feedback, and such data is automatically deleted after 30 days."
+      },
+      "thirdParty": {
+        "title": "Third-Party Services",
+        "body": "We use trusted AI partners like Google and OpenAI to process text and speech. Your data is used only for processing requested actions and is never used to train global models."
+      }
+    }
+  },
+  "cookies": {
+    "title": "Cookie Policy",
+    "lastUpdated": "Last updated: March 13, 2026",
+    "sections": {
+      "definition": {
+        "title": "What are Cookies?",
+        "body": "Cookies are small text files stored on your device that help us provide a seamless and personalized experience. They allow us to remember your login state and preferences."
+      },
+      "categories": {
+        "essential": {
+          "title": "Essential",
+          "body": "Required for core site functionality like secure login and session management. Cannot be disabled."
+        },
+        "preferences": {
+          "title": "Preferences",
+          "body": "Remember your language settings and AI voice preferences for a consistent experience."
+        }
+      },
+      "analytics": {
+        "title": "Analytics Cookies",
+        "body": "We use analytics partners to understand how users interact with PreCue.ai. This helps us optimize performance and identify common technical issues."
+      },
+      "manage": {
+        "title": "How to manage cookies",
+        "body": "You can control cookie settings through your browser. However, disabling essential cookies will prevent you from logging into your account."
+      }
+    }
+  },
+  "resetPassword": {
+    "title": "Reset Password",
+    "subtitle": "Enter your new password below",
+    "success": {
+      "title": "Password Reset Successful",
+      "body": "Your password has been reset successfully. Redirecting to login...",
+      "action": "Go to Sign In"
+    },
+    "invalidLink": {
+      "title": "Invalid Reset Link",
+      "body": "The password reset link is missing or invalid. Please request a new one.",
+      "action": "Request New Link"
+    },
+    "form": {
+      "newPassword": "New Password",
+      "newPasswordPlaceholder": "Enter new password (min. 8 characters)",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordPlaceholder": "Confirm your new password",
+      "resetting": "Resetting...",
+      "submit": "Reset Password"
+    },
+    "footer": {
+      "prompt": "Remember your password?",
+      "action": "Sign In"
+    },
+    "errors": {
+      "tokenMissing": "Reset token not found. Please use the link from your email.",
+      "tokenMissingShort": "Reset token is missing.",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordTooShort": "Password must be at least 8 characters long.",
+      "resetFailed": "Failed to reset password. Please try again."
+    }
+  },
+  "library": {
+    "title": "My Library",
+    "subtitle": "Clean, searchable access to all your presentations.",
+    "stats": {
+      "files": "Files",
+      "slides": "Slides",
+      "latestUpload": "Latest Upload",
+      "noUploads": "No uploads yet"
+    },
+    "summary": "Showing {filtered} of {total} presentations.",
+    "actions": {
+      "addNew": "Add New"
+    },
+    "empty": {
+      "title": "Your library is empty.",
+      "subtitle": "Upload your first presentation to get started.",
+      "cta": "Upload Presentation"
+    },
+    "planner": {
+      "title": "Add To Planner",
+      "dateLabel": "Date",
+      "presentationTime": "Presentation Time",
+      "presentationTimeDesc": "This is the start time of your presentation.",
+      "presentationStartsAt": "Presentation starts at:",
+      "emailReminder": "Email Reminder",
+      "reminderDesc": "This setting is only for the reminder email delivery time.",
+      "thirtyMinReminder": "Email reminder 30 minutes ago",
+      "emailSentAt": "Email will be sent at:",
+      "noReminder": "No reminder",
+      "disable": "Disable",
+      "enable": "Enable",
+      "selectTimeFirst": "Select presentation time first. Email reminder and note options appear after that.",
+      "noteLabel": "Note (Optional)",
+      "notePlaceholder": "Add a note for this planner event...",
+      "cancel": "Cancel",
+      "addToPlanner": "Add To Planner"
+    },
+    "alerts": {
+      "addToPlannerSuccess": "Presentation added to planner.",
+      "addToPlannerFailed": "Presentation could not be added to planner."
+    }
+  },
   "dashboard": {
     "goodMorning": "Good Morning",
     "goodAfternoon": "Good Afternoon",
@@ -186,6 +436,13 @@
     "addedToPlanner": "Presentation added to planner.",
     "plannerAddFailed": "Presentation could not be added to planner.",
     "slides": "Slides",
+    "masteredCount": "{count} Mastered",
+    "userFallback": "User",
+    "sessionActions": "Session actions",
+    "presentationActions": "Presentation actions",
+    "editTitle": "Edit presentation title",
+    "saveTitle": "Save title",
+    "cancelEdit": "Cancel edit",
     "addToPlannerTitle": "Add To Planner",
     "dateLabel": "Date",
     "presentationTime": "Presentation Time",
@@ -222,7 +479,188 @@
     "weekday3": "W",
     "weekday4": "T",
     "weekday5": "F",
-    "weekday6": "S"
+    "weekday6": "S",
+    "sessionPresentation": "Presentation",
+    "type": "Type",
+    "duration": "Duration",
+    "timeLabel": "Time",
+    "actionCol": "Action",
+    "rehearsal": "Rehearsal",
+    "live": "Live",
+    "noSessions": "No recorded sessions found.",
+    "newSession": "New session"
+  },
+  "profile": {
+    "title": "Profile Information",
+    "subtitle": "Keep your name and email up to date.",
+    "notAvailable": "Profile information is not available.",
+    "fullName": "Full Name",
+    "email": "Email",
+    "emailChangeRequired": "Email change requires verification",
+    "emailCodeDesc": "We will send a 6-digit code to your new email address.",
+    "enterCode": "Enter 6-digit code",
+    "sending": "Sending...",
+    "resendCode": "Resend Code",
+    "verifying": "Verifying...",
+    "verifyCode": "Verify Code",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "codeSent": "Code Sent",
+    "sendVerificationCode": "Send Verification Code",
+    "saveChanges": "Save Changes",
+    "security": "Security",
+    "securitySubtitle": "Change your password regularly to keep your account secure.",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmNewPassword": "Confirm New Password",
+    "clear": "Clear",
+    "updating": "Updating...",
+    "updatePassword": "Update Password",
+    "plan": "Plan",
+    "planSubtitle": "Your current subscription and upgrade availability.",
+    "upgrade": "Upgrade",
+    "dangerZone": "Danger Zone",
+    "dangerSubtitle": "Deleting your account permanently removes your data.",
+    "deleteAccount": "Delete Account",
+    "deleteWarning": "This action cannot be undone. All your account data will be permanently deleted.",
+    "iUnderstand": "I Understand",
+    "confirmWithPassword": "Confirm With Password",
+    "confirmDeleteDesc": "Enter your current password to permanently delete your account.",
+    "currentPasswordPlaceholder": "Current password",
+    "back": "Back",
+    "deleting": "Deleting...",
+    "deletePermanently": "Delete Permanently",
+    "freePlan": "Free Plan",
+    "verificationCodeSent": "Verification code sent to your new email.",
+    "failedToSendCode": "Failed to send verification code.",
+    "fullNameEmpty": "Full name cannot be empty.",
+    "enterCodeToComplete": "Enter the verification code below to complete email update.",
+    "emailUpdated": "Email updated successfully.",
+    "verificationFailed": "Verification failed.",
+    "profileUpdated": "Profile updated successfully.",
+    "profileUpdateFailed": "Failed to update profile.",
+    "fillAllFields": "Fill in all password fields.",
+    "passwordTooShort": "New password must be at least 8 characters.",
+    "passwordMismatch": "New password and confirmation do not match.",
+    "passwordUpdated": "Password updated successfully.",
+    "passwordUpdateFailed": "Failed to update password.",
+    "accountDeleted": "Account deleted successfully.",
+    "accountDeletionFailed": "Account deletion failed."
+  },
+  "planner": {
+    "title": "Planner",
+    "prevMonth": "Previous month",
+    "prevWeek": "Previous week",
+    "prevDay": "Previous day",
+    "nextMonth": "Next month",
+    "nextWeek": "Next week",
+    "nextDay": "Next day",
+    "goToday": "Go to today",
+    "calendarView": "Calendar view",
+    "selectedDay": "Selected day",
+    "addPresentation": "Add Presentation",
+    "noEvents": "No events yet. Click the + button to schedule a presentation.",
+    "tapDate": "Tap a date on the calendar to see it here.",
+    "editEvent": "Edit Planner Event",
+    "selectPresentation": "Select Presentation",
+    "selectTime": "Select Time",
+    "addNote": "Add Note",
+    "searchPresentations": "Search presentations...",
+    "noPresentationsFound": "No presentations found.",
+    "presentationTime": "Presentation Time",
+    "presentationTimeDesc": "This is the start time of your presentation.",
+    "presentationStartsAt": "Presentation starts at:",
+    "emailReminder": "Email Reminder",
+    "reminderDesc": "This setting is only for the reminder email delivery time.",
+    "thirtyMinReminder": "Email reminder 30 minutes ago",
+    "emailSentAt": "Email will be sent at:",
+    "noReminder": "No reminder",
+    "disableReminder": "Disable reminder",
+    "enableReminder": "Enable reminder",
+    "selectTimeFirst": "Select presentation time first. Email reminder options appear after that.",
+    "back": "Back",
+    "nextAddNote": "Next: Add Note",
+    "addNotePlaceholder": "Add a note... (optional)",
+    "saveChanges": "Save Changes",
+    "confirmSchedule": "Confirm Schedule",
+    "noPresentationsDay": "No presentations scheduled for this day.",
+    "noNotes": "No notes added",
+    "present": "Present:",
+    "alert": "Alert:",
+    "remove": "Remove",
+    "plannerEventsError": "Planner events could not be loaded.",
+    "eventUpdated": "Event updated.",
+    "eventSaved": "Event saved to planner.",
+    "eventUpdateFailed": "Event could not be updated.",
+    "eventSaveFailed": "Event could not be saved.",
+    "reminderRemoved": "Reminder removed.",
+    "reminderRemoveFailed": "Reminder could not be removed.",
+    "scheduledRemoved": "Scheduled presentation removed.",
+    "scheduledRemoveFailed": "Scheduled presentation could not be removed.",
+    "editScheduled": "Edit scheduled presentation",
+    "removeScheduled": "Remove scheduled presentation",
+    "removeReminder": "Remove reminder",
+    "slides": "slides",
+    "more": "more",
+    "weekMon": "Mon",
+    "weekTue": "Tue",
+    "weekWed": "Wed",
+    "weekThu": "Thu",
+    "weekFri": "Fri",
+    "weekSat": "Sat",
+    "weekSun": "Sun",
+    "weekMonShort": "Mo",
+    "weekTueShort": "Tu",
+    "weekWedShort": "We",
+    "weekThuShort": "Th",
+    "weekFriShort": "Fr",
+    "weekSatShort": "Sa",
+    "weekSunShort": "Su",
+    "calendarFor": "Calendar for {month}",
+    "weekOf": "Week of {range}",
+    "presentationHourLabel": "Presentation hour",
+    "presentationMinuteLabel": "Presentation minute",
+    "reminderHourLabel": "Reminder hour",
+    "reminderMinuteLabel": "Reminder minute"
+  },
+  "presentation": {
+    "loading": "Loading...",
+    "liveTranscript": "Live Transcript",
+    "voiceCommands": "Voice Commands",
+    "engine": "PreCue.ai Real-time Engine",
+    "start": "Start",
+    "pause": "Pause",
+    "end": "End",
+    "retryConnection": "Retry Connection",
+    "errorPrefix": "Error:",
+    "menu": "Menu",
+    "slide": "Slide",
+    "pages": "Pages",
+    "engineStatus": "Engine",
+    "networkError": "Network error: Browsers like Chrome require an internet connection to reach Google's speech services. Please check if they are blocked.",
+    "permissionDenied": "Permission denied: Please ensure microphone access is allowed in your site settings.",
+    "noSpeech": "Silence detected: No audio was picked up. Check your microphone sensitivity.",
+    "speechNotSupported": "Speech recognition not supported in this browser.",
+    "try": "Try:",
+    "nextSlide": "Next Slide",
+    "prevSlide": "Previous Slide",
+    "jumpToPage": "Jump to Page",
+    "zoom": "Zoom (NEW)",
+    "hideSidebar": "Hide sidebar",
+    "showMenu": "Show menu",
+    "nextSlideExample": "'Next slide', 'Moving on'",
+    "prevSlideExample": "'Go back', 'Last slide'",
+    "jumpToPageExample": "'Go to slide five'",
+    "zoomExample": "'Zoom in', 'Shrink', 'Reset'"
+  },
+  "viewer": {
+    "pptxPreview": "PowerPoint Preview",
+    "pptxComingSoon": "PPTX Viewer is coming soon. Use \"Real-Time\" mode for live presentation controls.",
+    "prevSlide": "Previous Slide",
+    "nextSlide": "Next Slide",
+    "presentationPreview": "Presentation Preview",
+    "resetToFit": "Reset to Fit",
+    "fit": "FIT"
   },
   "pricing": {
     "title": "Simple, Transparent Pricing",
