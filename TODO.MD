@@ -104,3 +104,31 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 - [ ] Implement Ctrl+F in-document search for PDF viewer — Option A: Replace iframe with react-pdf (full renderer swap, requires re-implementing zoom/fit/layout but gives native text layer + real highlight support) or Option B: Keep iframe, add pdfjs-dist overlay layer for text coordinate extraction and draw highlight rectangles on top (no layout change, riskier coordinate mapping)
 
 - [ ] Add PPTX browser preview via LibreOffice conversion — On upload, convert PPTX to a _preview.pdf using LibreOffice headless; delete endpoint also removes the preview PDF; frontend PresentationViewer loads the converted PDF instead of showing 'coming soon'. No DB migration needed, text extraction unchanged, failure is non-breaking.
+
+## Phase 10: Ideas Section — Topic Ideas Feature
+
+The sidebar already has the `ideas-topics` tab wired up in `DashboardContext`, but the tab renders an empty placeholder in `page.tsx`. This phase covers building the full Topic Ideas experience.
+
+### Phase 10.1: Backend — Topic Ideas Endpoint
+
+- [ ] Create `POST /api/v1/ideas/topics` endpoint that accepts `{ context, audience, purpose, num_ideas? }` and returns `{ ideas: [{ title, description, angle }] }`.
+- [ ] Write a system prompt that instructs Claude to generate distinct, actionable presentation topic ideas with a clear angle for each.
+- [ ] Optionally enrich the prompt with the user's existing presentation titles from the DB (no vector search needed, just metadata) to avoid repetition and tailor suggestions.
+- [ ] Add input validation (max lengths, required fields) and rate-limit the endpoint per user to avoid excessive Claude API calls.
+- [ ] Write backend tests for the endpoint (happy path + validation errors).
+
+### Phase 10.2: Frontend — TopicIdeas Component
+
+- [ ] Create `frontend/app/dashboard/ideas/TopicIdeas.tsx` as a self-contained component.
+- [ ] Build a context form with three fields: **Field / Expertise** (e.g. "software engineering"), **Target Audience** (e.g. "non-technical managers"), and **Purpose** (e.g. "persuade / inform / educate") — all short text inputs.
+- [ ] Add a **Generate Ideas** button that calls the backend endpoint; show a skeleton/spinner while loading.
+- [ ] Render results as cards (title + description + angle). Support re-generating with the same or updated inputs.
+- [ ] Wire the component into `page.tsx` replacing the empty `ideas-topics` placeholder.
+- [ ] Add i18n keys for all new strings in `en.json` and `tr.json`.
+
+### Phase 10.3: Future Enhancements (Post-MVP)
+
+- [ ] Allow users to **save** a topic idea (new `idea_bookmarks` DB table) and view saved ideas across sessions.
+- [ ] Feed the user's uploaded presentation content into the prompt via RAG so suggestions avoid already-covered topics.
+- [ ] Add category/tag filters on generated results (e.g. "beginner", "technical", "storytelling-heavy").
+
