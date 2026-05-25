@@ -772,8 +772,9 @@
     "chatPlaceholder": "Bu konu hakkında her şeyi sor...",
     "chatError": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
     "chatOpenBtn": "Sohbet",
-    "searchIdeas": "Fikir ara...",
-    "noSavedIdeas": "Henüz fikir üretilmedi",
-    "startWithCategory": "Ya da bir kategoriyle başla"
+    "searchIdeas": "Favori ara...",
+    "noSavedIdeas": "Henüz favori fikir yok",
+    "startWithCategory": "Ya da bir kategoriyle başla",
+    "trendingTopics": "Güncel Konular"
   }
 }

@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Sparkles, Tag, MessageSquare, Send, X, Bot, Users, TrendingUp, Wallet, BookOpen, Briefcase, Heart, Rocket, LucideIcon } from "lucide-react";
+import { RefreshCw, Sparkles, Tag, MessageSquare, Send, X, Bot, Users, TrendingUp, Wallet, BookOpen, Briefcase, Heart, Rocket, LucideIcon, Star } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import client from "../../api/client";
 import { useDashboard } from "../DashboardContext";
@@ -76,7 +76,7 @@ interface ChatContext {
 export default function TopicIdeas() {
     const t = useTranslations('topicIdeas');
     const locale = useLocale();
-    const { savedTopicIdeas, setSavedTopicIdeas, pendingTopicIdea, setPendingTopicIdea } = useDashboard();
+    const { favoriteTopicIdeas, setFavoriteTopicIdeas, pendingTopicIdea, setPendingTopicIdea } = useDashboard();
 
     const [context, setContext] = useState('');
     const [audience, setAudience] = useState('');
@@ -91,6 +91,8 @@ export default function TopicIdeas() {
     const [chatLoading, setChatLoading] = useState(false);
     const [mobileChatOpen, setMobileChatOpen] = useState(false);
     const [chatContext, setChatContext] = useState<ChatContext>({ context: '', audience: '', purpose: '' });
+    const [trendingIdeas, setTrendingIdeas] = useState<TopicIdea[]>([]);
+    const [trendingLoading, setTrendingLoading] = useState(true);
 
     const canGenerate = context.trim().length >= 2 && audience.trim().length >= 2 && purpose.trim().length >= 2;
 
@@ -114,12 +116,6 @@ export default function TopicIdeas() {
             const newIdeas: TopicIdea[] = res.data.ideas || [];
             setIdeas(newIdeas);
             setHasGenerated(true);
-
-            setSavedTopicIdeas(prev => {
-                const existingTitles = new Set(prev.map(i => i.title));
-                const fresh = newIdeas.filter(i => !existingTitles.has(i.title));
-                return [...prev, ...fresh];
-            });
         } catch {
             setError(t('errorMessage'));
         } finally {
@@ -148,6 +144,16 @@ export default function TopicIdeas() {
         setMobileChatOpen(true);
     };
 
+    const toggleFavorite = (idea: TopicIdea, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setFavoriteTopicIdeas(prev => {
+            const exists = prev.some(f => f.title === idea.title);
+            return exists ? prev.filter(f => f.title !== idea.title) : [...prev, idea];
+        });
+    };
+
+    const isFavorited = (idea: TopicIdea) => favoriteTopicIdeas.some(f => f.title === idea.title);
+
     useEffect(() => {
         if (!pendingTopicIdea) return;
         setSelectedIdea(pendingTopicIdea);
@@ -161,6 +167,29 @@ export default function TopicIdeas() {
         setPendingTopicIdea(null);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingTopicIdea]);
+
+    useEffect(() => {
+        const defaultParams = locale === 'tr'
+            ? {
+                context: 'Teknoloji, iş dünyası ve toplumda şu anda öne çıkan konular',
+                audience: 'Genel profesyonel kitle',
+                purpose: 'İlham vermek ve güncel kalmak',
+              }
+            : {
+                context: 'Currently trending topics in technology, business, and society',
+                audience: 'General professional audience',
+                purpose: 'Inspire and keep audiences informed',
+              };
+
+        client.post('/api/v1/ideas/topics', { ...defaultParams, num_ideas: 5, language: locale })
+            .then(res => {
+                const fetched: TopicIdea[] = res.data.ideas || [];
+                setTrendingIdeas(fetched);
+            })
+            .catch(() => {})
+            .finally(() => setTrendingLoading(false));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [locale]);
 
     const handleSendMessage = async () => {
         if (!chatInput.trim() || chatLoading || !selectedIdea) return;
@@ -296,6 +325,8 @@ export default function TopicIdeas() {
                                         t={t}
                                         isSelected={selectedIdea?.title === idea.title}
                                         onSelect={handleSelectIdea}
+                                        isFavorited={isFavorited(idea)}
+                                        onFavorite={toggleFavorite}
                                     />
                                 ))}
                                 {!selectedIdea && (
@@ -342,6 +373,48 @@ export default function TopicIdeas() {
                                     );
                                 })}
                             </div>
+                        </motion.div>
+                    )}
+
+                    {/* Trending ideas — AI generated on page load */}
+                    {!loading && !hasGenerated && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.25 }}
+                            className="space-y-4"
+                        >
+                            <p className="px-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                {t('trendingTopics')}
+                            </p>
+
+                            {trendingLoading ? (
+                                <div className="space-y-3">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className="rounded-[1.5rem] border border-white/5 bg-[#0c0c0c] p-5 space-y-3 animate-pulse"
+                                        >
+                                            <div className="h-4 w-2/5 rounded-md bg-white/8" />
+                                            <div className="h-3 w-full rounded-md bg-white/5" />
+                                            <div className="h-3 w-3/5 rounded-md bg-white/5" />
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                trendingIdeas.map((idea, i) => (
+                                    <IdeaCard
+                                        key={i}
+                                        idea={idea}
+                                        index={i}
+                                        t={t}
+                                        isSelected={selectedIdea?.title === idea.title}
+                                        onSelect={handleSelectIdea}
+                                        isFavorited={isFavorited(idea)}
+                                        onFavorite={toggleFavorite}
+                                    />
+                                ))
+                            )}
                         </motion.div>
                     )}
 
@@ -566,21 +639,27 @@ function IdeaCard({
     t,
     isSelected,
     onSelect,
+    isFavorited,
+    onFavorite,
 }: {
     idea: TopicIdea;
     index: number;
     t: ReturnType<typeof useTranslations>;
     isSelected: boolean;
     onSelect: (idea: TopicIdea) => void;
+    isFavorited: boolean;
+    onFavorite: (idea: TopicIdea, e: React.MouseEvent) => void;
 }) {
     return (
-        <motion.button
-            type="button"
+        <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.07 }}
             onClick={() => onSelect(idea)}
-            className={`group w-full text-left rounded-[1.5rem] border p-5 transition-all ${
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && onSelect(idea)}
+            className={`group w-full cursor-pointer text-left rounded-[1.5rem] border p-5 transition-all ${
                 isSelected
                     ? 'border-primary/40 bg-primary/[0.06]'
                     : 'border-white/5 bg-[#0c0c0c] hover:border-primary/20 hover:bg-white/[0.02]'
@@ -603,15 +682,31 @@ function IdeaCard({
                         <span className="text-[11px] text-zinc-400">{idea.angle}</span>
                     </div>
                 </div>
-                {!isSelected && (
-                    <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1">
-                            <MessageSquare size={11} className="text-primary" />
-                            <span className="text-[10px] font-bold text-primary">Chat</span>
+                <div className="shrink-0 flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={(e) => onFavorite(idea, e)}
+                        className="rounded-lg p-1 transition-colors"
+                        aria-label={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                    >
+                        <Star
+                            size={14}
+                            className={isFavorited
+                                ? 'text-amber-400 fill-amber-400'
+                                : 'text-zinc-600 hover:text-amber-400 transition-colors'
+                            }
+                        />
+                    </button>
+                    {!isSelected && (
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="flex items-center gap-1 rounded-lg border border-primary/20 bg-primary/10 px-2 py-1">
+                                <MessageSquare size={11} className="text-primary" />
+                                <span className="text-[10px] font-bold text-primary">Chat</span>
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
-        </motion.button>
+        </motion.div>
     );
 }

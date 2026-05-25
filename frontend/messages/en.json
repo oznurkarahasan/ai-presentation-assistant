@@ -772,8 +772,9 @@
     "chatPlaceholder": "Ask anything about this topic...",
     "chatError": "Failed to send message. Please try again.",
     "chatOpenBtn": "Chat",
-    "searchIdeas": "Search ideas...",
-    "noSavedIdeas": "No ideas generated yet",
-    "startWithCategory": "Or start with a category"
+    "searchIdeas": "Search favorites...",
+    "noSavedIdeas": "No favorites yet",
+    "startWithCategory": "Or start with a category",
+    "trendingTopics": "Trending Topics"
   }
 }

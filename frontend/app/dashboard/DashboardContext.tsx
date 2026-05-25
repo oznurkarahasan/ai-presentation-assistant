@@ -71,8 +71,8 @@ interface DashboardContextType {
     setRecentPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
     setRecentSessions: React.Dispatch<React.SetStateAction<RecentSession[]>>;
     setPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
-    savedTopicIdeas: SavedTopicIdea[];
-    setSavedTopicIdeas: React.Dispatch<React.SetStateAction<SavedTopicIdea[]>>;
+    favoriteTopicIdeas: SavedTopicIdea[];
+    setFavoriteTopicIdeas: React.Dispatch<React.SetStateAction<SavedTopicIdea[]>>;
     pendingTopicIdea: SavedTopicIdea | null;
     setPendingTopicIdea: React.Dispatch<React.SetStateAction<SavedTopicIdea | null>>;
 }
@@ -91,7 +91,14 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [alert, setAlert] = useState<{ type: 'info' | 'error', message: string } | null>(null);
-    const [savedTopicIdeas, setSavedTopicIdeas] = useState<SavedTopicIdea[]>([]);
+    const [favoriteTopicIdeas, setFavoriteTopicIdeas] = useState<SavedTopicIdea[]>(() => {
+        try {
+            const stored = localStorage.getItem('precue_favorite_ideas');
+            return stored ? JSON.parse(stored) : [];
+        } catch {
+            return [];
+        }
+    });
     const [pendingTopicIdea, setPendingTopicIdea] = useState<SavedTopicIdea | null>(null);
 
     const activeTab = searchParams.get('tab') || 'overview';
@@ -150,6 +157,10 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         fetchDashboardData();
     }, [fetchDashboardData]);
 
+    useEffect(() => {
+        localStorage.setItem('precue_favorite_ideas', JSON.stringify(favoriteTopicIdeas));
+    }, [favoriteTopicIdeas]);
+
     const handleLogout = () => {
         localStorage.removeItem("access_token");
         router.push("/login");
@@ -161,7 +172,7 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             loading, activeTab, setActiveTab, sidebarOpen, setSidebarOpen,
             searchQuery, setSearchQuery, handleLogout, refreshData: fetchDashboardData,
             alert, setAlert, setStats, setRecentPresentations, setRecentSessions, setPresentations,
-            savedTopicIdeas, setSavedTopicIdeas,
+            favoriteTopicIdeas, setFavoriteTopicIdeas,
             pendingTopicIdea, setPendingTopicIdea
         }}>
             {children}

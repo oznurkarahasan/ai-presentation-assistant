@@ -222,7 +222,7 @@ function Sidebar() {
 }
 
 function Header() {
-    const { user, activeTab, searchQuery, setSearchQuery, setActiveTab, savedTopicIdeas, setPendingTopicIdea } = useDashboard();
+    const { user, activeTab, searchQuery, setSearchQuery, setActiveTab, favoriteTopicIdeas, setPendingTopicIdea } = useDashboard();
     const t = useTranslations("dashboard");
     const tIdeas = useTranslations("topicIdeas");
     const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing' || activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals';
@@ -266,7 +266,7 @@ function Header() {
                     >
                         {activeTab === 'ideas-topics' ? (
                             <IdeasDropdownSearch
-                                ideas={savedTopicIdeas}
+                                ideas={favoriteTopicIdeas}
                                 onSelect={(idea) => setPendingTopicIdea(idea)}
                                 searchPlaceholder={tIdeas('searchIdeas')}
                                 noIdeasText={tIdeas('noSavedIdeas')}
