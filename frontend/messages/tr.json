@@ -749,5 +749,32 @@
     "userLabel": "Sen",
     "askPlaceholder": "Sunumun hakkında PreCue.ai'ya her şeyi sor...",
     "disclaimer": "PreCue.ai hata yapabilir. Önemli bilgileri doğrulayın."
+  },
+  "topicIdeas": {
+    "title": "Konu Fikirleri",
+    "subtitle": "Kitlenize özel, özgün ve uygulanabilir sunum konu fikirleri oluşturun",
+    "fieldLabel": "Alan / Uzmanlık",
+    "fieldPlaceholder": "örn. yazılım mühendisliği",
+    "audienceLabel": "Hedef Kitle",
+    "audiencePlaceholder": "örn. teknik olmayan yöneticiler",
+    "purposeLabel": "Amaç",
+    "purposePlaceholder": "örn. ikna etmek / bilgilendirmek / eğitmek",
+    "generate": "Fikir Üret",
+    "regenerate": "Yeniden Üret",
+    "generating": "Üretiliyor...",
+    "resultsLabel": "{count} fikir oluşturuldu",
+    "angleLabel": "Açı",
+    "errorMessage": "Fikirler oluşturulamadı. Lütfen tekrar deneyin.",
+    "noResults": "Hiç fikir döndürülmedi. Girişlerinizi ayarlamayı deneyin.",
+    "selectIdeaHint": "AI ile konuşmak için bir fikre tıkla",
+    "chatTitle": "Bu konu hakkında sohbet",
+    "chatWelcomeBody": "Yapı, konuşma noktaları, kitle kancaları veya bu konuyu nasıl parlatacağın hakkında bana sor.",
+    "chatPlaceholder": "Bu konu hakkında her şeyi sor...",
+    "chatError": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
+    "chatOpenBtn": "Sohbet",
+    "searchIdeas": "Favori ara...",
+    "noSavedIdeas": "Henüz favori fikir yok",
+    "startWithCategory": "Ya da bir kategoriyle başla",
+    "trendingTopics": "Güncel Konular"
   }
 }
