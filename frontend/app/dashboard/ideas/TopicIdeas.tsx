@@ -93,6 +93,7 @@ export default function TopicIdeas() {
     const [chatContext, setChatContext] = useState<ChatContext>({ context: '', audience: '', purpose: '' });
     const [trendingIdeas, setTrendingIdeas] = useState<TopicIdea[]>([]);
     const [trendingLoading, setTrendingLoading] = useState(true);
+    const [trendingCtx, setTrendingCtx] = useState<ChatContext>({ context: '', audience: '', purpose: '' });
 
     const canGenerate = context.trim().length >= 2 && audience.trim().length >= 2 && purpose.trim().length >= 2;
 
@@ -133,9 +134,9 @@ export default function TopicIdeas() {
         generate(data);
     };
 
-    const handleSelectIdea = (idea: TopicIdea) => {
+    const handleSelectIdea = (idea: TopicIdea, ctxOverride?: ChatContext) => {
         setSelectedIdea(idea);
-        setChatContext({ context: context.trim(), audience: audience.trim(), purpose: purpose.trim() });
+        setChatContext(ctxOverride ?? { context: context.trim(), audience: audience.trim(), purpose: purpose.trim() });
         setChatMessages([{
             role: 'assistant',
             content: `"${idea.title}" — ${t('chatWelcomeBody')}`,
@@ -170,6 +171,12 @@ export default function TopicIdeas() {
 
     useEffect(() => {
         const CACHE_KEY = `precue_trending_ideas_${locale}`;
+        const defaultParams: ChatContext = locale === 'tr'
+            ? { context: 'Teknoloji, iş dünyası ve toplumda şu anda öne çıkan konular', audience: 'Genel profesyonel kitle', purpose: 'İlham vermek ve güncel kalmak' }
+            : { context: 'Currently trending topics in technology, business, and society', audience: 'General professional audience', purpose: 'Inspire and keep audiences informed' };
+
+        setTrendingCtx(defaultParams);
+
         const cached = sessionStorage.getItem(CACHE_KEY);
         if (cached) {
             try {
@@ -181,18 +188,6 @@ export default function TopicIdeas() {
                 }
             } catch {}
         }
-
-        const defaultParams = locale === 'tr'
-            ? {
-                context: 'Teknoloji, iş dünyası ve toplumda şu anda öne çıkan konular',
-                audience: 'Genel profesyonel kitle',
-                purpose: 'İlham vermek ve güncel kalmak',
-              }
-            : {
-                context: 'Currently trending topics in technology, business, and society',
-                audience: 'General professional audience',
-                purpose: 'Inspire and keep audiences informed',
-              };
 
         client.post('/api/v1/ideas/topics', { ...defaultParams, num_ideas: 5, language: locale })
             .then(res => {
@@ -422,7 +417,7 @@ export default function TopicIdeas() {
                                         index={i}
                                         t={t}
                                         isSelected={selectedIdea?.title === idea.title}
-                                        onSelect={handleSelectIdea}
+                                        onSelect={(idea) => handleSelectIdea(idea, trendingCtx)}
                                         isFavorited={isFavorited(idea)}
                                         onFavorite={toggleFavorite}
                                     />
