@@ -20,7 +20,7 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ValidationError
 )
-from app.api.v1 import auth, presentations, chat, orchestration
+from app.api.v1 import auth, presentations, chat, orchestration, ideas
 from app.api.v1.dashboard.planner import planner
 from app.services.planner_reminder_service import run_reminder_worker
 
@@ -150,6 +150,7 @@ app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presenta
 app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
 app.include_router(orchestration.router, prefix=settings.API_V1_STR + "/orchestration", tags=["Orchestration"])
 app.include_router(planner.router, prefix=settings.API_V1_STR + "/planner", tags=["Planner"])
+app.include_router(ideas.router, prefix=settings.API_V1_STR + "/ideas", tags=["Ideas"])
 
 
 @app.get("/")

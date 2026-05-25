@@ -749,5 +749,28 @@
     "userLabel": "You",
     "askPlaceholder": "Ask PreCue.ai anything about your deck...",
     "disclaimer": "PreCue.ai can make errors. Verify important information."
+  },
+  "topicIdeas": {
+    "title": "Topic Ideas",
+    "subtitle": "Generate distinct, actionable presentation topic ideas tailored to your audience",
+    "fieldLabel": "Field / Expertise",
+    "fieldPlaceholder": "e.g. software engineering",
+    "audienceLabel": "Target Audience",
+    "audiencePlaceholder": "e.g. non-technical managers",
+    "purposeLabel": "Purpose",
+    "purposePlaceholder": "e.g. persuade / inform / educate",
+    "generate": "Generate Ideas",
+    "regenerate": "Regenerate",
+    "generating": "Generating...",
+    "resultsLabel": "{count} ideas generated",
+    "angleLabel": "Angle",
+    "errorMessage": "Failed to generate ideas. Please try again.",
+    "noResults": "No ideas were returned. Try adjusting your inputs.",
+    "selectIdeaHint": "Click an idea to chat about it with AI",
+    "chatTitle": "Chat about this topic",
+    "chatWelcomeBody": "Ask me about structure, talking points, audience hooks, or how to make this topic shine.",
+    "chatPlaceholder": "Ask anything about this topic...",
+    "chatError": "Failed to send message. Please try again.",
+    "chatOpenBtn": "Chat"
   }
 }

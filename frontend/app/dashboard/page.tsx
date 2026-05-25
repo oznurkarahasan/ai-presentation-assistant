@@ -25,6 +25,7 @@ import { motion } from "framer-motion";
 import { useDashboard, RecentPresentation } from "./DashboardContext";
 import Sessions from "./sessions/Sessions";
 import Profile from "./profile/Profile";
+import TopicIdeas from "./ideas/TopicIdeas";
 import client from "../api/client";
 import axios from "axios";
 import { useTranslations } from "next-intl";
@@ -489,8 +490,11 @@ export default function DashboardPage() {
                 />
             )}
 
-            {/* Ideas — placeholders */}
-            {(activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals') && (
+            {/* Topic Ideas */}
+            {activeTab === 'ideas-topics' && <TopicIdeas />}
+
+            {/* Ideas — placeholders (hooks & visuals remain pending) */}
+            {(activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals') && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}

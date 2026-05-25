@@ -223,14 +223,16 @@ function Sidebar() {
 function Header() {
     const { user, activeTab, searchQuery, setSearchQuery, setActiveTab } = useDashboard();
     const t = useTranslations("dashboard");
-    const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing';
+    const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing' || activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals';
     const compactTitle = activeTab === 'sessions'
         ? t("sessions")
         : activeTab === 'profile'
             ? t("profile")
             : activeTab === 'billing'
                 ? t("billing")
-                : t("library");
+                : activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals'
+                    ? t("ideas")
+                    : t("library");
     const compactSearchPlaceholder = activeTab === 'sessions' ? t("searchSessions") : t("searchPresentations");
     const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions';
     const profileDisplayName = user?.full_name?.trim() || user?.email?.split('@')[0] || t('userFallback');
