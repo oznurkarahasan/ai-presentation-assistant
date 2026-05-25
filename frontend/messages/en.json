@@ -773,6 +773,7 @@
     "chatError": "Failed to send message. Please try again.",
     "chatOpenBtn": "Chat",
     "searchIdeas": "Search ideas...",
-    "noSavedIdeas": "No ideas generated yet"
+    "noSavedIdeas": "No ideas generated yet",
+    "startWithCategory": "Or start with a category"
   }
 }

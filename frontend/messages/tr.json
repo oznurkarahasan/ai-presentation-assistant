@@ -773,6 +773,7 @@
     "chatError": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
     "chatOpenBtn": "Sohbet",
     "searchIdeas": "Fikir ara...",
-    "noSavedIdeas": "Henüz fikir üretilmedi"
+    "noSavedIdeas": "Henüz fikir üretilmedi",
+    "startWithCategory": "Ya da bir kategoriyle başla"
   }
 }

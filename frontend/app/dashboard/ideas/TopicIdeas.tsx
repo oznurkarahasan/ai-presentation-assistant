@@ -2,10 +2,59 @@
 
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCw, Sparkles, Tag, MessageSquare, Send, X } from "lucide-react";
+import { RefreshCw, Sparkles, Tag, MessageSquare, Send, X, Bot, Users, TrendingUp, Wallet, BookOpen, Briefcase, Heart, Rocket, LucideIcon } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import client from "../../api/client";
 import { useDashboard } from "../DashboardContext";
+
+interface Category {
+    icon: LucideIcon;
+    en: { label: string; context: string; audience: string; purpose: string };
+    tr: { label: string; context: string; audience: string; purpose: string };
+}
+
+const CATEGORIES: Category[] = [
+    {
+        icon: Bot,
+        en: { label: 'AI & Technology', context: 'AI & Technology', audience: 'Tech enthusiasts, entrepreneurs', purpose: 'Inform and inspire' },
+        tr: { label: 'Yapay Zeka & Teknoloji', context: 'Yapay Zeka ve Teknoloji', audience: 'Teknoloji meraklıları, girişimciler', purpose: 'Bilgilendirmek ve ilham vermek' },
+    },
+    {
+        icon: Users,
+        en: { label: 'Leadership', context: 'Leadership & management', audience: 'Managers, team leaders', purpose: 'Motivate and guide' },
+        tr: { label: 'Liderlik', context: 'Liderlik ve yönetim', audience: 'Yöneticiler, takım liderleri', purpose: 'Motive etmek ve yol göstermek' },
+    },
+    {
+        icon: TrendingUp,
+        en: { label: 'Marketing', context: 'Digital marketing & growth', audience: 'Marketing professionals, startups', purpose: 'Share strategies and inspire' },
+        tr: { label: 'Pazarlama', context: 'Dijital pazarlama ve büyüme', audience: 'Pazarlama profesyonelleri, girişimler', purpose: 'Strateji paylaşmak ve ilham vermek' },
+    },
+    {
+        icon: Wallet,
+        en: { label: 'Finance', context: 'Personal finance & investment', audience: 'General public, investors', purpose: 'Educate and raise awareness' },
+        tr: { label: 'Finans', context: 'Kişisel finans ve yatırım', audience: 'Genel halk, yatırımcılar', purpose: 'Eğitmek ve bilinçlendirmek' },
+    },
+    {
+        icon: BookOpen,
+        en: { label: 'Education', context: 'Modern education methods', audience: 'Teachers, educators', purpose: 'Inspire innovation in teaching' },
+        tr: { label: 'Eğitim', context: 'Modern eğitim yöntemleri', audience: 'Öğretmenler, eğitimciler', purpose: 'Eğitimde yeniliği teşvik etmek' },
+    },
+    {
+        icon: Briefcase,
+        en: { label: 'Career', context: 'Career development & work life', audience: 'Young professionals, graduates', purpose: 'Guide and empower' },
+        tr: { label: 'Kariyer', context: 'Kariyer gelişimi ve iş hayatı', audience: 'Genç profesyoneller, mezunlar', purpose: 'Rehberlik etmek ve güçlendirmek' },
+    },
+    {
+        icon: Heart,
+        en: { label: 'Health & Wellness', context: 'Healthy living & wellness', audience: 'General public, health enthusiasts', purpose: 'Create awareness' },
+        tr: { label: 'Sağlık & Wellness', context: 'Sağlıklı yaşam ve wellness', audience: 'Genel halk, sağlık meraklıları', purpose: 'Farkındalık yaratmak' },
+    },
+    {
+        icon: Rocket,
+        en: { label: 'Entrepreneurship', context: 'Entrepreneurship & startup ecosystem', audience: 'Entrepreneurs, investors', purpose: 'Share experience and inspire' },
+        tr: { label: 'Girişimcilik', context: 'Girişimcilik ve startup ekosistemi', audience: 'Girişimciler, yatırımcılar', purpose: 'Deneyim paylaşmak ve ilham vermek' },
+    },
+];
 
 interface TopicIdea {
     title: string;
@@ -45,17 +94,20 @@ export default function TopicIdeas() {
 
     const canGenerate = context.trim().length >= 2 && audience.trim().length >= 2 && purpose.trim().length >= 2;
 
-    const handleGenerate = async () => {
-        if (!canGenerate || loading) return;
+    const generate = async (params?: { context: string; audience: string; purpose: string }) => {
+        const ctx = params?.context ?? context.trim();
+        const aud = params?.audience ?? audience.trim();
+        const pup = params?.purpose ?? purpose.trim();
+        if (!ctx || !aud || !pup || loading) return;
 
         setLoading(true);
         setError(null);
 
         try {
             const res = await client.post('/api/v1/ideas/topics', {
-                context: context.trim(),
-                audience: audience.trim(),
-                purpose: purpose.trim(),
+                context: ctx,
+                audience: aud,
+                purpose: pup,
                 num_ideas: 5,
                 language: locale,
             });
@@ -73,6 +125,16 @@ export default function TopicIdeas() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleGenerate = () => generate();
+
+    const handleCategoryClick = (cat: Category) => {
+        const data = locale === 'tr' ? cat.tr : cat.en;
+        setContext(data.context);
+        setAudience(data.audience);
+        setPurpose(data.purpose);
+        generate(data);
     };
 
     const handleSelectIdea = (idea: TopicIdea) => {
@@ -245,7 +307,45 @@ export default function TopicIdeas() {
                         </AnimatePresence>
                     )}
 
-                    {/* Empty state */}
+                    {/* Category shortcuts — shown before first generation */}
+                    {!loading && !hasGenerated && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.15 }}
+                            className="space-y-4"
+                        >
+                            <p className="px-1 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                {t('startWithCategory')}
+                            </p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {CATEGORIES.map((cat, i) => {
+                                    const data = locale === 'tr' ? cat.tr : cat.en;
+                                    const Icon = cat.icon;
+                                    return (
+                                        <motion.button
+                                            key={i}
+                                            type="button"
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.1 + i * 0.04 }}
+                                            onClick={() => handleCategoryClick(cat)}
+                                            className="group flex flex-col items-start gap-3 rounded-2xl border border-white/5 bg-[#0c0c0c] p-4 text-left hover:border-primary/25 hover:bg-primary/[0.04] transition-all active:scale-95"
+                                        >
+                                            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary/20 transition-colors shrink-0">
+                                                <Icon size={16} />
+                                            </div>
+                                            <span className="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors leading-tight">
+                                                {data.label}
+                                            </span>
+                                        </motion.button>
+                                    );
+                                })}
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {/* No results after generation */}
                     {!loading && hasGenerated && ideas.length === 0 && (
                         <div className="py-16 text-center text-zinc-600 text-sm">
                             {t('noResults')}
