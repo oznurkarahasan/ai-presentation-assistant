@@ -771,6 +771,8 @@
     "chatWelcomeBody": "Ask me about structure, talking points, audience hooks, or how to make this topic shine.",
     "chatPlaceholder": "Ask anything about this topic...",
     "chatError": "Failed to send message. Please try again.",
-    "chatOpenBtn": "Chat"
+    "chatOpenBtn": "Chat",
+    "searchIdeas": "Search ideas...",
+    "noSavedIdeas": "No ideas generated yet"
   }
 }

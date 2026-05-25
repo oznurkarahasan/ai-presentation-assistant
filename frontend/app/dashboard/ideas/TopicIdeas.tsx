@@ -2,9 +2,10 @@
 
 import { useRef, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Lightbulb, RefreshCw, Sparkles, Tag, MessageSquare, Send, X } from "lucide-react";
+import { RefreshCw, Sparkles, Tag, MessageSquare, Send, X } from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import client from "../../api/client";
+import { useDashboard } from "../DashboardContext";
 
 interface TopicIdea {
     title: string;
@@ -26,6 +27,7 @@ interface ChatContext {
 export default function TopicIdeas() {
     const t = useTranslations('topicIdeas');
     const locale = useLocale();
+    const { savedTopicIdeas, setSavedTopicIdeas, pendingTopicIdea, setPendingTopicIdea } = useDashboard();
 
     const [context, setContext] = useState('');
     const [audience, setAudience] = useState('');
@@ -57,8 +59,15 @@ export default function TopicIdeas() {
                 num_ideas: 5,
                 language: locale,
             });
-            setIdeas(res.data.ideas || []);
+            const newIdeas: TopicIdea[] = res.data.ideas || [];
+            setIdeas(newIdeas);
             setHasGenerated(true);
+
+            setSavedTopicIdeas(prev => {
+                const existingTitles = new Set(prev.map(i => i.title));
+                const fresh = newIdeas.filter(i => !existingTitles.has(i.title));
+                return [...prev, ...fresh];
+            });
         } catch {
             setError(t('errorMessage'));
         } finally {
@@ -76,6 +85,20 @@ export default function TopicIdeas() {
         setChatInput('');
         setMobileChatOpen(true);
     };
+
+    useEffect(() => {
+        if (!pendingTopicIdea) return;
+        setSelectedIdea(pendingTopicIdea);
+        setChatContext({ context: context.trim(), audience: audience.trim(), purpose: purpose.trim() });
+        setChatMessages([{
+            role: 'assistant',
+            content: `"${pendingTopicIdea.title}" — ${t('chatWelcomeBody')}`,
+        }]);
+        setChatInput('');
+        setMobileChatOpen(true);
+        setPendingTopicIdea(null);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pendingTopicIdea]);
 
     const handleSendMessage = async () => {
         if (!chatInput.trim() || chatLoading || !selectedIdea) return;
@@ -120,17 +143,7 @@ export default function TopicIdeas() {
         >
             <div className={selectedIdea ? 'flex gap-6 items-start' : ''}>
                 {/* Left panel: form + ideas */}
-                <div className={`${selectedIdea ? 'flex-1 min-w-0' : ''} space-y-8`}>
-                    {/* Header */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                            <Lightbulb size={20} />
-                        </div>
-                        <div>
-                            <h2 className="text-lg font-bold text-white">{t('title')}</h2>
-                            <p className="text-xs text-zinc-500">{t('subtitle')}</p>
-                        </div>
-                    </div>
+                <div className={`${selectedIdea ? 'flex-1 min-w-0' : ''} space-y-6`}>
 
                     {/* Form */}
                     <div className="rounded-[1.75rem] border border-white/8 bg-[#0c0c0c] p-6 space-y-5">
@@ -232,7 +245,7 @@ export default function TopicIdeas() {
                         </AnimatePresence>
                     )}
 
-                    {/* Empty state after generation */}
+                    {/* Empty state */}
                     {!loading && hasGenerated && ideas.length === 0 && (
                         <div className="py-16 text-center text-zinc-600 text-sm">
                             {t('noResults')}
@@ -330,7 +343,6 @@ function ChatPanel({
     height: string;
 }) {
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -348,7 +360,6 @@ function ChatPanel({
             className="flex flex-col rounded-[1.75rem] border border-white/8 bg-[#0c0c0c] overflow-hidden"
             style={{ height }}
         >
-            {/* Header */}
             <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-white/5 shrink-0">
                 <div className="min-w-0">
                     <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-0.5">
@@ -365,7 +376,6 @@ function ChatPanel({
                 </button>
             </div>
 
-            {/* Messages */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 invisible-scrollbar">
                 {messages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -394,11 +404,9 @@ function ChatPanel({
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
             <div className="px-4 py-4 border-t border-white/5 shrink-0">
                 <div className="flex items-end gap-2">
                     <textarea
-                        ref={textareaRef}
                         value={input}
                         onChange={(e) => onInputChange(e.target.value)}
                         onKeyDown={handleKeyDown}

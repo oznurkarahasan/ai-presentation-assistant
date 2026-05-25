@@ -30,6 +30,12 @@ export interface RecentPresentation {
     created_at: string;
 }
 
+export interface SavedTopicIdea {
+    title: string;
+    description: string;
+    angle: string;
+}
+
 export interface RecentSession {
     id: number;
     session_type: string;
@@ -65,6 +71,10 @@ interface DashboardContextType {
     setRecentPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
     setRecentSessions: React.Dispatch<React.SetStateAction<RecentSession[]>>;
     setPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
+    savedTopicIdeas: SavedTopicIdea[];
+    setSavedTopicIdeas: React.Dispatch<React.SetStateAction<SavedTopicIdea[]>>;
+    pendingTopicIdea: SavedTopicIdea | null;
+    setPendingTopicIdea: React.Dispatch<React.SetStateAction<SavedTopicIdea | null>>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -81,6 +91,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [alert, setAlert] = useState<{ type: 'info' | 'error', message: string } | null>(null);
+    const [savedTopicIdeas, setSavedTopicIdeas] = useState<SavedTopicIdea[]>([]);
+    const [pendingTopicIdea, setPendingTopicIdea] = useState<SavedTopicIdea | null>(null);
 
     const activeTab = searchParams.get('tab') || 'overview';
 
@@ -148,7 +160,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             user, stats, recentPresentations, recentSessions, presentations,
             loading, activeTab, setActiveTab, sidebarOpen, setSidebarOpen,
             searchQuery, setSearchQuery, handleLogout, refreshData: fetchDashboardData,
-            alert, setAlert, setStats, setRecentPresentations, setRecentSessions, setPresentations
+            alert, setAlert, setStats, setRecentPresentations, setRecentSessions, setPresentations,
+            savedTopicIdeas, setSavedTopicIdeas,
+            pendingTopicIdea, setPendingTopicIdea
         }}>
             {children}
         </DashboardContext.Provider>

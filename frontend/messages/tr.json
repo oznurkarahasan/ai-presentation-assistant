@@ -771,6 +771,8 @@
     "chatWelcomeBody": "Yapı, konuşma noktaları, kitle kancaları veya bu konuyu nasıl parlatacağın hakkında bana sor.",
     "chatPlaceholder": "Bu konu hakkında her şeyi sor...",
     "chatError": "Mesaj gönderilemedi. Lütfen tekrar deneyin.",
-    "chatOpenBtn": "Sohbet"
+    "chatOpenBtn": "Sohbet",
+    "searchIdeas": "Fikir ara...",
+    "noSavedIdeas": "Henüz fikir üretilmedi"
   }
 }

@@ -28,6 +28,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import LanguageSwitcher from "../components/LanguageSwitcher";
+import IdeasDropdownSearch from "./ideas/IdeasDropdownSearch";
 
 function NavItem({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) {
     return (
@@ -221,8 +222,9 @@ function Sidebar() {
 }
 
 function Header() {
-    const { user, activeTab, searchQuery, setSearchQuery, setActiveTab } = useDashboard();
+    const { user, activeTab, searchQuery, setSearchQuery, setActiveTab, savedTopicIdeas, setPendingTopicIdea } = useDashboard();
     const t = useTranslations("dashboard");
+    const tIdeas = useTranslations("topicIdeas");
     const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing' || activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals';
     const compactTitle = activeTab === 'sessions'
         ? t("sessions")
@@ -234,7 +236,7 @@ function Header() {
                     ? t("ideas")
                     : t("library");
     const compactSearchPlaceholder = activeTab === 'sessions' ? t("searchSessions") : t("searchPresentations");
-    const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions';
+    const showCompactSearch = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'ideas-topics';
     const profileDisplayName = user?.full_name?.trim() || user?.email?.split('@')[0] || t('userFallback');
 
     const getTimeGreeting = () => {
@@ -262,26 +264,38 @@ function Header() {
                         animate={{ opacity: 1, x: 0 }}
                         className="flex w-full items-center gap-2 sm:w-auto"
                     >
-                        <div className="relative w-full sm:w-72">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
-                            <input
-                                type="text"
-                                placeholder={compactSearchPlaceholder}
-                                className="w-full rounded-full border border-white/5 bg-[#101010] py-2.5 pl-11 pr-6 text-sm focus:border-primary/50 focus:outline-none"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                        {activeTab === 'ideas-topics' ? (
+                            <IdeasDropdownSearch
+                                ideas={savedTopicIdeas}
+                                onSelect={(idea) => setPendingTopicIdea(idea)}
+                                searchPlaceholder={tIdeas('searchIdeas')}
+                                noIdeasText={tIdeas('noSavedIdeas')}
+                                noResultsText={tIdeas('noResults')}
                             />
-                        </div>
-                        <Link href="/upload" className="shrink-0">
-                            <button
-                                type="button"
-                                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
-                                aria-label={t("newPresentation")}
-                                title={t("newPresentation")}
-                            >
-                                <Plus size={18} />
-                            </button>
-                        </Link>
+                        ) : (
+                            <>
+                                <div className="relative w-full sm:w-72">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={18} />
+                                    <input
+                                        type="text"
+                                        placeholder={compactSearchPlaceholder}
+                                        className="w-full rounded-full border border-white/5 bg-[#101010] py-2.5 pl-11 pr-6 text-sm focus:border-primary/50 focus:outline-none"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
+                                <Link href="/upload" className="shrink-0">
+                                    <button
+                                        type="button"
+                                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-primary-hover"
+                                        aria-label={t("newPresentation")}
+                                        title={t("newPresentation")}
+                                    >
+                                        <Plus size={18} />
+                                    </button>
+                                </Link>
+                            </>
+                        )}
                     </motion.div>
                 )}
             </header>
