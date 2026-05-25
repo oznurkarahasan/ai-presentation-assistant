@@ -169,6 +169,19 @@ export default function TopicIdeas() {
     }, [pendingTopicIdea]);
 
     useEffect(() => {
+        const CACHE_KEY = `precue_trending_ideas_${locale}`;
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        if (cached) {
+            try {
+                const parsed = JSON.parse(cached);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    setTrendingIdeas(parsed);
+                    setTrendingLoading(false);
+                    return;
+                }
+            } catch {}
+        }
+
         const defaultParams = locale === 'tr'
             ? {
                 context: 'Teknoloji, iş dünyası ve toplumda şu anda öne çıkan konular',
@@ -185,10 +198,10 @@ export default function TopicIdeas() {
             .then(res => {
                 const fetched: TopicIdea[] = res.data.ideas || [];
                 setTrendingIdeas(fetched);
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify(fetched));
             })
             .catch(() => {})
             .finally(() => setTrendingLoading(false));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [locale]);
 
     const handleSendMessage = async () => {

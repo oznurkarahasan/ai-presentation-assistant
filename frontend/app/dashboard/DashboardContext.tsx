@@ -163,6 +163,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
 
     const handleLogout = () => {
         localStorage.removeItem("access_token");
+        sessionStorage.removeItem("precue_trending_ideas_en");
+        sessionStorage.removeItem("precue_trending_ideas_tr");
         router.push("/login");
     };
 
