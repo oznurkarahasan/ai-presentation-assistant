@@ -621,7 +621,10 @@
     "presentationHourLabel": "Sunum saati",
     "presentationMinuteLabel": "Sunum dakikası",
     "reminderHourLabel": "Hatırlatıcı saati",
-    "reminderMinuteLabel": "Hatırlatıcı dakikası"
+    "reminderMinuteLabel": "Hatırlatıcı dakikası",
+    "viewDay": "Gün",
+    "viewWeek": "Hafta",
+    "viewMonth": "Ay"
   },
   "presentation": {
     "loading": "Yükleniyor...",
