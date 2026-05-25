@@ -621,7 +621,10 @@
     "presentationHourLabel": "Presentation hour",
     "presentationMinuteLabel": "Presentation minute",
     "reminderHourLabel": "Reminder hour",
-    "reminderMinuteLabel": "Reminder minute"
+    "reminderMinuteLabel": "Reminder minute",
+    "viewDay": "Day",
+    "viewWeek": "Week",
+    "viewMonth": "Month"
   },
   "presentation": {
     "loading": "Loading...",
