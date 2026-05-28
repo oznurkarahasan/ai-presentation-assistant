@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Query, status
+from fastapi import APIRouter, Depends, UploadFile, File, Query, status, HTTPException
+from openai import APIConnectionError, APIError, AuthenticationError, BadRequestError, RateLimitError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1 import auth
 from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
-from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator
+from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service
+from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationState
 from pydantic import BaseModel, Field
 import os
 import shutil
@@ -26,6 +28,36 @@ class PresentationTitleUpdate(BaseModel):
 async def get_db():
     async with AsyncSessionLocal() as session:
         yield session
+
+
+@router.post("/generate", response_model=PresentationState)
+async def generate_presentation(
+    request: PresentationGenerateRequest,
+    current_user=Depends(auth.get_current_user),
+):
+    try:
+        return await generation_service.generate_presentation_state(request)
+    except AuthenticationError as exc:
+        logger.error(f"OpenAI authentication failed for user {current_user.id}: {exc}")
+        raise HTTPException(status_code=401, detail="OpenAI authentication failed.") from exc
+    except RateLimitError as exc:
+        logger.warning(f"OpenAI rate limit hit for user {current_user.id}: {exc}")
+        raise HTTPException(status_code=429, detail="OpenAI rate limit exceeded. Please try again later.") from exc
+    except BadRequestError as exc:
+        logger.error(f"OpenAI request validation failed for user {current_user.id}: {exc}")
+        raise HTTPException(status_code=400, detail="Invalid AI generation request.") from exc
+    except APIConnectionError as exc:
+        logger.error(f"OpenAI connection error for user {current_user.id}: {exc}")
+        raise HTTPException(status_code=503, detail="OpenAI service unavailable.") from exc
+    except APIError as exc:
+        logger.error(f"OpenAI API error for user {current_user.id}: {exc}")
+        raise HTTPException(status_code=502, detail="OpenAI service error.") from exc
+    except ValueError as exc:
+        logger.error(f"AI response validation failed for user {current_user.id}: {exc}")
+        raise HTTPException(status_code=500, detail="AI response validation failed.") from exc
+    except Exception as exc:
+        logger.error(f"Presentation generation failed for user {current_user.id}: {exc}")
+        raise HTTPException(status_code=500, detail="Failed to generate presentation.") from exc
 
 @router.get("/", response_model=list)
 async def list_presentations(
