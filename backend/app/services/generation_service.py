@@ -29,7 +29,11 @@ Rules:
 - The JSON must match the schema exactly: metadata + slides.
 - Determine the optimum slide count automatically based on the complexity of the topic (usually between 5 to 12 slides). Do not overextend or make it too short.
 - Keep slide titles concise and action-oriented.
-- Use content_type values from this set: bullets, steps, quote, data, narrative, timeline.
+- Use content_type values from this set: standard, left, right, background.
+  * standard: standard text-only layout with bullet points. Set image to null.
+  * left: slide with an image on the left side. Provide a descriptive image object.
+  * right: slide with an image on the right side. Provide a descriptive image object.
+  * background: slide with a background image. Provide a descriptive image object.
 - items must be an array of short strings (max 12 words each).
 - speaker_note should be 1-3 concise sentences for delivery guidance.
 - Provide a cohesive color palette and a legible font_family.
@@ -46,7 +50,7 @@ async def generate_presentation_state(request: PresentationGenerateRequest) -> P
         "Return JSON structure:\n"
         "metadata: {title, theme, primary_color, accent_color, font_family}\n"
         "slides: [ {id, title, content_type, items, image, speaker_note} ]\n"
-        "image can be null or an object with keys: {prompt, style, alt}."
+        "image can be null (especially when content_type is 'standard') or an object with keys: {prompt, style, alt}."
     )
 
     client = get_client()

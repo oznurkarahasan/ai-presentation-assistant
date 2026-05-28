@@ -188,6 +188,16 @@ const DEFAULT_SLIDES: PresentationSlide[] = [
     }
 ];
 
+const VALID_LAYOUTS = ['standard', 'left', 'right', 'background'];
+
+const normalizeSlides = (slidesList: PresentationSlide[]): PresentationSlide[] => {
+    if (!slidesList) return [];
+    return slidesList.map(slide => ({
+        ...slide,
+        content_type: VALID_LAYOUTS.includes(slide.content_type) ? slide.content_type : 'standard'
+    }));
+};
+
 export default function PresentationEditor() {
     const router = useRouter();
     const t = useTranslations('editor');
@@ -200,7 +210,7 @@ export default function PresentationEditor() {
                 try {
                     const parsed = JSON.parse(stored);
                     if (parsed.slides && parsed.slides.length > 0) {
-                        return parsed.slides;
+                        return normalizeSlides(parsed.slides);
                     }
                 } catch (e) {
                     console.error('Failed to parse slides from session:', e);
@@ -260,7 +270,7 @@ export default function PresentationEditor() {
                     const parsed = JSON.parse(stored);
                     if (parsed.slides && parsed.slides.length > 0) {
                         setTimeout(() => {
-                            setSlides(parsed.slides);
+                            setSlides(normalizeSlides(parsed.slides));
                             if (parsed.metadata) {
                                 setMetadata(parsed.metadata);
                             }
@@ -350,7 +360,7 @@ export default function PresentationEditor() {
                     speaker_note: t('defaultSlides.slide5.speakerNote')
                 }
             ];
-            
+
             setTimeout(() => {
                 setSlides(localizedDefaultSlides);
                 setMetadata(prev => ({
@@ -642,7 +652,7 @@ export default function PresentationEditor() {
                             {/* Glowing Spinner */}
                             <div className="relative w-16 h-16 mx-auto">
                                 <div className="absolute inset-0 rounded-full border-2 border-white/5" />
-                                <motion.div 
+                                <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ repeat: Infinity, duration: 1.2, ease: "linear" }}
                                     className="absolute inset-0 rounded-full border-2 border-t-primary border-r-transparent border-b-transparent border-l-transparent"
