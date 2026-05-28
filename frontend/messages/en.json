@@ -783,6 +783,10 @@
   "aiGeneration": {
     "title": "Generate Presentation with AI",
     "subtitle": "Just enter the topic, let AI decide the slide count and design",
+    "generatedTitle": "AI Generated Presentations",
+    "generatedSubtitle": "Resume editing without spending tokens again",
+    "generatedEmpty": "No AI presentations yet. Generate your first one.",
+    "generatedSlides": "{count} slides",
     "topicLabel": "Presentation Topic",
     "topicPlaceholder": "E.g. 'Future vision of PreCue.ai, speaker analytics and market growth strategy'...",
     "languageLabel": "Presentation Language",

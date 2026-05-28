@@ -2,13 +2,23 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, HelpCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import PresentationEditor from '../../components/PresentationEditor';
 
+const GENERATED_STORAGE_KEY = 'precue_generated_presentations';
+const ACTIVE_PRESENTATION_KEY = 'precue_active_presentation_id';
+const SESSION_PRESENTATION_KEY = 'precue_generated_presentation';
+
+type GeneratedPresentation = {
+    id: string;
+    data: unknown;
+};
+
 export default function PresentationEditorPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const t = useTranslations('aiGeneration');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -19,14 +29,30 @@ export default function PresentationEditorPage() {
             return;
         }
 
-        const stored = sessionStorage.getItem('precue_generated_presentation');
+        const stored = sessionStorage.getItem(SESSION_PRESENTATION_KEY);
         if (!stored) {
+            const generatedId = searchParams.get('generatedId');
+            if (generatedId) {
+                try {
+                    const raw = localStorage.getItem(GENERATED_STORAGE_KEY);
+                    const list = raw ? (JSON.parse(raw) as GeneratedPresentation[]) : [];
+                    const match = list.find((item) => item.id === generatedId);
+                    if (match?.data) {
+                        sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(match.data));
+                        sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, match.id);
+                        setIsAuthenticated(true);
+                        return;
+                    }
+                } catch {
+                    // Ignore and redirect below.
+                }
+            }
             router.push('/dashboard?tab=ai-presentation');
             return;
         }
 
         setIsAuthenticated(true);
-    }, [router]);
+    }, [router, searchParams]);
 
     if (!isAuthenticated) {
         return (

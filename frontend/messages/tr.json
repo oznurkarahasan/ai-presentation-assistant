@@ -783,6 +783,10 @@
   "aiGeneration": {
     "title": "Yapay Zeka ile Sunum Üret",
     "subtitle": "Sadece konuyu yazın, slayt sayısına ve tasarıma yapay zeka karar versin",
+    "generatedTitle": "AI ile Olusturulan Sunumlar",
+    "generatedSubtitle": "Tekrar token harcamadan duzenlemeye devam edin",
+    "generatedEmpty": "Henuz AI sunumu yok. Ilk sunumunu olustur.",
+    "generatedSlides": "{count} slayt",
     "topicLabel": "Sunum Konusu (Topic)",
     "topicPlaceholder": "Örn: 'PreCue.ai platformunun gelecek vizyonu, konuşmacı analitikleri ve pazar büyüme stratejisi'...",
     "languageLabel": "Sunum Dili (Language)",

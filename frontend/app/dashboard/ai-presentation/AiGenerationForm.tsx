@@ -1,11 +1,46 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, MessageSquare, Globe, ArrowRight, AlertCircle } from 'lucide-react';
+import { Sparkles, MessageSquare, Globe, ArrowRight, AlertCircle, History, ExternalLink } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import client from '../../api/client';
+
+type GeneratedPresentation = {
+    id: string;
+    title: string;
+    createdAt: string;
+    slideCount: number;
+    language: string;
+    theme: string | null;
+    data: unknown;
+};
+
+const GENERATED_STORAGE_KEY = 'precue_generated_presentations';
+const ACTIVE_PRESENTATION_KEY = 'precue_active_presentation_id';
+const SESSION_PRESENTATION_KEY = 'precue_generated_presentation';
+
+const createGeneratedId = () => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        return crypto.randomUUID();
+    }
+    return `gen-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const loadGeneratedPresentations = (): GeneratedPresentation[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        const stored = localStorage.getItem(GENERATED_STORAGE_KEY);
+        return stored ? (JSON.parse(stored) as GeneratedPresentation[]) : [];
+    } catch {
+        return [];
+    }
+};
+
+const persistGeneratedPresentations = (presentations: GeneratedPresentation[]) => {
+    localStorage.setItem(GENERATED_STORAGE_KEY, JSON.stringify(presentations));
+};
 
 export default function AiGenerationForm() {
     const router = useRouter();
@@ -17,6 +52,24 @@ export default function AiGenerationForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [loadingStep, setLoadingStep] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [generatedPresentations, setGeneratedPresentations] = useState<GeneratedPresentation[]>([]);
+
+    useEffect(() => {
+        setGeneratedPresentations(loadGeneratedPresentations());
+    }, []);
+
+    const formattedGeneratedPresentations = useMemo(() => {
+        return generatedPresentations.map((item) => ({
+            ...item,
+            formattedDate: new Date(item.createdAt).toLocaleDateString(),
+        }));
+    }, [generatedPresentations]);
+
+    const openGeneratedPresentation = (item: GeneratedPresentation) => {
+        sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(item.data));
+        sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, item.id);
+        router.push(`/editor?generatedId=${item.id}`);
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -58,14 +111,28 @@ export default function AiGenerationForm() {
             });
 
             if (response.data) {
-                // Store the PresentationState JSON globally in sessionStorage
-                sessionStorage.setItem('precue_generated_presentation', JSON.stringify(response.data));
+                const presentationState = response.data;
+                const generatedId = createGeneratedId();
+                const title = presentationState?.metadata?.title || topic.trim();
+                const slideCount = presentationState?.slides?.length || 0;
+                const createdAt = new Date().toISOString();
+                const newItem: GeneratedPresentation = {
+                    id: generatedId,
+                    title,
+                    createdAt,
+                    slideCount,
+                    language,
+                    theme: presentationState?.metadata?.theme ?? null,
+                    data: presentationState,
+                };
+                const nextGenerated = [newItem, ...generatedPresentations].slice(0, 20);
+                setGeneratedPresentations(nextGenerated);
+                persistGeneratedPresentations(nextGenerated);
 
-                // Clear any manual query ID in storage
-                sessionStorage.removeItem('precue_active_presentation_id');
+                sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(presentationState));
+                sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, generatedId);
 
-                // Redirect to the new independent editor route
-                router.push('/editor');
+                router.push(`/editor?generatedId=${generatedId}`);
             } else {
                 throw new Error('No data returned.');
             }
@@ -85,11 +152,12 @@ export default function AiGenerationForm() {
             {/* Ambient background glow */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none z-0" />
 
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-xl bg-zinc-950/65 border border-white/5 p-8 rounded-3xl backdrop-blur-xl relative overflow-hidden shadow-2xl z-10"
-            >
+            <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-6 z-10">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full bg-zinc-950/65 border border-white/5 p-8 rounded-3xl backdrop-blur-xl relative overflow-hidden shadow-2xl"
+                >
                 {/* Decorative top gradient line */}
                 <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
@@ -176,7 +244,58 @@ export default function AiGenerationForm() {
                         <ArrowRight size={14} />
                     </button>
                 </form>
-            </motion.div>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full bg-zinc-950/65 border border-white/5 p-6 rounded-3xl backdrop-blur-xl relative overflow-hidden shadow-2xl"
+                >
+                    <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-inner">
+                            <History size={18} />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black uppercase tracking-wider text-white">{t('generatedTitle')}</h3>
+                            <p className="text-[10px] text-zinc-500 font-semibold uppercase tracking-widest mt-1">{t('generatedSubtitle')}</p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 max-h-[540px] overflow-y-auto pr-1 custom-scrollbar">
+                        {formattedGeneratedPresentations.length === 0 && (
+                            <div className="rounded-2xl border border-white/5 bg-zinc-900/40 p-4 text-[11px] text-zinc-500 font-medium">
+                                {t('generatedEmpty')}
+                            </div>
+                        )}
+
+                        {formattedGeneratedPresentations.map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => openGeneratedPresentation(item)}
+                                className="w-full text-left rounded-2xl border border-white/5 bg-zinc-900/40 hover:bg-zinc-900/70 transition-colors p-4 group"
+                            >
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="space-y-2">
+                                        <h4 className="text-xs font-bold text-zinc-100 leading-snug line-clamp-2">
+                                            {item.title}
+                                        </h4>
+                                        <div className="flex flex-wrap items-center gap-2 text-[10px] text-zinc-500 font-semibold uppercase tracking-widest">
+                                            <span>{t('generatedSlides', { count: item.slideCount })}</span>
+                                            <span className="h-[10px] w-[1px] bg-white/10" />
+                                            <span>{item.formattedDate}</span>
+                                        </div>
+                                    </div>
+                                    <span className="text-zinc-500 group-hover:text-primary transition-colors">
+                                        <ExternalLink size={14} />
+                                    </span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                </motion.div>
+            </div>
 
             {/* AI Generation Loading Overlay */}
             <AnimatePresence>
