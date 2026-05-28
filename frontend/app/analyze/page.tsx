@@ -101,9 +101,14 @@ export default function AnalyzePage() {
                 try {
                     const response = await client.get(`/api/v1/presentations/${presentationId}`);
                     setPresentationTitle(response.data.title);
-                    // Use PDF preview for PPTX files when available
-                    setPresentationFile(response.data.pdf_preview_path || response.data.file_path);
-                    setFileType(response.data.pdf_preview_path ? 'pdf' : response.data.file_type);
+                    if (response.data.file_type === 'ai') {
+                        setPresentationFile(null);
+                        setFileType('ai');
+                    } else {
+                        // Use PDF preview for PPTX files when available
+                        setPresentationFile(response.data.pdf_preview_path || response.data.file_path);
+                        setFileType(response.data.pdf_preview_path ? 'pdf' : response.data.file_type);
+                    }
                     if (response.data.aspect_ratio) {
                         setAspectRatio(response.data.aspect_ratio);
                     }

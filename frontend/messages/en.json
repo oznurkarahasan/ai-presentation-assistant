@@ -430,6 +430,7 @@
     "permissionDenied": "Permission denied. You don't have authority to delete this.",
     "presentationNotFound": "Presentation not found.",
     "serverError": "Server error. Please try again later.",
+    "aiBadge": "AI",
     "titleEmpty": "Presentation title cannot be empty.",
     "titleUpdated": "Presentation title updated.",
     "titleUpdateFailed": "Presentation title could not be updated.",
@@ -802,5 +803,119 @@
     "step4": "Preparing image layouts and presentation theme...",
     "step5": "Creating speaker notes and smart questions...",
     "step6": "Preparing presentation, transferring to editor..."
+  },
+  "editor": {
+    "defaultSlides": {
+      "slide1": {
+        "title": "PreCue.ai — Presentation Assistant",
+        "item1": "Leave the remote behind: Manage slides with natural voice control.",
+        "item2": "Provide seamless slide transitions according to your intent with AI voice engine.",
+        "item3": "Get speech rate and pause analysis thanks to the analytics panel.",
+        "speakerNote": "Start the presentation strong and confident. Keep your tone high while explaining the PreCue.ai vision."
+      },
+      "slide2": {
+        "title": "AI Voice Control",
+        "item1": "98% accuracy voice management with Chrome speech recognition engine.",
+        "item2": "Smart voice triggers like 'Next slide' that don't break presentation flow.",
+        "item3": "Smart speech detection filtering out background noise."
+      },
+      "slide3": {
+        "title": "Rehearsal Analytics",
+        "item1": "Stay at ideal pace with speech rate (words/minute) tracking.",
+        "item2": "Automatic detection of frequently repeated filler words.",
+        "item3": "Detailed breakdown graphs of time spent on each slide."
+      },
+      "slide4": {
+        "title": "Smart Insights & Q&A",
+        "item1": "Automatic Q&A sets from presentation content with RAG infrastructure.",
+        "item2": "Analysis of slide content to generate recommended speaker cards.",
+        "item3": "Suggestions for adjusting presentation tone based on target audience."
+      },
+      "slide5": {
+        "title": "Your Turn on Stage",
+        "item1": "Forget technical glitches with PreCue.ai, focus on the stage.",
+        "item2": "More confident, more fluent, and more professional presentations.",
+        "item3": "Sign up now and take your presentations to the next level."
+      }
+    },
+    "sidebar": {
+      "header": "Slides",
+      "slideCount": "{count} Slides",
+      "deleteTooltip": "Delete Slide",
+      "untitled": "Untitled Slide",
+      "addSlide": "New Slide",
+      "layoutStandard": "STANDARD",
+      "layoutLeftImage": "LEFT IMAGE",
+      "layoutRightImage": "RIGHT IMAGE",
+      "layoutTopImage": "TOP IMAGE",
+      "layoutBottomImage": "BOTTOM IMAGE",
+      "layoutBackgroundImage": "BACKGROUND"
+    },
+    "canvas": {
+      "header": "Canvas",
+      "subtitle": "Real-Time HTML/CSS Preview",
+      "titlePlaceholder": "Enter Slide Title...",
+      "itemPlaceholder": "Enter bullet point...",
+      "deleteItem": "Delete Bullet Point",
+      "addItem": "Add New Bullet Point",
+      "changeImage": "Change Image",
+      "removeImage": "Remove Image",
+      "findImage": "Find Image (Unsplash)",
+      "visualizeSubtitle": "Visualize the slide",
+      "layoutText": "Text",
+      "layoutLeft": "Left Image",
+      "layoutRight": "Right Image",
+      "layoutBg": "Background",
+      "speakerNotesHeader": "Speaker Notes",
+      "speakerNotesPlaceholder": "Add notes here to guide you while speaking on stage...",
+      "charLimit": "{count} / 800 Characters"
+    },
+    "settings": {
+      "header": "Presentation Settings",
+      "subtitle": "Global Design & Export",
+      "titleLabel": "Presentation Title",
+      "titlePlaceholder": "Presentation Title...",
+      "colorPalettes": "Color Palettes",
+      "primaryColor": "Primary Color",
+      "accentColor": "Accent Color",
+      "fontFamily": "Font Family",
+      "downloadingPptx": "Downloading PPTX...",
+      "downloadPptx": "Download PPTX",
+      "sendingToAnalysis": "Sending to Analysis...",
+      "sendToAnalysis": "Send to Analysis"
+    },
+    "notifications": {
+      "cannotDeleteLastSlide": "The last slide in the presentation cannot be deleted. There must be at least 1 slide.",
+      "downloadSuccess": "Presentation successfully created in PPTX format and download started.",
+      "saveRequiredError": "A saved presentation is required before sending to analysis.",
+      "savingChanges": "Saving Slide Changes...",
+      "updatingVectorDb": "Updating Vector Database (Embedding)...",
+      "preparingSpeakerRag": "Preparing Speaker RAG Layer...",
+      "configuringRehearsal": "Configuring Live Rehearsal Infrastructure...",
+      "redirectingToAnalysis": "Success! Redirecting to Analysis Panel...",
+      "preparingPresentation": "Preparing Presentation",
+      "unsplashHeader": "Unsplash Image Library",
+      "unsplashSubtitle": "Empower your presentation with professional photos",
+      "searchImagesPlaceholder": "Search for image or topic (e.g. technology, AI, business)...",
+      "popular": "Popular:",
+      "photoAuthor": "Photo by: {author}",
+      "imagesNotFound": "No images found.",
+      "tryDifferentKeywords": "Please try searching with different keywords."
+    },
+    "categories": {
+      "technology": "Technology",
+      "ai": "Artificial Intelligence",
+      "business": "Business",
+      "design": "Design",
+      "stage": "Stage",
+      "abstract": "Abstract"
+    },
+    "misc": {
+      "newBulletPoint": "New Bullet Point",
+      "newSlideTitle": "New Slide Title",
+      "newSlideDescription": "Add a new bullet point description.",
+      "defaultTitle": "PreCue.ai Presentation",
+      "help": "Help"
+    }
   }
 }

@@ -6,20 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ChevronLeft, HelpCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import PresentationEditor from '../../components/PresentationEditor';
-
-const GENERATED_STORAGE_KEY = 'precue_generated_presentations';
+import client from '../../api/client';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 const ACTIVE_PRESENTATION_KEY = 'precue_active_presentation_id';
 const SESSION_PRESENTATION_KEY = 'precue_generated_presentation';
-
-type GeneratedPresentation = {
-    id: string;
-    data: unknown;
-};
 
 export default function PresentationEditorPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const t = useTranslations('aiGeneration');
+    const tEditor = useTranslations('editor');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
@@ -30,22 +26,36 @@ export default function PresentationEditorPage() {
         }
 
         const stored = sessionStorage.getItem(SESSION_PRESENTATION_KEY);
+        const presentationId = searchParams.get('presentationId');
+        const activePresentationId = sessionStorage.getItem(ACTIVE_PRESENTATION_KEY);
+
+        if (presentationId && presentationId !== activePresentationId) {
+            client
+                .get(`/api/v1/presentations/${presentationId}/ai-state`)
+                .then((response) => {
+                    sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(response.data));
+                    sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, String(presentationId));
+                    setIsAuthenticated(true);
+                })
+                .catch(() => {
+                    router.push('/dashboard?tab=ai-presentation');
+                });
+            return;
+        }
+
         if (!stored) {
-            const generatedId = searchParams.get('generatedId');
-            if (generatedId) {
-                try {
-                    const raw = localStorage.getItem(GENERATED_STORAGE_KEY);
-                    const list = raw ? (JSON.parse(raw) as GeneratedPresentation[]) : [];
-                    const match = list.find((item) => item.id === generatedId);
-                    if (match?.data) {
-                        sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(match.data));
-                        sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, match.id);
+            if (presentationId) {
+                client
+                    .get(`/api/v1/presentations/${presentationId}/ai-state`)
+                    .then((response) => {
+                        sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(response.data));
+                        sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, String(presentationId));
                         setIsAuthenticated(true);
-                        return;
-                    }
-                } catch {
-                    // Ignore and redirect below.
-                }
+                    })
+                    .catch(() => {
+                        router.push('/dashboard?tab=ai-presentation');
+                    });
+                return;
             }
             router.push('/dashboard?tab=ai-presentation');
             return;
@@ -92,9 +102,10 @@ export default function PresentationEditorPage() {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <LanguageSwitcher />
                     <button 
                         className="text-zinc-500 hover:text-zinc-300 transition-colors p-1.5 rounded-lg"
-                        title="Help"
+                        title={tEditor('misc.help')}
                     >
                         <HelpCircle size={16} />
                     </button>

@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Grid, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import SlideList, { PresentationSlide } from './SlideList';
 import SlideCanvas from './SlideCanvas';
 import RightStylePanel, { PresentationMetadata } from './RightStylePanel';
@@ -189,6 +190,7 @@ const DEFAULT_SLIDES: PresentationSlide[] = [
 
 export default function PresentationEditor() {
     const router = useRouter();
+    const t = useTranslations('editor');
 
     // Presentation Editor Master States
     const [slides, setSlides] = useState<PresentationSlide[]>(() => {
@@ -227,7 +229,7 @@ export default function PresentationEditor() {
 
     const [metadata, setMetadata] = useState<PresentationMetadata>(() => {
         const defaultMetadata = {
-            title: 'PreCue.ai Sunumu',
+            title: 'PreCue.ai Presentation',
             theme: 'sunset',
             primary_color: '#f97316',
             accent_color: '#06b6d4',
@@ -248,6 +250,116 @@ export default function PresentationEditor() {
         }
         return defaultMetadata;
     });
+
+    // Set localized default slides or load from session storage on mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const stored = sessionStorage.getItem('precue_generated_presentation');
+            if (stored) {
+                try {
+                    const parsed = JSON.parse(stored);
+                    if (parsed.slides && parsed.slides.length > 0) {
+                        setTimeout(() => {
+                            setSlides(parsed.slides);
+                            if (parsed.metadata) {
+                                setMetadata(parsed.metadata);
+                            }
+                        }, 0);
+                        return;
+                    }
+                } catch (e) {
+                    console.error('Failed to parse slides from session:', e);
+                }
+            }
+
+            // Fallback: Localized default slides
+            const localizedDefaultSlides: PresentationSlide[] = [
+                {
+                    id: 'slide-1',
+                    title: t('defaultSlides.slide1.title'),
+                    content_type: 'left',
+                    items: [
+                        t('defaultSlides.slide1.item1'),
+                        t('defaultSlides.slide1.item2'),
+                        t('defaultSlides.slide1.item3')
+                    ],
+                    image: {
+                        prompt: 'Conference stage with bright presentation screen',
+                        url: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&auto=format&fit=crop&q=80',
+                        alt: 'Conference stage'
+                    },
+                    speaker_note: t('defaultSlides.slide1.speakerNote')
+                },
+                {
+                    id: 'slide-2',
+                    title: t('defaultSlides.slide2.title'),
+                    content_type: 'right',
+                    items: [
+                        t('defaultSlides.slide2.item1'),
+                        t('defaultSlides.slide2.item2'),
+                        t('defaultSlides.slide2.item3')
+                    ],
+                    image: {
+                        prompt: 'Microphone on a dark conference stage',
+                        url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80',
+                        alt: 'Stage microphone'
+                    },
+                    speaker_note: t('defaultSlides.slide2.speakerNote')
+                },
+                {
+                    id: 'slide-3',
+                    title: t('defaultSlides.slide3.title'),
+                    content_type: 'left',
+                    items: [
+                        t('defaultSlides.slide3.item1'),
+                        t('defaultSlides.slide3.item2'),
+                        t('defaultSlides.slide3.item3')
+                    ],
+                    image: {
+                        prompt: 'Financial analytics and charts on a screen',
+                        url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
+                        alt: 'Analytics metrics dashboard'
+                    },
+                    speaker_note: t('defaultSlides.slide3.speakerNote')
+                },
+                {
+                    id: 'slide-4',
+                    title: t('defaultSlides.slide4.title'),
+                    content_type: 'standard',
+                    items: [
+                        t('defaultSlides.slide4.item1'),
+                        t('defaultSlides.slide4.item2'),
+                        t('defaultSlides.slide4.item3')
+                    ],
+                    speaker_note: t('defaultSlides.slide4.speakerNote')
+                },
+                {
+                    id: 'slide-5',
+                    title: t('defaultSlides.slide5.title'),
+                    content_type: 'background',
+                    items: [
+                        t('defaultSlides.slide5.item1'),
+                        t('defaultSlides.slide5.item2'),
+                        t('defaultSlides.slide5.item3')
+                    ],
+                    image: {
+                        prompt: 'Silicon microchip with glowing gold elements',
+                        url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
+                        alt: 'Silicon microchip'
+                    },
+                    speaker_note: t('defaultSlides.slide5.speakerNote')
+                }
+            ];
+            
+            setTimeout(() => {
+                setSlides(localizedDefaultSlides);
+                setMetadata(prev => ({
+                    ...prev,
+                    title: t('misc.defaultTitle')
+                }));
+            }, 0);
+        }
+    }, [t]);
 
     // Interaction & Action States
     const [isSaving, setIsSaving] = useState(false);
@@ -319,7 +431,7 @@ export default function PresentationEditor() {
         setSlides((prev) =>
             prev.map((s) => {
                 if (s.id !== id) return s;
-                return { ...s, items: [...s.items, 'Yeni Açıklama Noktası'] };
+                return { ...s, items: [...s.items, t('misc.newBulletPoint')] };
             })
         );
     };
@@ -374,9 +486,9 @@ export default function PresentationEditor() {
         const newId = `slide-${Date.now()}`;
         const newSlide: PresentationSlide = {
             id: newId,
-            title: 'Yeni Slayt Başlığı',
+            title: t('misc.newSlideTitle'),
             content_type: 'standard',
-            items: ['Yeni madde açıklaması ekleyin.'],
+            items: [t('misc.newSlideDescription')],
             speaker_note: ''
         };
 
@@ -388,7 +500,7 @@ export default function PresentationEditor() {
         if (slides.length <= 1) {
             setToast({
                 type: 'error',
-                message: 'Sunumdaki son slayt silinemez. En az 1 slayt bulunmalıdır.'
+                message: t('notifications.cannotDeleteLastSlide')
             });
             return;
         }
@@ -417,7 +529,7 @@ export default function PresentationEditor() {
             setIsDownloading(false);
             setToast({
                 type: 'success',
-                message: 'Sunum PPTX formatında başarıyla oluşturuldu ve indirme başlatıldı.'
+                message: t('notifications.downloadSuccess')
             });
 
             // Simulate file download
@@ -432,15 +544,27 @@ export default function PresentationEditor() {
     };
 
     const handleSendToAnalysis = () => {
+        const activePresentationId = typeof window !== 'undefined'
+            ? sessionStorage.getItem('precue_active_presentation_id')
+            : null;
+
+        if (!activePresentationId) {
+            setToast({
+                type: 'error',
+                message: t('notifications.saveRequiredError')
+            });
+            return;
+        }
+
         setIsSaving(true);
         setShowSaveOverlay(true);
 
         const steps = [
-            'Slayt Değişiklikleri Kaydediliyor...',
-            'Vektör Veritabanı (Embedding) Güncelleniyor...',
-            'Konuşmacı RAG Katmanı Hazırlanıyor...',
-            'Canlı Prova Altyapısı Yapılandırılıyor...',
-            'Tamamlandı! Analiz Paneline Yönlendiriliyorsunuz...'
+            t('notifications.savingChanges'),
+            t('notifications.updatingVectorDb'),
+            t('notifications.preparingSpeakerRag'),
+            t('notifications.configuringRehearsal'),
+            t('notifications.redirectingToAnalysis')
         ];
 
         let currentStep = 0;
@@ -454,9 +578,7 @@ export default function PresentationEditor() {
                 clearInterval(interval);
                 setIsSaving(false);
                 setShowSaveOverlay(false);
-                // Redirect user to the analyze page. Since this is client state, we mock the redirection.
-                // We'll pass a mock query ID so the page loads successfully.
-                router.push('/analyze?id=mock-presentation-editor');
+                router.push(`/analyze?id=${activePresentationId}`);
             }
         }, 1200);
     };
@@ -528,7 +650,7 @@ export default function PresentationEditor() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-sm font-black italic uppercase tracking-wider text-zinc-100">Sunum Hazırlanıyor</h3>
+                                <h3 className="text-sm font-black italic uppercase tracking-wider text-zinc-100">{t('notifications.preparingPresentation')}</h3>
                                 <p className="text-xs text-zinc-400 font-medium h-4">{saveProgress}</p>
                             </div>
                         </div>
@@ -556,8 +678,8 @@ export default function PresentationEditor() {
                                 <div className="flex items-center gap-2">
                                     <Grid size={15} className="text-primary" style={{ color: metadata.primary_color }} />
                                     <div>
-                                        <h3 className="text-xs font-black uppercase tracking-widest text-white">Unsplash Görsel Kütüphanesi</h3>
-                                        <p className="text-[10px] text-zinc-500 font-medium mt-0.5">Sunumunuzu profesyonel fotoğraflarla güçlendirin</p>
+                                        <h3 className="text-xs font-black uppercase tracking-widest text-white">{t('notifications.unsplashHeader')}</h3>
+                                        <p className="text-[10px] text-zinc-500 font-medium mt-0.5">{t('notifications.unsplashSubtitle')}</p>
                                     </div>
                                 </div>
                                 <button
@@ -576,7 +698,7 @@ export default function PresentationEditor() {
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Görsel veya konu arayın (örn. teknoloji, yapay zeka, iş)..."
+                                        placeholder={t('notifications.searchImagesPlaceholder')}
                                         className="w-full bg-zinc-900 border border-white/5 hover:border-white/10 focus:border-primary/50 focus:outline-none py-3.5 pl-10 pr-4 rounded-xl text-xs font-medium text-white placeholder-zinc-600 transition-all"
                                     />
                                     {searchQuery && (
@@ -591,16 +713,19 @@ export default function PresentationEditor() {
 
                                 {/* Curated suggestion chips */}
                                 <div className="flex flex-wrap items-center gap-1.5 mt-3">
-                                    <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500 mr-1.5">Popüler:</span>
-                                    {['Teknoloji', 'Yapay Zeka', 'İş', 'Tasarım', 'Sahne', 'Abstract'].map((term) => (
-                                        <button
-                                            key={term}
-                                            onClick={() => setSearchQuery(term)}
-                                            className="px-2.5 py-1 rounded-md bg-zinc-900 border border-white/5 hover:border-white/10 text-[9px] font-bold text-zinc-400 hover:text-white transition-all"
-                                        >
-                                            {term}
-                                        </button>
-                                    ))}
+                                    <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500 mr-1.5">{t('notifications.popular')}</span>
+                                    {['technology', 'ai', 'business', 'design', 'stage', 'abstract'].map((term) => {
+                                        const localizedTerm = t(`categories.${term}`);
+                                        return (
+                                            <button
+                                                key={term}
+                                                onClick={() => setSearchQuery(localizedTerm)}
+                                                className="px-2.5 py-1 rounded-md bg-zinc-900 border border-white/5 hover:border-white/10 text-[9px] font-bold text-zinc-400 hover:text-white transition-all"
+                                            >
+                                                {localizedTerm}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -622,7 +747,7 @@ export default function PresentationEditor() {
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-3 flex flex-col justify-end">
                                                     <p className="text-[10px] font-bold text-white line-clamp-1">{img.alt}</p>
-                                                    <p className="text-[8px] text-zinc-400 mt-0.5">Fotoğraf: {img.author}</p>
+                                                    <p className="text-[8px] text-zinc-400 mt-0.5">{t('notifications.photoAuthor', { author: img.author })}</p>
                                                 </div>
                                             </div>
                                         ))}
@@ -630,8 +755,8 @@ export default function PresentationEditor() {
                                 ) : (
                                     <div className="flex flex-col items-center justify-center py-16 text-center">
                                         <AlertCircle size={24} className="text-zinc-600 mb-3" />
-                                        <p className="text-xs font-bold text-zinc-400">Görsel bulunamadı.</p>
-                                        <p className="text-[10px] text-zinc-500 mt-1">Lütfen farklı anahtar kelimeler aramayı deneyin.</p>
+                                        <p className="text-xs font-bold text-zinc-400">{t('notifications.imagesNotFound')}</p>
+                                        <p className="text-[10px] text-zinc-500 mt-1">{t('notifications.tryDifferentKeywords')}</p>
                                     </div>
                                 )}
                             </div>

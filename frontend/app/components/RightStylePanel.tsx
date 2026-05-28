@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Palette, Type, Download, Sparkles, Check, ChevronRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface PresentationMetadata {
     title: string;
@@ -52,6 +53,8 @@ export default function RightStylePanel({
     isSaving,
     isDownloading
 }: RightStylePanelProps) {
+    const t = useTranslations('editor.settings');
+
     const handlePaletteSelect = (palette: ColorPalette) => {
         onUpdateMetadata({
             ...metadata,
@@ -88,18 +91,18 @@ export default function RightStylePanel({
             <div className="flex-1 overflow-y-auto space-y-6 invisible-scrollbar pr-0.5">
                 {/* Header */}
                 <div className="pb-3 border-b border-white/5">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Sunum Ayarları</h3>
-                    <p className="text-[10px] text-zinc-500 font-medium mt-0.5">Global Tasarım & Dışa Aktarma</p>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('header')}</h3>
+                    <p className="text-[10px] text-zinc-500 font-medium mt-0.5">{t('subtitle')}</p>
                 </div>
 
                 {/* Presentation Title Field */}
                 <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Sunum Başlığı</label>
+                    <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">{t('titleLabel')}</label>
                     <input
                         type="text"
                         value={metadata.title}
                         onChange={(e) => handleTitleChange(e.target.value)}
-                        placeholder="Sunum Başlığı..."
+                        placeholder={t('titlePlaceholder')}
                         className="w-full bg-zinc-900 border border-white/5 hover:border-white/10 focus:border-primary/50 focus:outline-none px-4 py-3 rounded-xl text-xs text-white font-bold transition-all placeholder-zinc-600"
                     />
                 </div>
@@ -108,7 +111,7 @@ export default function RightStylePanel({
                 <div className="space-y-2.5">
                     <div className="flex items-center gap-1.5 text-zinc-400">
                         <Palette size={13} />
-                        <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Hazır Renk Paletleri</label>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">{t('colorPalettes')}</label>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
                         {PRESET_PALETTES.map((palette) => {
@@ -143,7 +146,7 @@ export default function RightStylePanel({
                 {/* Custom Color Pickers */}
                 <div className="grid grid-cols-2 gap-3 pt-2">
                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-wider text-zinc-500">Birincil Renk</label>
+                        <label className="text-[9px] font-black uppercase tracking-wider text-zinc-500">{t('primaryColor')}</label>
                         <div className="flex items-center gap-1.5 bg-zinc-900 border border-white/5 p-1 rounded-xl">
                             <input
                                 type="color"
@@ -161,7 +164,7 @@ export default function RightStylePanel({
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[9px] font-black uppercase tracking-wider text-zinc-500">Vurgu Rengi</label>
+                        <label className="text-[9px] font-black uppercase tracking-wider text-zinc-500">{t('accentColor')}</label>
                         <div className="flex items-center gap-1.5 bg-zinc-900 border border-white/5 p-1 rounded-xl">
                             <input
                                 type="color"
@@ -183,7 +186,7 @@ export default function RightStylePanel({
                 <div className="space-y-2 pt-2">
                     <div className="flex items-center gap-1.5 text-zinc-400">
                         <Type size={13} />
-                        <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">Yazı Tipi (Font)</label>
+                        <label className="text-[10px] font-black uppercase tracking-wider text-zinc-500">{t('fontFamily')}</label>
                     </div>
                     <select
                         value={metadata.font_family}
@@ -218,7 +221,7 @@ export default function RightStylePanel({
                     ) : (
                         <Download size={14} className="text-zinc-400" />
                     )}
-                    <span>{isDownloading ? 'PPTX İndiriliyor...' : 'PPTX İndir'}</span>
+                    <span>{isDownloading ? t('downloadingPptx') : t('downloadPptx')}</span>
                 </button>
 
                 {/* Send to Analysis Button */}
@@ -235,7 +238,7 @@ export default function RightStylePanel({
                     ) : (
                         <Sparkles size={14} className="text-white animate-pulse" />
                     )}
-                    <span>{isSaving ? 'Analize Gönderiliyor...' : 'Analize Gönder'}</span>
+                    <span>{isSaving ? t('sendingToAnalysis') : t('sendToAnalysis')}</span>
                     <ChevronRight size={14} className="ml-0.5 text-white/70" />
                 </button>
             </div>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Trash2, Plus, Move } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export interface SlideImage {
     prompt: string;
@@ -40,6 +41,7 @@ export default function SlideList({
     primaryColor,
     accentColor
 }: SlideListProps) {
+    const t = useTranslations('editor.sidebar');
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
     const handleDragStart = (index: number) => {
@@ -63,8 +65,8 @@ export default function SlideList({
             {/* Header */}
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/5">
                 <div>
-                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">Slaytlar</h3>
-                    <p className="text-[10px] text-zinc-500 font-medium mt-0.5">{slides.length} Slayt</p>
+                    <h3 className="text-xs font-black uppercase tracking-widest text-zinc-400">{t('header')}</h3>
+                    <p className="text-[10px] text-zinc-500 font-medium mt-0.5">{t('slideCount', { count: slides.length })}</p>
                 </div>
             </div>
 
@@ -105,7 +107,7 @@ export default function SlideList({
                                     onDeleteSlide(slide.id);
                                 }}
                                 className="absolute top-2 right-2 p-1.5 rounded-lg bg-zinc-950/80 border border-white/5 text-zinc-400 hover:text-red-400 hover:border-red-500/20 opacity-0 group-hover:opacity-100 transition-all duration-200 z-10"
-                                title="Slaytı Sil"
+                                title={t('deleteTooltip')}
                             >
                                 <Trash2 size={11} />
                             </button>
@@ -124,7 +126,7 @@ export default function SlideList({
                                     }}
                                 >
                                     <h4 className="text-[20px] font-black text-white leading-tight uppercase tracking-tighter truncate">
-                                        {slide.title || 'Başlıksız Slayt'}
+                                        {slide.title || t('untitled')}
                                     </h4>
                                     <div className="space-y-1.5 my-2 flex-1">
                                         {slide.items.slice(0, 3).map((item, idx) => (
@@ -145,14 +147,14 @@ export default function SlideList({
                             <div className="flex items-center justify-between mt-1 px-0.5">
                                 <div className="truncate pr-4">
                                     <p className="text-xs font-bold text-zinc-200 truncate group-hover:text-white transition-colors">
-                                        {slide.title || 'Başlıksız Slayt'}
+                                        {slide.title || t('untitled')}
                                     </p>
                                     <p className="text-[9px] text-zinc-500 font-black uppercase tracking-wider mt-0.5">
-                                        {slide.content_type === 'standard' ? 'STANDART' : 
-                                         slide.content_type === 'left' ? 'SOL GÖRSEL' :
-                                         slide.content_type === 'right' ? 'SAĞ GÖRSEL' :
-                                         slide.content_type === 'top' ? 'ÜST GÖRSEL' :
-                                         slide.content_type === 'bottom' ? 'ALT GÖRSEL' : 'ARKA PLAN'}
+                                        {slide.content_type === 'standard' ? t('layoutStandard') : 
+                                         slide.content_type === 'left' ? t('layoutLeftImage') :
+                                         slide.content_type === 'right' ? t('layoutRightImage') :
+                                         slide.content_type === 'top' ? t('layoutTopImage') :
+                                         slide.content_type === 'bottom' ? t('layoutBottomImage') : t('layoutBackgroundImage')}
                                     </p>
                                 </div>
                                 <span 
@@ -175,7 +177,7 @@ export default function SlideList({
                 }}
             >
                 <Plus size={14} className="text-primary" style={{ color: primaryColor }} />
-                <span>Yeni Slayt</span>
+                <span>{t('addSlide')}</span>
             </button>
         </div>
     );

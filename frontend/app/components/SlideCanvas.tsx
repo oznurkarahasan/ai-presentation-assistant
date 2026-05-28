@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, Plus, Trash2, ChevronDown, ChevronUp, Sparkles, Eye } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { PresentationSlide } from './SlideList';
 
 interface SlideCanvasProps {
@@ -34,6 +35,7 @@ export default function SlideCanvas({
     onTriggerImageSearch,
     onRemoveImage
 }: SlideCanvasProps) {
+    const t = useTranslations('editor.canvas');
     const [notesExpanded, setNotesExpanded] = useState(true);
 
     // Dynamically inject selected Google Font
@@ -62,7 +64,7 @@ export default function SlideCanvas({
                     type="text"
                     value={slide.title}
                     onChange={(e) => onUpdateSlideTitle(slide.id, e.target.value)}
-                    placeholder="Slayt Başlığı Girin..."
+                    placeholder={t('titlePlaceholder')}
                     className={`w-full bg-transparent border-b border-transparent hover:border-white/10 focus:border-primary focus:outline-none text-3xl font-black tracking-tight mb-6 pb-2 transition-all duration-300 ${alignmentClass}`}
                     style={{
                         fontFamily: resolvedFontFamily,
@@ -82,14 +84,14 @@ export default function SlideCanvas({
                                 type="text"
                                 value={item}
                                 onChange={(e) => onUpdateSlideItem(slide.id, idx, e.target.value)}
-                                placeholder="Açıklama maddesi girin..."
+                                placeholder={t('itemPlaceholder')}
                                 className={`flex-1 bg-transparent border-b border-transparent hover:border-white/5 focus:border-white/20 focus:outline-none text-sm font-medium py-1 transition-all ${textColorClass}`}
                                 style={{ fontFamily: resolvedFontFamily }}
                             />
                             <button
                                 onClick={() => onDeleteSlideItem(slide.id, idx)}
                                 className="opacity-0 group-hover/item:opacity-100 p-1.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-white/5 transition-all duration-200"
-                                title="Maddeyi Sil"
+                                title={t('deleteItem')}
                             >
                                 <Trash2 size={13} />
                             </button>
@@ -102,7 +104,7 @@ export default function SlideCanvas({
                         className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-500 hover:text-white transition-colors pt-2 group"
                     >
                         <Plus size={14} className="text-zinc-600 group-hover:text-primary" style={{ transition: 'color 0.2s' }} />
-                        <span>Yeni Madde Ekle</span>
+                        <span>{t('addItem')}</span>
                     </button>
                 </div>
             </div>
@@ -123,12 +125,12 @@ export default function SlideCanvas({
                             onClick={() => onTriggerImageSearch(slide.id)}
                             className="px-3.5 py-2 rounded-xl bg-zinc-900 border border-white/10 hover:border-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all"
                         >
-                            Görseli Değiştir
+                            {t('changeImage')}
                         </button>
                         <button
                             onClick={() => onRemoveImage(slide.id)}
                             className="p-2 rounded-xl bg-red-950/80 border border-red-500/20 hover:border-red-500/40 text-red-400 transition-all"
-                            title="Görseli Kaldır"
+                            title={t('removeImage')}
                         >
                             <Trash2 size={14} />
                         </button>
@@ -146,8 +148,8 @@ export default function SlideCanvas({
                     <ImageIcon size={20} />
                 </div>
                 <div className="text-center">
-                    <p className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors">Görsel Bul (Unsplash)</p>
-                    <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-1">Slaytı görselleştirin</p>
+                    <p className="text-xs font-bold text-zinc-300 group-hover:text-white transition-colors">{t('findImage')}</p>
+                    <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-1">{t('visualizeSubtitle')}</p>
                 </div>
             </div>
         );
@@ -169,8 +171,8 @@ export default function SlideCanvas({
                         <Eye size={14} style={{ color: primaryColor }} />
                     </div>
                     <div>
-                        <h3 className="text-xs font-black uppercase tracking-widest text-zinc-300">Kanvas</h3>
-                        <p className="text-[10px] text-zinc-500 font-medium leading-none mt-0.5">Gerçek Zamanlı HTML/CSS Önizleme</p>
+                        <h3 className="text-xs font-black uppercase tracking-widest text-zinc-300">{t('header')}</h3>
+                        <p className="text-[10px] text-zinc-500 font-medium leading-none mt-0.5">{t('subtitle')}</p>
                     </div>
                 </div>
 
@@ -187,7 +189,7 @@ export default function SlideCanvas({
                             backgroundColor: slide.content_type === 'standard' ? primaryColor : undefined
                         }}
                     >
-                        Metin
+                        {t('layoutText')}
                     </button>
                     <button
                         onClick={() => onUpdateLayoutType(slide.id, 'left')}
@@ -200,7 +202,7 @@ export default function SlideCanvas({
                             backgroundColor: slide.content_type === 'left' ? primaryColor : undefined
                         }}
                     >
-                        Sol Görsel
+                        {t('layoutLeft')}
                     </button>
                     <button
                         onClick={() => onUpdateLayoutType(slide.id, 'right')}
@@ -213,7 +215,7 @@ export default function SlideCanvas({
                             backgroundColor: slide.content_type === 'right' ? primaryColor : undefined
                         }}
                     >
-                        Sağ Görsel
+                        {t('layoutRight')}
                     </button>
                     <button
                         onClick={() => onUpdateLayoutType(slide.id, 'background')}
@@ -226,7 +228,7 @@ export default function SlideCanvas({
                             backgroundColor: slide.content_type === 'background' ? primaryColor : undefined
                         }}
                     >
-                        Arka Plan
+                        {t('layoutBg')}
                     </button>
                 </div>
             </div>
@@ -300,7 +302,7 @@ export default function SlideCanvas({
                 >
                     <div className="flex items-center gap-2.5">
                         <Sparkles size={14} className="text-primary" style={{ color: primaryColor }} />
-                        <span className="text-xs font-black uppercase tracking-widest">Konuşmacı Notları (Speaker Notes)</span>
+                        <span className="text-xs font-black uppercase tracking-widest">{t('speakerNotesHeader')}</span>
                     </div>
                     {notesExpanded ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                 </button>
@@ -310,12 +312,12 @@ export default function SlideCanvas({
                         <textarea
                             value={slide.speaker_note || ''}
                             onChange={(e) => onUpdateSpeakerNote(slide.id, e.target.value)}
-                            placeholder="Sahnede konuşurken size yol gösterecek notları buraya ekleyin..."
+                            placeholder={t('speakerNotesPlaceholder')}
                             className="w-full h-24 bg-zinc-900/40 border border-white/5 hover:border-white/10 focus:border-primary/40 focus:outline-none p-3.5 rounded-xl text-xs font-medium leading-relaxed text-zinc-300 placeholder:text-zinc-600 resize-none transition-all custom-scrollbar"
                             maxLength={800}
                         />
                         <div className="flex justify-end text-[9px] text-zinc-600 font-bold uppercase tracking-wider mt-1 px-1">
-                            {slide.speaker_note?.length || 0} / 800 Karakter
+                            {t('charLimit', { count: slide.speaker_note?.length || 0 })}
                         </div>
                     </div>
                 )}

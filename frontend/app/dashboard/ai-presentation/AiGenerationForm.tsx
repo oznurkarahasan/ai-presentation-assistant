@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, MessageSquare, Globe, ArrowRight, AlertCircle, History, ExternalLink } from 'lucide-react';
@@ -8,39 +8,15 @@ import { useTranslations } from 'next-intl';
 import client from '../../api/client';
 
 type GeneratedPresentation = {
-    id: string;
+    id: number;
     title: string;
-    createdAt: string;
-    slideCount: number;
-    language: string;
-    theme: string | null;
-    data: unknown;
+    created_at: string;
+    slide_count: number;
+    is_ai_generated: boolean;
 };
 
-const GENERATED_STORAGE_KEY = 'precue_generated_presentations';
 const ACTIVE_PRESENTATION_KEY = 'precue_active_presentation_id';
 const SESSION_PRESENTATION_KEY = 'precue_generated_presentation';
-
-const createGeneratedId = () => {
-    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-        return crypto.randomUUID();
-    }
-    return `gen-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-};
-
-const loadGeneratedPresentations = (): GeneratedPresentation[] => {
-    if (typeof window === 'undefined') return [];
-    try {
-        const stored = localStorage.getItem(GENERATED_STORAGE_KEY);
-        return stored ? (JSON.parse(stored) as GeneratedPresentation[]) : [];
-    } catch {
-        return [];
-    }
-};
-
-const persistGeneratedPresentations = (presentations: GeneratedPresentation[]) => {
-    localStorage.setItem(GENERATED_STORAGE_KEY, JSON.stringify(presentations));
-};
 
 export default function AiGenerationForm() {
     const router = useRouter();
@@ -54,21 +30,36 @@ export default function AiGenerationForm() {
     const [error, setError] = useState<string | null>(null);
     const [generatedPresentations, setGeneratedPresentations] = useState<GeneratedPresentation[]>([]);
 
-    useEffect(() => {
-        setGeneratedPresentations(loadGeneratedPresentations());
+    const loadGeneratedPresentations = useCallback(async () => {
+        try {
+            const response = await client.get('/api/v1/presentations/ai');
+            setGeneratedPresentations(response.data || []);
+        } catch (err) {
+            console.error('Failed to load AI presentations:', err);
+        }
     }, []);
+
+    useEffect(() => {
+        loadGeneratedPresentations();
+    }, [loadGeneratedPresentations]);
 
     const formattedGeneratedPresentations = useMemo(() => {
         return generatedPresentations.map((item) => ({
             ...item,
-            formattedDate: new Date(item.createdAt).toLocaleDateString(),
+            formattedDate: new Date(item.created_at).toLocaleDateString(),
         }));
     }, [generatedPresentations]);
 
-    const openGeneratedPresentation = (item: GeneratedPresentation) => {
-        sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(item.data));
-        sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, item.id);
-        router.push(`/editor?generatedId=${item.id}`);
+    const openGeneratedPresentation = async (item: GeneratedPresentation) => {
+        try {
+            const response = await client.get(`/api/v1/presentations/${item.id}/ai-state`);
+            sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(response.data));
+            sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, String(item.id));
+            router.push(`/editor?presentationId=${item.id}`);
+        } catch (err) {
+            console.error('Failed to load AI presentation state:', err);
+            setError(t('errorTitle'));
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -110,29 +101,15 @@ export default function AiGenerationForm() {
                 theme: 'sunset' // Default theme seed
             });
 
-            if (response.data) {
-                const presentationState = response.data;
-                const generatedId = createGeneratedId();
-                const title = presentationState?.metadata?.title || topic.trim();
-                const slideCount = presentationState?.slides?.length || 0;
-                const createdAt = new Date().toISOString();
-                const newItem: GeneratedPresentation = {
-                    id: generatedId,
-                    title,
-                    createdAt,
-                    slideCount,
-                    language,
-                    theme: presentationState?.metadata?.theme ?? null,
-                    data: presentationState,
-                };
-                const nextGenerated = [newItem, ...generatedPresentations].slice(0, 20);
-                setGeneratedPresentations(nextGenerated);
-                persistGeneratedPresentations(nextGenerated);
+            if (response.data?.state && response.data?.presentation_id) {
+                const presentationState = response.data.state;
+                const presentationId = response.data.presentation_id;
 
                 sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(presentationState));
-                sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, generatedId);
+                sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, String(presentationId));
 
-                router.push(`/editor?generatedId=${generatedId}`);
+                await loadGeneratedPresentations();
+                router.push(`/editor?presentationId=${presentationId}`);
             } else {
                 throw new Error('No data returned.');
             }
@@ -282,7 +259,7 @@ export default function AiGenerationForm() {
                                             {item.title}
                                         </h4>
                                         <div className="flex flex-wrap items-center gap-2 text-[10px] text-zinc-500 font-semibold uppercase tracking-widest">
-                                            <span>{t('generatedSlides', { count: item.slideCount })}</span>
+                                            <span>{t('generatedSlides', { count: item.slide_count })}</span>
                                             <span className="h-[10px] w-[1px] bg-white/10" />
                                             <span>{item.formattedDate}</span>
                                         </div>

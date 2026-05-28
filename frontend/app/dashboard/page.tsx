@@ -908,6 +908,11 @@ function PresentationRow({ presentation, index, onDelete }: { presentation: Rece
                     <p className="font-bold text-sm truncate pr-4">{presentation.title}</p>
                     <p className="text-[10px] text-zinc-500 flex items-center gap-2 mt-0.5 font-medium uppercase tracking-tighter">
                         <span>{presentation.slide_count} {t('slides')}</span>
+                        {presentation.is_ai_generated && (
+                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary">
+                                {t('aiBadge')}
+                            </span>
+                        )}
                         <span className="w-1 h-1 rounded-full bg-zinc-700" />
                         <span>{new Date(presentation.created_at).toLocaleDateString('en-US')}</span>
                     </p>
@@ -1049,7 +1054,14 @@ function PresentationCard({
                             </button>
                         </div>
                     )}
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{presentation.slide_count} {t('slides')}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                        <span>{presentation.slide_count} {t('slides')}</span>
+                        {presentation.is_ai_generated && (
+                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary">
+                                {t('aiBadge')}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </td>
 
