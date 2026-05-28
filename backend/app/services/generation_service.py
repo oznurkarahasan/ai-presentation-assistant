@@ -27,7 +27,7 @@ Generate a structured presentation plan as strict JSON that matches the required
 Rules:
 - Output only JSON. No markdown, no explanations.
 - The JSON must match the schema exactly: metadata + slides.
-- Use the requested slide_count exactly.
+- Determine the optimum slide count automatically based on the complexity of the topic (usually between 5 to 12 slides). Do not overextend or make it too short.
 - Keep slide titles concise and action-oriented.
 - Use content_type values from this set: bullets, steps, quote, data, narrative, timeline.
 - items must be an array of short strings (max 12 words each).
@@ -41,7 +41,6 @@ async def generate_presentation_state(request: PresentationGenerateRequest) -> P
     # User prompt optimized to reinforce the requested language.
     user_prompt = (
         f"Topic: {request.topic}\n"
-        f"Slide count: {request.slide_count}\n"
         f"Language: {request.language} (ALL text content must be in this language!)\n"
         f"Theme: {request.theme or 'Auto'}\n\n"
         "Return JSON structure:\n"

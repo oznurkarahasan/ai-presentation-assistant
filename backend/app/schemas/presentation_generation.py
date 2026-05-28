@@ -7,7 +7,6 @@ class PresentationGenerateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     topic: str = Field(..., min_length=2, max_length=200)
-    slide_count: int = Field(..., ge=1, le=30)
     language: str = Field(..., min_length=2, max_length=12)
     theme: Optional[str] = Field(None, max_length=80)
 
