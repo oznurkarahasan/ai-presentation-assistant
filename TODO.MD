@@ -19,8 +19,8 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 - [x] Forgot password + reset password backend flow is completed.
 - [x] Forgot/Reset password frontend pages are completed.
 - [x] SMTP-based reset email delivery is integrated.
-- [ ] Email verification flow (token verification endpoint + UI) is missing.
-- [ ] Refresh token and session invalidation strategy is missing.
+- [x] Email verification flow (token verification endpoint + UI) is missing.
+- [x] Refresh token and session invalidation strategy is missing.
 
 ## Phase 3: File Ingestion & Security (Completed, Guest Side Pending)
 
@@ -32,7 +32,6 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 - [x] Embedding generation is optimized with batch/concurrent processing.
 - [x] Presentation + slide + vector persistence flow is completed.
 - [x] File cleanup flow for failure scenarios is added.
-- [ ] Guest upload lifecycle (permission model + data retention policy) needs to be finalized.
 
 ## Phase 4: AI/RAG & Real-Time Orchestration (In Progress)
 
@@ -42,8 +41,8 @@ This file is maintained as a living backlog. Phases are updated based on the cur
 - [x] Intent-driven slide commands are active (`NEXT/PREV/JUMP`).
 - [x] Real-time presentation frontend page is active.
 - [x] Analyze -> Real-Time navigation link is added.
-- [ ] Prompt/heuristic tuning for better intent accuracy is pending.
-- [ ] Multi-language intent stability and edge-case tests are pending.
+- [x] Prompt/heuristic tuning for better intent accuracy is pending.
+- [x] Multi-language intent stability and edge-case tests are pending.
 - [ ] Whisper/local STT alternative (beyond Web Speech fallback) is pending.
 
 ## Phase 5: Frontend Product Flows (Mostly Completed)
@@ -111,7 +110,7 @@ The sidebar already has the `ideas-topics` tab wired up in `DashboardContext`, b
 
 ### Phase 10.1: Backend — Topic Ideas Endpoint
 
-- [ ] Create `POST /api/v1/ideas/topics` endpoint that accepts `{ context, audience, purpose, num_ideas? }` and returns `{ ideas: [{ title, description, angle }] }`.
+- [x] Create `POST /api/v1/ideas/topics` endpoint that accepts `{ context, audience, purpose, num_ideas? }` and returns `{ ideas: [{ title, description, angle }] }`.
 - [ ] Write a system prompt that instructs Claude to generate distinct, actionable presentation topic ideas with a clear angle for each.
 - [ ] Optionally enrich the prompt with the user's existing presentation titles from the DB (no vector search needed, just metadata) to avoid repetition and tailor suggestions.
 - [ ] Add input validation (max lengths, required fields) and rate-limit the endpoint per user to avoid excessive Claude API calls.
@@ -119,12 +118,12 @@ The sidebar already has the `ideas-topics` tab wired up in `DashboardContext`, b
 
 ### Phase 10.2: Frontend — TopicIdeas Component
 
-- [ ] Create `frontend/app/dashboard/ideas/TopicIdeas.tsx` as a self-contained component.
-- [ ] Build a context form with three fields: **Field / Expertise** (e.g. "software engineering"), **Target Audience** (e.g. "non-technical managers"), and **Purpose** (e.g. "persuade / inform / educate") — all short text inputs.
-- [ ] Add a **Generate Ideas** button that calls the backend endpoint; show a skeleton/spinner while loading.
-- [ ] Render results as cards (title + description + angle). Support re-generating with the same or updated inputs.
-- [ ] Wire the component into `page.tsx` replacing the empty `ideas-topics` placeholder.
-- [ ] Add i18n keys for all new strings in `en.json` and `tr.json`.
+- [x] Create `frontend/app/dashboard/ideas/TopicIdeas.tsx` as a self-contained component.
+- [x] Build a context form with three fields: **Field / Expertise** (e.g. "software engineering"), **Target Audience** (e.g. "non-technical managers"), and **Purpose** (e.g. "persuade / inform / educate") — all short text inputs.
+- [x] Add a **Generate Ideas** button that calls the backend endpoint; show a skeleton/spinner while loading.
+- [x] Render results as cards (title + description + angle). Support re-generating with the same or updated inputs.
+- [x] Wire the component into `page.tsx` replacing the empty `ideas-topics` placeholder.
+- [x] Add i18n keys for all new strings in `en.json` and `tr.json`.
 
 ### Phase 10.3: Future Enhancements (Post-MVP)
 
@@ -132,3 +131,12 @@ The sidebar already has the `ideas-topics` tab wired up in `DashboardContext`, b
 - [ ] Feed the user's uploaded presentation content into the prompt via RAG so suggestions avoid already-covered topics.
 - [ ] Add category/tag filters on generated results (e.g. "beginner", "technical", "storytelling-heavy").
 
+## Phase 11: Schema Consolidation (Planned)
+
+Move request/response models out of route files into `schemas/` for consistency and reuse.
+
+- [ ] Inventory all `api/v1` routes using inline `BaseModel` definitions or ad-hoc dict responses.
+- [ ] Create/expand schema files per domain (e.g. `schemas/presentations.py`, `schemas/ideas.py`, `schemas/orchestration.py`, `schemas/dashboard.py`).
+- [ ] Migrate route-level models into schemas and update imports.
+- [ ] Add shared/common schema types (pagination, error responses) if needed.
+- [ ] Verify response models still match actual output (update tests if required).

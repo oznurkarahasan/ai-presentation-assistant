@@ -12,6 +12,13 @@ The format is based on Keep a Changelog.
   - Backend endpoints: `POST /api/v1/auth/forgot-password`, `POST /api/v1/auth/reset-password`
   - SMTP-based reset email service integration
   - Frontend pages for forgot/reset password flow
+- Topic Ideas feature:
+  - Backend endpoints: `POST /api/v1/ideas/topics`, `POST /api/v1/ideas/topics/chat`
+  - Dashboard Topic Ideas UI with category presets, favorites, and chat
+- Structured AI presentation generation scaffolding:
+  - Pydantic schemas for `PresentationState`
+  - Generation service for `gpt-4o-mini` JSON output
+- Email change verification flow (`/me/email-change/request-code`, `/me/email-change/confirm`)
 - Real-time orchestration mode for presentations:
   - WebSocket endpoint: `/api/v1/orchestration/ws/presentation/{presentation_id}`
   - Client-side speech capture via Web Speech API
@@ -25,6 +32,9 @@ The format is based on Keep a Changelog.
 
 - Analyze page now links directly to Real-Time Mode (`/presentation/{id}`)
 - Presentation details response now includes `total_pages` for frontend compatibility
+- Auth endpoints now include rate limiting for login and forgot-password
+- WebSocket orchestration now enforces token-based authentication
+- Next.js response headers include baseline security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy)
 - CI workflow naming/file alignment updated in documentation and repository:
   - Backend quality: `.github/workflows/backend-check.yml`
   - Main CI (Docker build validation): `.github/workflows/ci-cd.yml`
