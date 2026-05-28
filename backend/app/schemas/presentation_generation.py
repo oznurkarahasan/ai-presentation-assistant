@@ -59,3 +59,10 @@ class PresentationState(BaseModel):
 
     metadata: PresentationMetadata
     slides: list[PresentationSlide] = Field(default_factory=list)
+
+
+class PresentationGenerateResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    presentation_id: int
+    state: PresentationState

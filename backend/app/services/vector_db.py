@@ -75,3 +75,66 @@ async def save_presentation_with_slides(
                 logger.error(f"Failed to update presentation status to FAILED: {inner_e}")
         
         raise e
+
+
+async def save_ai_presentation_with_slides(
+    db: AsyncSession,
+    user_id: int,
+    title: str,
+    file_path: str,
+    slide_texts: list[str],
+    embeddings: list[list[float]],
+    ai_content_json: dict,
+):
+    presentation = None
+    try:
+        presentation = Presentation(
+            title=title,
+            original_filename=title,
+            file_path=file_path,
+            file_type=FileType.AI,
+            file_size_bytes=0,
+            user_id=user_id,
+            status=PresentationStatus.ANALYZING,
+            slide_count=len(slide_texts),
+            processing_started_at=datetime.now(timezone.utc),
+            is_ai_generated=True,
+            ai_content_json=ai_content_json,
+        )
+        db.add(presentation)
+        await db.flush()
+
+        if len(slide_texts) != len(embeddings):
+            raise ValueError("The number of slide texts and embeddings do not match!")
+
+        slide_objects = [
+            Slide(
+                presentation_id=presentation.id,
+                page_number=i + 1,
+                content_text=text,
+                embedding=vector,
+            )
+            for i, (text, vector) in enumerate(zip(slide_texts, embeddings))
+        ]
+        db.add_all(slide_objects)
+
+        presentation.status = PresentationStatus.COMPLETED
+        presentation.processing_completed_at = datetime.now(timezone.utc)
+
+        await db.commit()
+        await db.refresh(presentation)
+
+        return presentation
+
+    except Exception as e:
+        await db.rollback()
+        if presentation:
+            try:
+                presentation.status = PresentationStatus.FAILED
+                presentation.error_message = str(e)
+                presentation.processing_completed_at = datetime.now(timezone.utc)
+                await db.commit()
+            except Exception as inner_e:
+                from app.core.logger import logger
+                logger.error(f"Failed to update AI presentation status to FAILED: {inner_e}")
+        raise e

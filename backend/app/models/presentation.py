@@ -42,6 +42,7 @@ class PresentationStatus(str, enum.Enum):
 class FileType(str, enum.Enum):
     PDF = "pdf"
     PPTX = "pptx"
+    AI = "ai"
 
 class SessionType(str, enum.Enum):
     REHEARSAL = "rehearsal"
@@ -107,6 +108,9 @@ class Presentation(Base):
     file_size_bytes = Column(BigInteger, nullable=False)
     file_hash = Column(String(64), nullable=True)
     thumbnail_path = Column(String, nullable=True)
+
+    is_ai_generated = Column(Boolean, default=False, index=True)
+    ai_content_json = Column(JSON, nullable=True)
     
     slide_count = Column(Integer, default=0)
     total_words = Column(Integer, default=0)

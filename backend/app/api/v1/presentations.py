@@ -6,7 +6,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service
-from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationState
+from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationGenerateResponse, PresentationState
 from pydantic import BaseModel, Field
 import os
 import shutil
@@ -19,7 +19,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from app.models.presentation import Presentation, PresentationSession
+from app.models.presentation import Presentation, PresentationSession, FileType
 
 
 class PresentationTitleUpdate(BaseModel):
@@ -30,13 +30,40 @@ async def get_db():
         yield session
 
 
-@router.post("/generate", response_model=PresentationState)
+@router.post("/generate", response_model=PresentationGenerateResponse)
 async def generate_presentation(
     request: PresentationGenerateRequest,
+    db: AsyncSession = Depends(get_db),
     current_user=Depends(auth.get_current_user),
 ):
     try:
-        return await generation_service.generate_presentation_state(request)
+        state = await generation_service.generate_presentation_state(request)
+
+        slide_texts = []
+        for slide in state.slides:
+            parts = [slide.title]
+            if slide.items:
+                parts.extend(slide.items)
+            if slide.speaker_note:
+                parts.append(slide.speaker_note)
+            slide_texts.append("\n".join([part for part in parts if part]))
+
+        embeddings = await embedding_service.create_embeddings_batch(slide_texts) if slide_texts else []
+        file_path = f"generated/ai/{uuid.uuid4().hex}.json"
+        presentation = await vector_db.save_ai_presentation_with_slides(
+            db=db,
+            user_id=current_user.id,
+            title=state.metadata.title,
+            file_path=file_path,
+            slide_texts=slide_texts,
+            embeddings=embeddings,
+            ai_content_json=state.model_dump(),
+        )
+
+        return PresentationGenerateResponse(
+            presentation_id=presentation.id,
+            state=state,
+        )
     except AuthenticationError as exc:
         logger.error(f"OpenAI authentication failed for user {current_user.id}: {exc}")
         raise HTTPException(status_code=401, detail="OpenAI authentication failed.") from exc
@@ -74,10 +101,41 @@ async def list_presentations(
             "title": p.title,
             "file_name": os.path.basename(p.file_path),
             "file_path": p.file_path,
-            "file_type": p.file_type,
+            "file_type": p.file_type.value if isinstance(p.file_type, FileType) else str(p.file_type).lower(),
             "slide_count": p.slide_count,
             "status": p.status,
-            "created_at": p.created_at.isoformat() if p.created_at else None
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+            "is_ai_generated": p.is_ai_generated,
+        }
+        for p in presentations
+    ]
+
+
+@router.get("/ai", response_model=list)
+async def list_ai_presentations(
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(auth.get_current_user),
+):
+    stmt = (
+        select(Presentation)
+        .where(Presentation.user_id == current_user.id)
+        .where(Presentation.is_ai_generated.is_(True))
+        .order_by(Presentation.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    presentations = result.scalars().all()
+
+    return [
+        {
+            "id": p.id,
+            "title": p.title,
+            "file_name": os.path.basename(p.file_path),
+            "file_path": p.file_path,
+            "file_type": p.file_type.value if isinstance(p.file_type, FileType) else str(p.file_type).lower(),
+            "slide_count": p.slide_count,
+            "status": p.status,
+            "created_at": p.created_at.isoformat() if p.created_at else None,
+            "is_ai_generated": p.is_ai_generated,
         }
         for p in presentations
     ]
@@ -168,14 +226,15 @@ async def get_presentation(
     # Detect orientation and aspect ratio for frontend
     orientation = "landscape"
     aspect_ratio = 1.777
-    if presentation.file_type == "pdf":
+    file_type_value = presentation.file_type.value if isinstance(presentation.file_type, FileType) else str(presentation.file_type).lower()
+    if file_type_value == FileType.PDF.value:
         orientation, aspect_ratio = pdf_service.get_pdf_orientation(presentation.file_path)
-    elif presentation.file_type == "pptx":
+    elif file_type_value == FileType.PPTX.value:
         orientation, aspect_ratio = pptx_service.get_pptx_orientation(presentation.file_path)
 
     # Include PDF preview path for PPTX files
     pdf_preview_path = None
-    if presentation.file_type == "pptx":
+    if file_type_value == FileType.PPTX.value:
         preview = presentation.file_path + ".preview.pdf"
         if not os.path.exists(preview) and os.path.exists(presentation.file_path):
             # On-demand conversion for files uploaded before this feature was added
@@ -187,13 +246,14 @@ async def get_presentation(
         "id": presentation.id,
         "title": presentation.title,
         "file_path": presentation.file_path,
-        "file_type": presentation.file_type,
+        "file_type": file_type_value,
         "pdf_preview_path": pdf_preview_path,
         "slide_count": presentation.slide_count,
         "total_pages": presentation.slide_count,  # Added for frontend compatibility
         "status": presentation.status,
         "orientation": orientation,
         "aspect_ratio": aspect_ratio,
+        "is_ai_generated": presentation.is_ai_generated,
     }
 
     if include_slides:
@@ -203,6 +263,26 @@ async def get_presentation(
         ]
 
     return response
+
+
+@router.get("/{presentation_id}/ai-state", response_model=PresentationState)
+async def get_ai_presentation_state(
+    presentation_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(auth.get_current_user),
+):
+    stmt = select(Presentation).where(
+        Presentation.id == presentation_id,
+        Presentation.user_id == current_user.id,
+        Presentation.is_ai_generated.is_(True),
+    )
+    result = await db.execute(stmt)
+    presentation = result.scalar_one_or_none()
+
+    if not presentation or not presentation.ai_content_json:
+        raise ValidationError("AI presentation not found")
+
+    return PresentationState.model_validate(presentation.ai_content_json)
 
 
 @router.post("/upload", status_code=status.HTTP_201_CREATED)
@@ -352,10 +432,11 @@ async def update_presentation_title(
         "title": presentation.title,
         "file_name": os.path.basename(presentation.file_path),
         "file_path": presentation.file_path,
-        "file_type": presentation.file_type,
+        "file_type": presentation.file_type.value if isinstance(presentation.file_type, FileType) else str(presentation.file_type).lower(),
         "slide_count": presentation.slide_count,
         "status": presentation.status,
         "created_at": presentation.created_at.isoformat() if presentation.created_at else None,
+        "is_ai_generated": presentation.is_ai_generated,
     }
 
 @router.delete("/{presentation_id}", status_code=status.HTTP_204_NO_CONTENT)
