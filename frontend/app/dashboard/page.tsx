@@ -26,6 +26,7 @@ import { useDashboard, RecentPresentation } from "./DashboardContext";
 import Sessions from "./sessions/Sessions";
 import Profile from "./profile/Profile";
 import TopicIdeas from "./ideas/TopicIdeas";
+import AiGenerationForm from "./ai-generation/AiGenerationForm";
 import client from "../api/client";
 import axios from "axios";
 import { useTranslations } from "next-intl";
@@ -481,13 +482,9 @@ export default function DashboardPage() {
                 </motion.div>
             )}
 
-            {/* AI Presentation — placeholder */}
+            {/* AI Presentation — Generation Form */}
             {activeTab === 'ai-presentation' && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="min-h-[40vh]"
-                />
+                <AiGenerationForm />
             )}
 
             {/* Topic Ideas */}

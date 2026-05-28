@@ -779,5 +779,24 @@
     "noSavedIdeas": "No favorites yet",
     "startWithCategory": "Or start with a category",
     "trendingTopics": "Trending Topics"
+  },
+  "aiGeneration": {
+    "title": "Generate Presentation with AI",
+    "subtitle": "Just enter the topic, let AI decide the slide count and design",
+    "topicLabel": "Presentation Topic",
+    "topicPlaceholder": "E.g. 'Future vision of PreCue.ai, speaker analytics and market growth strategy'...",
+    "languageLabel": "Presentation Language",
+    "submitButton": "Generate Presentation with AI",
+    "errorTitle": "Failed to Generate Presentation",
+    "loadingTitle": "AI is Generating Presentation",
+    "loadingNote": "This process may take about 10-15 seconds.",
+    "backToLibrary": "Back to Library",
+    "presentationEditor": "Presentation Editor",
+    "step1": "Analyzing topic and creating outlines...",
+    "step2": "AI is constructing slide structures...",
+    "step3": "Detailing slide contents and titles...",
+    "step4": "Preparing image layouts and presentation theme...",
+    "step5": "Creating speaker notes and smart questions...",
+    "step6": "Preparing presentation, transferring to editor..."
   }
 }

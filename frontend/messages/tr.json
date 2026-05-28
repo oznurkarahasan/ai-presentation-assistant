@@ -779,5 +779,24 @@
     "noSavedIdeas": "Henüz favori fikir yok",
     "startWithCategory": "Ya da bir kategoriyle başla",
     "trendingTopics": "Güncel Konular"
+  },
+  "aiGeneration": {
+    "title": "Yapay Zeka ile Sunum Üret",
+    "subtitle": "Sadece konuyu yazın, slayt sayısına ve tasarıma yapay zeka karar versin",
+    "topicLabel": "Sunum Konusu (Topic)",
+    "topicPlaceholder": "Örn: 'PreCue.ai platformunun gelecek vizyonu, konuşmacı analitikleri ve pazar büyüme stratejisi'...",
+    "languageLabel": "Sunum Dili (Language)",
+    "submitButton": "AI ile Sunum Oluştur",
+    "errorTitle": "Sunum Oluşturulamadı",
+    "loadingTitle": "Yapay Zeka Sunumu Üretiyor",
+    "loadingNote": "Bu işlem ortalama 10-15 saniye sürebilir.",
+    "backToLibrary": "Kütüphaneye Dön",
+    "presentationEditor": "Sunum Editörü",
+    "step1": "Konu analiz ediliyor ve ana hatlar çıkarılıyor...",
+    "step2": "Yapay zeka slayt yapılarını kurguluyor...",
+    "step3": "Slayt içerikleri ve başlıkları detaylandırılıyor...",
+    "step4": "Görsel yerleşimleri ve sunum teması hazırlanıyor...",
+    "step5": "Konuşmacı notları ve akıllı sorular oluşturuluyor...",
+    "step6": "Sunum hazırlanıyor, editöre aktarılıyor..."
   }
 }
