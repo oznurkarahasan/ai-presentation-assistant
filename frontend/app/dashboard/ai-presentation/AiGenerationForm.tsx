@@ -60,12 +60,12 @@ export default function AiGenerationForm() {
             if (response.data) {
                 // Store the PresentationState JSON globally in sessionStorage
                 sessionStorage.setItem('precue_generated_presentation', JSON.stringify(response.data));
-                
+
                 // Clear any manual query ID in storage
                 sessionStorage.removeItem('precue_active_presentation_id');
 
                 // Redirect to the new independent editor route
-                router.push('/ai-presentation/editor');
+                router.push('/editor');
             } else {
                 throw new Error('No data returned.');
             }
