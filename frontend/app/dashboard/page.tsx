@@ -26,7 +26,7 @@ import { useDashboard, RecentPresentation } from "./DashboardContext";
 import Sessions from "./sessions/Sessions";
 import Profile from "./profile/Profile";
 import TopicIdeas from "./ideas/TopicIdeas";
-import AiGenerationForm from "./ai-generation/AiGenerationForm";
+import AiGenerationForm from "./ai-presentation/AiGenerationForm";
 import client from "../api/client";
 import axios from "axios";
 import { useTranslations } from "next-intl";
@@ -587,11 +587,11 @@ export default function DashboardPage() {
                                                 : 'border-white/15 text-zinc-300 hover:bg-white/[0.04]'
                                                 }`}
                                         >
-                                                {useReminder ? t('disable') : t('enable')}
+                                            {useReminder ? t('disable') : t('enable')}
                                         </button>
                                     </div>
                                     <p className="mb-2 text-xs text-zinc-300">
-                                            {t('reminderDesc')}
+                                        {t('reminderDesc')}
                                     </p>
                                     <button
                                         type="button"

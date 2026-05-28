@@ -65,7 +65,7 @@ export default function AiGenerationForm() {
                 sessionStorage.removeItem('precue_active_presentation_id');
 
                 // Redirect to the new independent editor route
-                router.push('/dashboard/ai-generation/editor');
+                router.push('/ai-presentation/editor');
             } else {
                 throw new Error('No data returned.');
             }
