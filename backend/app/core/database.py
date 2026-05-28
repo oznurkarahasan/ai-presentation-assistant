@@ -5,7 +5,7 @@ from app.core.config import settings
 #create the async engine for async database connection
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=True, 
+    echo=settings.ENV.lower() in ("development", "dev"),
     future=True
 )
 

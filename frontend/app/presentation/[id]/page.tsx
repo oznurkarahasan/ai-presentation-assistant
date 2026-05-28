@@ -258,7 +258,7 @@ export default function RealTimePresentationPage() {
                 ? `${baseWsUrl}/api/v1/orchestration/ws/presentation/${presentationId}?token=${encodeURIComponent(token)}`
                 : `${baseWsUrl}/api/v1/orchestration/ws/presentation/${presentationId}`;
 
-            console.log(`[WebSocket] [${socketId}] Connecting to: ${wsUrl} (Current Host: ${host})`);
+            console.log(`[WebSocket] [${socketId}] Connecting to presentation ${presentationId} (Host: ${host})`);
             setWsStatus("connecting");
 
             socket = new WebSocket(wsUrl);
@@ -299,6 +299,10 @@ export default function RealTimePresentationPage() {
                 console.warn(`[WebSocket] [${socketId}] Closed. Code: ${event.code}`);
                 if (socketRef.current === socket) {
                     setWsStatus("disconnected");
+                }
+                if (event.code === 4001) {
+                    window.location.href = '/login';
+                    return;
                 }
                 // Only reconnect if this was the intended active socket
                 if (socketRef.current === socket) {

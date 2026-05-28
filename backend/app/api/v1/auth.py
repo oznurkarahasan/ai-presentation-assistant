@@ -1,7 +1,7 @@
 from typing import Any
 from datetime import timedelta, datetime, timezone
 import secrets
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Request, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -9,6 +9,7 @@ from jose import jwt, JWTError
 from app.models.presentation import User
 from app.core.database import AsyncSessionLocal
 from app.core import security
+from app.core.limiter import limiter
 from app.services import email_service
 from app.schemas.auth import ForgotPassword, ResetPassword
 from app.core.logger import logger
@@ -77,8 +78,9 @@ async def register(
     return user
 
 @router.post("/login", response_model=schemas.Token)
-# Oauth2PasswordRequestForm has 'username' and 'password' fields
+@limiter.limit("5/minute")
 async def login(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db)
 ) -> Any:
@@ -270,7 +272,9 @@ async def delete_me(
 
 
 @router.post("/forgot-password")
+@limiter.limit("3/minute")
 async def forgot_password(
+    request: Request,
     payload: ForgotPassword,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db)

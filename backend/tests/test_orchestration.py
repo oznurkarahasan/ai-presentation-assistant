@@ -9,6 +9,15 @@ from app.models.presentation import Presentation, PresentationSession, FileType,
 from sqlalchemy import select
 
 @pytest.fixture
+def mock_ws_auth():
+    """Bypass WebSocket token auth in tests by returning a dummy user_id."""
+    with patch(
+        "app.api.v1.orchestration.resolve_user_id_from_token",
+        AsyncMock(return_value=1),
+    ):
+        yield
+
+@pytest.fixture
 async def test_presentation(db_session):
     """Create a dummy presentation for testing"""
     presentation = Presentation(
@@ -39,14 +48,14 @@ async def test_session(db_session, test_presentation):
     return session
 
 @pytest.mark.asyncio
-async def test_websocket_connection(sync_client, test_presentation):
+async def test_websocket_connection(sync_client, test_presentation, mock_ws_auth):
     """Test that we can connect to the orchestration WebSocket"""
     with sync_client.websocket_connect(f"/api/v1/orchestration/ws/presentation/{test_presentation.id}") as websocket:
         # If we reached here without error, connection was successful
         assert websocket is not None
 
 @pytest.mark.asyncio
-async def test_websocket_broadcast_transcript(sync_client, test_presentation):
+async def test_websocket_broadcast_transcript(sync_client, test_presentation, mock_ws_auth):
     """Test that transcripts are broadcasted to all connections"""
     with sync_client.websocket_connect(f"/api/v1/orchestration/ws/presentation/{test_presentation.id}") as ws1:
         with sync_client.websocket_connect(f"/api/v1/orchestration/ws/presentation/{test_presentation.id}") as ws2:
@@ -66,7 +75,7 @@ async def test_websocket_broadcast_transcript(sync_client, test_presentation):
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(10)
-async def test_websocket_intent_persistence(sync_client, test_presentation, test_session, db_session):
+async def test_websocket_intent_persistence(sync_client, test_presentation, test_session, db_session, mock_ws_auth):
     """Test intent analysis and slide state persistence"""
     # Mock result for intent analysis
     mock_result = IntentResult(
@@ -107,7 +116,7 @@ async def test_websocket_intent_persistence(sync_client, test_presentation, test
                 assert updated_session.current_slide_index == 1
 
 @pytest.mark.asyncio
-async def test_websocket_jump_intent(sync_client, test_presentation, test_session):
+async def test_websocket_jump_intent(sync_client, test_presentation, test_session, mock_ws_auth):
     """Test jump to slide command"""
     mock_result = IntentResult(
         intent=IntentType.JUMP_TO_SLIDE,

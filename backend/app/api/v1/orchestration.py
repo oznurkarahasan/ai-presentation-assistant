@@ -60,6 +60,12 @@ async def websocket_orchestration(websocket: WebSocket, presentation_id: str):
     user_id: Optional[int] = await resolve_user_id_from_token(websocket.query_params.get("token"))
     current_session_id: Optional[int] = None
 
+    if user_id is None:
+        await websocket.accept()
+        await websocket.close(code=4001)
+        logger.warning(f"[WebSocket Handshake] Rejected unauthenticated connection for {presentation_id}")
+        return
+
     try:
         await manager.connect(presentation_id, websocket)
         logger.info(f"[WebSocket Handshake] Connection accepted for {presentation_id}")
