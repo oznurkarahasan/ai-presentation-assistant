@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Palette, Type, Check, Layers, StickyNote, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { SLIDE_LAYOUT_IDS, SLIDE_LAYOUT_ICONS, SlideLayoutId } from '../lib/slideLayouts';
 
 export interface PresentationMetadata {
     title: string;
@@ -17,9 +18,9 @@ interface RightStylePanelProps {
     onUpdateMetadata: (metadata: PresentationMetadata) => void;
     // Active slide info for Slide tab
     activeSlideTitle?: string;
-    activeSlideLayout?: string;
+    activeSlideLayout?: SlideLayoutId;
     activeSlideNote?: string;
-    onUpdateSlideLayout?: (layout: string) => void;
+    onUpdateSlideLayout?: (layout: SlideLayoutId) => void;
     onUpdateSlideNote?: (note: string) => void;
 }
 
@@ -47,12 +48,7 @@ const FONTS = [
     { name: 'Space Grotesk', value: 'Space Grotesk, sans-serif' }
 ];
 
-const LAYOUTS = [
-    { id: 'standard', icon: '▣' },
-    { id: 'left', icon: '◧' },
-    { id: 'right', icon: '◨' },
-    { id: 'background', icon: '▤' },
-];
+const LAYOUTS = SLIDE_LAYOUT_IDS.map((id) => ({ id, icon: SLIDE_LAYOUT_ICONS[id] }));
 
 type TabId = 'style' | 'slide' | 'notes';
 

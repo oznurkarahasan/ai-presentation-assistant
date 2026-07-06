@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Trash2, Plus, GripVertical } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { SlideLayoutId } from '../lib/slideLayouts';
 
 export interface SlideImage {
     prompt: string;
@@ -14,7 +15,7 @@ export interface SlideImage {
 export interface PresentationSlide {
     id: string;
     title: string;
-    content_type: string; // 'left' | 'right' | 'top' | 'bottom' | 'background' | 'standard'
+    content_type: SlideLayoutId;
     items: string[];
     image?: SlideImage;
     speaker_note?: string;

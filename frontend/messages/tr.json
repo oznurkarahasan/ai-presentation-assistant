@@ -921,6 +921,7 @@
       "searchImagesPlaceholder": "Görsel veya konu arayın (örn. teknoloji, yapay zeka, iş)...",
       "popular": "Popüler:",
       "photoAuthor": "Fotoğraf: {author}",
+      "loadingImages": "Görseller yükleniyor...",
       "imagesNotFound": "Görsel bulunamadı.",
       "tryDifferentKeywords": "Lütfen farklı anahtar kelimeler aramayı deneyin."
     },
