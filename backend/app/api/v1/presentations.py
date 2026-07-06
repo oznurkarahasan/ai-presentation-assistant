@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, UploadFile, File, Query, status, HTTPException
+from fastapi import APIRouter, Depends, UploadFile, File, Query, status, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from openai import APIConnectionError, APIError, AuthenticationError, BadRequestError, RateLimitError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +7,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service
+from app.core.limiter import limiter
 from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationGenerateResponse, PresentationState
 from pydantic import BaseModel, Field
 import asyncio
@@ -35,13 +36,15 @@ async def get_db():
 
 
 @router.post("/generate", response_model=PresentationGenerateResponse)
+@limiter.limit("5/minute")
 async def generate_presentation(
-    request: PresentationGenerateRequest,
+    request: Request,
+    payload: PresentationGenerateRequest,
     db: AsyncSession = Depends(get_db),
     current_user=Depends(auth.get_current_user),
 ):
     try:
-        state = await generation_service.generate_presentation_state(request)
+        state = await generation_service.generate_presentation_state(payload)
 
         slide_texts = []
         for slide in state.slides:
