@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 import uuid
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -6,9 +6,13 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class PresentationGenerateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    topic: str = Field(..., min_length=2, max_length=200)
+    topic: str = Field(..., min_length=2, max_length=500)
     language: str = Field(..., min_length=2, max_length=12)
     theme: Optional[str] = Field(None, max_length=80)
+    slide_count: Optional[int] = Field(None, ge=4, le=20)
+    presentation_type: Optional[str] = Field(None, max_length=50)
+    tone: Optional[str] = Field(None, max_length=50)
+    audience: Optional[str] = Field(None, max_length=100)
 
 
 class SlideImage(BaseModel):
@@ -18,6 +22,7 @@ class SlideImage(BaseModel):
     prompt: str = Field(..., min_length=1, max_length=500)
     style: Optional[str] = Field("modern", max_length=100)
     alt: Optional[str] = Field(None, max_length=200)
+    url: Optional[str] = Field(None, max_length=2000)
 
 
 class PresentationMetadata(BaseModel):
