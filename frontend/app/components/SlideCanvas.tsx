@@ -1,8 +1,8 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect } from 'react';
-import { Image as ImageIcon, Plus, Trash2, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { Image as ImageIcon, Plus, Trash2, Sparkles, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { PresentationSlide } from './SlideList';
 

@@ -3,7 +3,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 import PresentationEditor from '../../components/PresentationEditor';
 import client from '../../api/client';
 
@@ -13,7 +12,6 @@ const SESSION_PRESENTATION_KEY = 'precue_generated_presentation';
 export default function PresentationEditorPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const t = useTranslations('aiGeneration');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {

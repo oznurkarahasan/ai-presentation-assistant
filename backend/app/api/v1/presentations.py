@@ -14,6 +14,7 @@ import io
 import os
 import shutil
 import uuid
+from urllib.parse import quote
 
 router = APIRouter()
 
@@ -342,13 +343,23 @@ async def export_ai_presentation_pptx(
         logger.error(f"PPTX export failed for presentation {presentation_id}: {exc}")
         raise HTTPException(status_code=500, detail="Failed to generate PPTX file")
 
-    safe_title = "".join(c if c.isalnum() or c in " -_" else "_" for c in state.metadata.title)[:60]
-    filename = f"{safe_title}.pptx"
+    # Content-Disposition header values must be latin-1/ASCII; the title may
+    # contain non-ASCII characters (e.g. Turkish "ğ", "ş", "ı"), so provide an
+    # ASCII-only fallback filename plus an RFC 5987 UTF-8 filename* for
+    # browsers that support it (all modern browsers do).
+    ascii_title = state.metadata.title.encode("ascii", "ignore").decode("ascii")
+    safe_title = "".join(c if c.isalnum() or c in " -_" else "_" for c in ascii_title).strip("_ ") or "presentation"
+    filename_ascii = f"{safe_title[:60]}.pptx"
+    filename_utf8 = quote(f"{state.metadata.title[:60]}.pptx")
 
     return StreamingResponse(
         io.BytesIO(pptx_bytes),
         media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{filename_ascii}"; filename*=UTF-8\'\'{filename_utf8}'
+            )
+        },
     )
 
 
