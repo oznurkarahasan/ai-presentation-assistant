@@ -1,0 +1,52 @@
+# Changelog - July 7, 2026
+
+## Branch
+- **Name:** `76-ai-presentation-generation-2`
+- **Scope:** Systematic backend cleanup following a full codebase duplication/architecture-debt audit (see `reports/.notes.md` for the complete 9-item backend + 8-item frontend findings list). This report covers the first 5 backend items, tackled one at a time with full verification after each.
+
+## Change Summary
+- **5 findings resolved**, each verified independently: syntax check, full `pytest` suite (27/27 passing throughout), Docker container reload with no errors, plus targeted behavioral verification for the two riskiest changes (exact error-message diffing, live end-to-end test against the real PostgreSQL + pgvector database).
+- No user-facing API behavior changed except item 1, which makes previously-dead cleanup logic actually run.
+- Commits: `999e153`, `1a795ba`, `e8b7ecd`, `5aad6e8` (item 5 — `vector_db.py` — left uncommitted per session state).
+
+## 1. File Cleanup Worker Wired Up (`999e153`)
+- **Problem:** `app/services/file_cleanup.py` (139 lines) was entirely dead code — `cleanup_old_files()` and `cleanup_orphaned_files()` were never called from anywhere, so failed uploads and expired guest uploads accumulated on disk indefinitely.
+- **Fix:** Added `run_cleanup_worker()` to `file_cleanup.py`, following the exact same background-task pattern already established by `planner_reminder_service.run_reminder_worker()` (loop + `asyncio.sleep` + `CancelledError` handling). Wired into `main.py`'s `lifespan()` alongside the existing reminder worker, with matching graceful-shutdown cancellation. Runs once every 24 hours.
+- Removed `cleanup_orphaned_files()` — it was an incomplete stub that only counted and logged files without ever cross-referencing the database or actually deleting anything, despite its name/docstring implying otherwise.
+- **Verified:** Docker logs show `"File cleanup worker started"` followed by a real cleanup cycle log line after reload.
+
+## 2. Shared OpenAI Client (`1a795ba`)
+- **Problem:** An identical lazy-init `get_client()` / `_client` singleton pattern was copy-pasted in 5 places: `generation_service.py`, `rag_service.py`, `intent_service.py`, `embedding_service.py`, `api/v1/ideas.py` — each with slightly different logging/error-wrapping.
+- **Fix:** New `app/core/openai_client.py` with a single `get_openai_client()`. All 5 call sites now do `from app.core.openai_client import get_openai_client as get_client`, so no call-site code changed (`client = get_client()` still works everywhere).
+- **Care taken:** `tests/test_intent_service.py` patches `app.services.intent_service.get_client` directly — the `as get_client` re-export preserves this exact patch target, confirmed by the full suite still passing.
+- Cleaned up now-unused `AsyncOpenAI`/`settings`/`Optional` imports left behind in each file.
+
+## 3. Shared `get_db()` Dependency (`e8b7ecd`)
+- **Problem:** The FastAPI `get_db()` async generator was byte-identical in `auth.py`, `chat.py`, `presentations.py`, and `planner.py`.
+- **Fix:** Moved to `app/core/database.py`; all 4 routers now import it from there.
+- **Side-effect bug fix:** `tests/conftest.py` had a defensive workaround — because each router previously had its *own* `get_db` function object, the test client fixture had to import and override all 4 separately inside a `try/except ImportError` block (`"These modules might not exist yet"`). Now that all routers import the identical function object from `app.core.database`, a single `app.dependency_overrides[get_db]` covers every router — confirmed via `get_db is g1 is g2 is g3 is g4` inside the running container. Simplified `conftest.py` accordingly (removed ~10 now-redundant lines).
+
+## 4. Shared File-Security Validation (`5aad6e8`)
+- **Problem:** `pdf_service.py` and `pptx_service.py` each defined a byte-identical `clean_text()`, plus near-identical `validate_pdf_security()` / `validate_pptx_security()` "bomb protection" checks (item-count cap + average-item-size cap), differing only in wording ("page" vs "slide", "PDF" vs "PPTX").
+- **Fix:** New `app/services/file_security.py` with a shared `clean_text()` and a parametrized `validate_item_count_and_size(file_label, item_label, item_count, file_size)`. Each service now calls the shared validator and layers only its own format-specific check on top (PDF keeps its encryption check; PPTX has none).
+- **Verified:** Directly diffed the raised `ValidationError` messages against the originals — `"PDF has too many pages (600). Maximum allowed: 500"`, `"PPTX has too many slides (600)..."`, `"PDF file has unusually large pages..."` all match byte-for-byte.
+
+## 5. Consolidated `vector_db.py` Save Functions (uncommitted)
+- **Problem:** `save_presentation_with_slides()` and `save_ai_presentation_with_slides()` were ~90% duplicate: both create a `Presentation` row, flush, validate slide/embedding count parity, build `Slide` rows, commit, and on any exception roll back and mark the row `FAILED` with the error message.
+- **Fix:** Extracted `_save_presentation_with_slides(..., *, file_type, file_size=0, file_hash=None, is_ai_generated=False, ai_content_json=None)` holding the full shared logic. The two public functions are now thin wrappers computing their format-specific args (file size/type from disk for uploads; `FileType.AI` + `is_ai_generated=True` for AI generations) and delegating. Public signatures unchanged — both call sites in `presentations.py` use keyword arguments and needed no changes.
+- **Verified end-to-end against the real Postgres + pgvector database** (not just unit-level): ran both code paths live inside the container with real 1536-dim embeddings — non-AI path produced `FileType.PDF, is_ai_generated=False, ai_content_json=None, status=COMPLETED`; AI path produced `FileType.AI, is_ai_generated=True, ai_content_json={...}, status=COMPLETED`. Both matched pre-refactor semantics exactly.
+
+## Remaining Work (not yet started)
+From the original audit, items 6-9 (backend) and the full frontend list are still open:
+- `ideas.py` doesn't follow the established service-layer pattern (OpenAI call embedded directly in the route).
+- `presentations.py` is an 825-line god-file — the PPTX export engine belongs in `pptx_service.py`.
+- `api/v1/dashboard/planner/planner.py` is the only nested router; should flatten to `api/v1/planner.py`.
+- Unused exception classes (`DatabaseError`, `AuthenticationError`, `ResourceNotFoundError`, `RateLimitError`) are never raised; some "not found" cases incorrectly return 400 via `ValidationError` instead of 404.
+- Frontend: `PresentationEditor.tsx` god-component, duplicated session-storage parsing, duplicated auth-check boilerplate, duplicated auth-page scaffolding, no shared `types/`, no shared error-message util, repeated spinner markup.
+
+## Verification Summary
+Every item in this report was checked with all of the following before being considered done:
+1. `python -m ast.parse` on every touched file (syntax).
+2. Full backend `pytest` suite — stayed at 27/27 passing after each individual step.
+3. Docker container (`presentation_backend`) log inspection after each change to confirm a clean `--reload` with no import errors or tracebacks.
+4. Item-specific behavioral checks where the risk warranted it: exact exception-message diffing (item 4), live database round-trip with real embedding dimensions (item 5), and object-identity assertions (`is`) to confirm shared singletons are genuinely shared (items 2, 3).
