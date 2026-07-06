@@ -802,7 +802,28 @@
     "step3": "Slayt içerikleri ve başlıkları detaylandırılıyor...",
     "step4": "Görsel yerleşimleri ve sunum teması hazırlanıyor...",
     "step5": "Konuşmacı notları ve akıllı sorular oluşturuluyor...",
-    "step6": "Sunum hazırlanıyor, editöre aktarılıyor..."
+    "step6": "Sunum hazırlanıyor, editöre aktarılıyor...",
+    "slideCountLabel": "Slayt Sayısı",
+    "showAdvanced": "Gelişmiş seçenekler",
+    "hideAdvanced": "Gelişmiş seçenekleri gizle",
+    "presentationTypeLabel": "Sunum Tipi",
+    "typeAuto": "Otomatik",
+    "typePitchDeck": "Yatırımcı Sunumu",
+    "typeEducational": "Eğitim / Öğretim",
+    "typeWorkshop": "Workshop",
+    "typeProductDemo": "Ürün Tanıtımı",
+    "typeReport": "Rapor / Analiz",
+    "typeKeynote": "Keynote Konuşması",
+    "typeMarketing": "Pazarlama / Satış",
+    "toneLabel": "Ton",
+    "toneAuto": "Otomatik",
+    "toneProfessional": "Profesyonel",
+    "toneCasual": "Samimi / Günlük",
+    "toneInspiring": "İlham Verici",
+    "toneEducational": "Eğitici",
+    "toneCreative": "Yaratıcı",
+    "audienceLabel": "Hedef Kitle",
+    "audiencePlaceholder": "Ör: C-level yöneticiler, üniversite öğrencileri, teknik ekip..."
   },
   "editor": {
     "defaultSlides": {
@@ -887,6 +908,7 @@
     "notifications": {
       "cannotDeleteLastSlide": "Sunumdaki son slayt silinemez. En az 1 slayt bulunmalıdır.",
       "downloadSuccess": "Sunum PPTX formatında başarıyla oluşturuldu ve indirme başlatıldı.",
+      "downloadError": "PPTX dışa aktarma başarısız oldu. Lütfen tekrar deneyin.",
       "saveRequiredError": "Analize göndermeden önce kaydedilmiş bir sunum gereklidir.",
       "savingChanges": "Slayt Değişiklikleri Kaydediliyor...",
       "updatingVectorDb": "Vektör Veritabanı (Embedding) Güncelleniyor...",
@@ -916,6 +938,30 @@
       "newSlideDescription": "Yeni madde açıklaması ekleyin.",
       "defaultTitle": "PreCue.ai Sunumu",
       "help": "Yardım"
+    },
+    "toolbar": {
+      "slideOf": "Slayt {current} / {total}",
+      "zoomIn": "Yakınlaştır",
+      "zoomOut": "Uzaklaştır",
+      "zoomFit": "Sığdır",
+      "fullscreen": "Tam Ekran",
+      "exitFullscreen": "Tam Ekrandan Çık",
+      "present": "Sunum Yap",
+      "showSlides": "Slaytları Göster",
+      "hideSlides": "Slaytları Gizle",
+      "showProperties": "Özellikleri Göster",
+      "hideProperties": "Özellikleri Gizle"
+    },
+    "statusBar": {
+      "slide": "Slayt",
+      "zoom": "Yakınlaştırma",
+      "notes": "Notlar",
+      "of": "/"
+    },
+    "tabs": {
+      "style": "Stil",
+      "slide": "Slayt",
+      "notes": "Notlar"
     }
   }
 }

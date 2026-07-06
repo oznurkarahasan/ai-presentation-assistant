@@ -802,7 +802,28 @@
     "step3": "Detailing slide contents and titles...",
     "step4": "Preparing image layouts and presentation theme...",
     "step5": "Creating speaker notes and smart questions...",
-    "step6": "Preparing presentation, transferring to editor..."
+    "step6": "Preparing presentation, transferring to editor...",
+    "slideCountLabel": "Slide Count",
+    "showAdvanced": "Advanced options",
+    "hideAdvanced": "Hide advanced options",
+    "presentationTypeLabel": "Presentation Type",
+    "typeAuto": "Auto",
+    "typePitchDeck": "Investor Pitch Deck",
+    "typeEducational": "Educational / Training",
+    "typeWorkshop": "Workshop",
+    "typeProductDemo": "Product Demo",
+    "typeReport": "Report / Analysis",
+    "typeKeynote": "Keynote Speech",
+    "typeMarketing": "Marketing / Sales",
+    "toneLabel": "Tone",
+    "toneAuto": "Auto",
+    "toneProfessional": "Professional",
+    "toneCasual": "Casual / Friendly",
+    "toneInspiring": "Inspiring",
+    "toneEducational": "Educational",
+    "toneCreative": "Creative",
+    "audienceLabel": "Target Audience",
+    "audiencePlaceholder": "E.g. C-level executives, university students, technical team..."
   },
   "editor": {
     "defaultSlides": {
@@ -887,6 +908,7 @@
     "notifications": {
       "cannotDeleteLastSlide": "The last slide in the presentation cannot be deleted. There must be at least 1 slide.",
       "downloadSuccess": "Presentation successfully created in PPTX format and download started.",
+      "downloadError": "PPTX export failed. Please try again.",
       "saveRequiredError": "A saved presentation is required before sending to analysis.",
       "savingChanges": "Saving Slide Changes...",
       "updatingVectorDb": "Updating Vector Database (Embedding)...",
@@ -916,6 +938,30 @@
       "newSlideDescription": "Add a new bullet point description.",
       "defaultTitle": "PreCue.ai Presentation",
       "help": "Help"
+    },
+    "toolbar": {
+      "slideOf": "Slide {current} of {total}",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "zoomFit": "Fit",
+      "fullscreen": "Fullscreen",
+      "exitFullscreen": "Exit Fullscreen",
+      "present": "Present",
+      "showSlides": "Show Slides",
+      "hideSlides": "Hide Slides",
+      "showProperties": "Show Properties",
+      "hideProperties": "Hide Properties"
+    },
+    "statusBar": {
+      "slide": "Slide",
+      "zoom": "Zoom",
+      "notes": "Notes",
+      "of": "of"
+    },
+    "tabs": {
+      "style": "Style",
+      "slide": "Slide",
+      "notes": "Notes"
     }
   }
 }
