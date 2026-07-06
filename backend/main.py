@@ -26,12 +26,14 @@ from app.core.exceptions import (
 from app.api.v1 import auth, presentations, chat, orchestration, ideas
 from app.api.v1.dashboard.planner import planner
 from app.services.planner_reminder_service import run_reminder_worker
+from app.services.file_cleanup import run_cleanup_worker
 
 # Lifespan event to create tables and extensions
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Application startup initiated")
     reminder_worker_task = None
+    cleanup_worker_task = None
     if not os.getenv("TESTING"):
         try:
             async with engine.begin() as conn:
@@ -40,6 +42,7 @@ async def lifespan(app: FastAPI):
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("Database initialized successfully")
             reminder_worker_task = asyncio.create_task(run_reminder_worker())
+            cleanup_worker_task = asyncio.create_task(run_cleanup_worker())
         except Exception as e:
             logger.error(f"Database initialization failed: {str(e)}")
             logger.warning("Application starting without database initialization. Expect errors if DB is needed.")
@@ -47,10 +50,11 @@ async def lifespan(app: FastAPI):
         logger.info("Skipping database initialization in TESTING mode")
     yield
 
-    if reminder_worker_task is not None:
-        reminder_worker_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await reminder_worker_task
+    for task in (reminder_worker_task, cleanup_worker_task):
+        if task is not None:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
     logger.info("Application shutdown")
 
