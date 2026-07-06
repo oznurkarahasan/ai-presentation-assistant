@@ -414,8 +414,8 @@ export default function PresentationEditor() {
     // Panel & Zoom States
     const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
     const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
-    const [zoom, setZoom] = useState(0); // 0 = fit
-    const [isNotesOpen, setIsNotesOpen] = useState(false);
+    const [zoom, setZoom] = useState(150); // 0 = fit
+    const [isNotesOpen, setIsNotesOpen] = useState(true);
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     const handleZoomIn = useCallback(() => setZoom(prev => prev === 0 ? 125 : Math.min(prev + 25, 200)), []);
