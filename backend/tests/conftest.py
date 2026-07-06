@@ -29,8 +29,7 @@ TestingSessionLocal = async_sessionmaker(
 
 # 3. Import app and dependencies AFTER environment setup
 from main import app
-from app.api.v1.auth import get_db
-from app.core.database import Base
+from app.core.database import Base, get_db
 
 # Event loop fixture for session scope
 @pytest.fixture(scope="session")
@@ -65,18 +64,8 @@ async def client(db_session):
     async def override_get_db():
         yield db_session
     
-    # Override all get_db dependencies
+    # All routers share the same app.core.database.get_db, so one override covers them all.
     app.dependency_overrides[get_db] = override_get_db
-    
-    try:
-        from app.api.v1.presentations import get_db as pres_get_db
-        from app.api.v1.chat import get_db as chat_get_db
-        from app.api.v1.dashboard.planner.planner import get_db as planner_get_db
-        app.dependency_overrides[pres_get_db] = override_get_db
-        app.dependency_overrides[chat_get_db] = override_get_db
-        app.dependency_overrides[planner_get_db] = override_get_db
-    except ImportError:
-        pass  # These modules might not exist yet
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac

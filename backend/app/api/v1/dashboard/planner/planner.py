@@ -5,16 +5,11 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1 import auth
-from app.core.database import AsyncSessionLocal
+from app.core.database import get_db
 from app.models.presentation import PlannerEvent, Presentation, User
 from app.schemas.planner import PlannerEventCreate, PlannerEventResponse
 
 router = APIRouter()
-
-
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
 
 
 def _parse_datetime_parts(day: date, hhmm: str) -> datetime:

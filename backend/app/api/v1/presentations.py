@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from openai import APIConnectionError, APIError, AuthenticationError, BadRequestError, RateLimitError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1 import auth
-from app.core.database import AsyncSessionLocal
+from app.core.database import get_db
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service
@@ -29,10 +29,6 @@ from app.models.presentation import Presentation, PresentationSession, FileType
 
 class PresentationTitleUpdate(BaseModel):
     title: str = Field(..., min_length=1, max_length=500)
-
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
 
 
 @router.post("/generate", response_model=PresentationGenerateResponse)

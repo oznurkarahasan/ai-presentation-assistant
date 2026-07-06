@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from jose import jwt, JWTError
 from app.models.presentation import User
-from app.core.database import AsyncSessionLocal
+from app.core.database import get_db
 from app.core import security
 from app.core.limiter import limiter
 from app.services import email_service
@@ -18,10 +18,6 @@ from app.schemas import auth as schemas
 from app.core.config import settings
 # Define the API router login register endpoints
 router = APIRouter()
-#async database dependency
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
 
 async def get_current_user(
     token: str = Depends(security.oauth2_scheme),
