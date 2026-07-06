@@ -5,9 +5,8 @@
 - **Scope:** Systematic backend cleanup following a full codebase duplication/architecture-debt audit (see `reports/.notes.md` for the complete 9-item backend + 8-item frontend findings list). This report covers the first 5 backend items, tackled one at a time with full verification after each.
 
 ## Change Summary
-- **5 findings resolved**, each verified independently: syntax check, full `pytest` suite (27/27 passing throughout), Docker container reload with no errors, plus targeted behavioral verification for the two riskiest changes (exact error-message diffing, live end-to-end test against the real PostgreSQL + pgvector database).
+- **6 findings resolved**, each verified independently: syntax check, full `pytest` suite (27/27 passing throughout), Docker container reload with no errors, plus targeted behavioral verification for the riskiest changes (exact error-message diffing, live end-to-end test against the real PostgreSQL + pgvector database, mocked OpenAI round-trips).
 - No user-facing API behavior changed except item 1, which makes previously-dead cleanup logic actually run.
-- Commits: `999e153`, `1a795ba`, `e8b7ecd`, `5aad6e8` (item 5 — `vector_db.py` — left uncommitted per session state).
 
 ## 1. File Cleanup Worker Wired Up (`999e153`)
 - **Problem:** `app/services/file_cleanup.py` (139 lines) was entirely dead code — `cleanup_old_files()` and `cleanup_orphaned_files()` were never called from anywhere, so failed uploads and expired guest uploads accumulated on disk indefinitely.
@@ -31,14 +30,21 @@
 - **Fix:** New `app/services/file_security.py` with a shared `clean_text()` and a parametrized `validate_item_count_and_size(file_label, item_label, item_count, file_size)`. Each service now calls the shared validator and layers only its own format-specific check on top (PDF keeps its encryption check; PPTX has none).
 - **Verified:** Directly diffed the raised `ValidationError` messages against the originals — `"PDF has too many pages (600). Maximum allowed: 500"`, `"PPTX has too many slides (600)..."`, `"PDF file has unusually large pages..."` all match byte-for-byte.
 
-## 5. Consolidated `vector_db.py` Save Functions (uncommitted)
+## 5. Consolidated `vector_db.py` Save Functions
 - **Problem:** `save_presentation_with_slides()` and `save_ai_presentation_with_slides()` were ~90% duplicate: both create a `Presentation` row, flush, validate slide/embedding count parity, build `Slide` rows, commit, and on any exception roll back and mark the row `FAILED` with the error message.
 - **Fix:** Extracted `_save_presentation_with_slides(..., *, file_type, file_size=0, file_hash=None, is_ai_generated=False, ai_content_json=None)` holding the full shared logic. The two public functions are now thin wrappers computing their format-specific args (file size/type from disk for uploads; `FileType.AI` + `is_ai_generated=True` for AI generations) and delegating. Public signatures unchanged — both call sites in `presentations.py` use keyword arguments and needed no changes.
 - **Verified end-to-end against the real Postgres + pgvector database** (not just unit-level): ran both code paths live inside the container with real 1536-dim embeddings — non-AI path produced `FileType.PDF, is_ai_generated=False, ai_content_json=None, status=COMPLETED`; AI path produced `FileType.AI, is_ai_generated=True, ai_content_json={...}, status=COMPLETED`. Both matched pre-refactor semantics exactly.
 
+## 6. `ideas.py` Split into Schema + Service
+- **Problem:** Every other feature follows a route → service → (schema) layering (`presentations.py` → `generation_service`, `chat.py` → `rag_service`), but `ideas.py` built its OpenAI client, held its system prompts, and called `chat.completions.create` directly inside the route handlers, with all Pydantic models defined inline in the same file. This made the prompt/parsing logic impossible to reuse or test without going through FastAPI.
+- **Fix:**
+  - New `app/schemas/ideas.py` — moved `TopicIdeasRequest`, `TopicIdea`, `TopicIdeasResponse`, `ChatMessageItem`, `TopicChatRequest`, `TopicChatResponse` out of the route module.
+  - New `app/services/ideas_service.py` — moved `SYSTEM_PROMPT`, `CHAT_SYSTEM_PROMPT`, and the two OpenAI-calling functions (`generate_topic_ideas()`, `chat_about_topic()`), each now taking the request schema and returning the response schema directly, matching `generation_service.generate_presentation_state()`'s style.
+  - `api/v1/ideas.py` is now a thin route module: auth dependency, delegate to the service, `try/except` → `HTTPException(500)` — same error-handling behavior as before, no upgrade in granularity (kept in scope).
+- **Verified:** `POST /api/v1/ideas/topics` without a token still returns `401` (routing intact). With the real `AsyncOpenAI` client mocked out (`unittest.mock.patch`), ran both `ideas_service.generate_topic_ideas()` (JSON-mode response → parsed into `TopicIdea` objects) and `ideas_service.chat_about_topic()` (prompt formatting + message history truncation) end-to-end inside the running container — both produced correct output matching pre-refactor logic exactly.
+
 ## Remaining Work (not yet started)
-From the original audit, items 6-9 (backend) and the full frontend list are still open:
-- `ideas.py` doesn't follow the established service-layer pattern (OpenAI call embedded directly in the route).
+From the original audit, items 7-9 (backend) and the full frontend list are still open:
 - `presentations.py` is an 825-line god-file — the PPTX export engine belongs in `pptx_service.py`.
 - `api/v1/dashboard/planner/planner.py` is the only nested router; should flatten to `api/v1/planner.py`.
 - Unused exception classes (`DatabaseError`, `AuthenticationError`, `ResourceNotFoundError`, `RateLimitError`) are never raised; some "not found" cases incorrectly return 400 via `ValidationError` instead of 404.
@@ -49,4 +55,4 @@ Every item in this report was checked with all of the following before being con
 1. `python -m ast.parse` on every touched file (syntax).
 2. Full backend `pytest` suite — stayed at 27/27 passing after each individual step.
 3. Docker container (`presentation_backend`) log inspection after each change to confirm a clean `--reload` with no import errors or tracebacks.
-4. Item-specific behavioral checks where the risk warranted it: exact exception-message diffing (item 4), live database round-trip with real embedding dimensions (item 5), and object-identity assertions (`is`) to confirm shared singletons are genuinely shared (items 2, 3).
+4. Item-specific behavioral checks where the risk warranted it: exact exception-message diffing (item 4), live database round-trip with real embedding dimensions (item 5), mocked-OpenAI-client round-trips through the relocated service functions (item 6), and object-identity assertions (`is`) to confirm shared singletons are genuinely shared (items 2, 3).
