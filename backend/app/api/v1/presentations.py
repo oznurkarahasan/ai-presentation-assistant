@@ -8,7 +8,7 @@ from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service
 from app.core.limiter import limiter
-from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationGenerateResponse, PresentationState
+from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationGenerateResponse, PresentationState, ImageLibraryItem
 from pydantic import BaseModel, Field
 import asyncio
 import io
@@ -116,6 +116,16 @@ async def list_presentations(
         }
         for p in presentations
     ]
+
+
+@router.get("/image-library", response_model=list[ImageLibraryItem])
+async def get_image_library(
+    current_user=Depends(auth.get_current_user),
+):
+    """Curated Unsplash image catalog, single source of truth shared by the
+    AI generation auto-matching (generation_service.resolve_image_url) and
+    the editor's manual image picker."""
+    return generation_service.UNSPLASH_IMAGE_DATABASE
 
 
 @router.get("/ai", response_model=list)
@@ -488,6 +498,10 @@ def _generate_pptx_from_state(state: PresentationState) -> bytes:
         slide_w = Inches(13.33)
         slide_h = Inches(7.5)
 
+        # Layout ids ("standard"/"left"/"right"/"background") must match
+        # frontend/app/lib/slideLayouts.ts SLIDE_LAYOUT_IDS. Kept in sync by
+        # hand since this is a separate (Python) rendering engine that can't
+        # import the shared frontend module.
         if slide_data.content_type == "background" and image_bytes:
             pic_stream = io.BytesIO(image_bytes)
             slide.shapes.add_picture(pic_stream, Emu(0), Emu(0), width=slide_w, height=slide_h)
