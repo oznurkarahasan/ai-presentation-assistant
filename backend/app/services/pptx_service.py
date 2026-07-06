@@ -3,10 +3,10 @@ PPTX text extraction service with security validation.
 """
 from pptx import Presentation
 from fastapi import UploadFile
-from app.core.exceptions import FileProcessingError, ValidationError
+from app.core.exceptions import FileProcessingError
 from app.core.logger import logger
+from app.services.file_security import clean_text, validate_item_count_and_size
 from pypdf import PdfWriter, PdfReader
-import re
 import io
 import os
 import asyncio
@@ -14,46 +14,16 @@ import subprocess  # nosec B404
 import shutil
 import tempfile
 
-# Security limits (same as PDF)
-MAX_PPTX_SLIDES = 500
-MAX_SLIDE_SIZE_KB = 5000  # 5MB per slide
-
-def clean_text(text: str) -> str:
-    """
-    Cleans extracted PPTX text by removing null bytes and other invalid characters.
-    """
-    # Remove null bytes
-    text = text.replace('\x00', '')
-    # Remove other control characters except newlines and tabs
-    text = re.sub(r'[\x01-\x08\x0b-\x0c\x0e-\x1f\x7f-\x9f]', '', text)
-    # Normalize whitespace
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
-
 def validate_pptx_security(prs: Presentation, file_size: int) -> None:
     """
     Validates PPTX for security issues: slide bombs, excessive size.
-    
+
     Raises:
         ValidationError: If PPTX fails security checks
     """
-    # Check slide count (PPTX bomb protection)
-    num_slides = len(prs.slides)
-    if num_slides > MAX_PPTX_SLIDES:
-        logger.warning(f"PPTX has too many slides: {num_slides}")
-        raise ValidationError(
-            f"PPTX has too many slides ({num_slides}). Maximum allowed: {MAX_PPTX_SLIDES}"
-        )
-    
-    # Check average slide size (detect compression bombs)
-    avg_slide_size = file_size / num_slides if num_slides > 0 else 0
-    if avg_slide_size > MAX_SLIDE_SIZE_KB * 1024:
-        logger.warning(f"PPTX has suspicious slide size: {avg_slide_size/1024:.2f}KB per slide")
-        raise ValidationError(
-            "PPTX file has unusually large slides. This may be a malicious file."
-        )
-    
-    logger.debug(f"PPTX security validation passed: {num_slides} slides, {file_size/1024:.2f}KB")
+    validate_item_count_and_size(
+        file_label="PPTX", item_label="slide", item_count=len(prs.slides), file_size=file_size
+    )
 
 async def extract_text_from_pptx(file: UploadFile, file_size: int = 0) -> tuple[list[str], str, float]:
     """
