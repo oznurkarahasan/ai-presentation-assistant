@@ -28,6 +28,7 @@ export interface RecentPresentation {
     slide_count: number;
     status: string;
     created_at: string;
+    is_ai_generated?: boolean;
 }
 
 export interface SavedTopicIdea {

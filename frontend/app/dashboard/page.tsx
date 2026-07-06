@@ -26,6 +26,7 @@ import { useDashboard, RecentPresentation } from "./DashboardContext";
 import Sessions from "./sessions/Sessions";
 import Profile from "./profile/Profile";
 import TopicIdeas from "./ideas/TopicIdeas";
+import AiGenerationForm from "./ai-presentation/AiGenerationForm";
 import client from "../api/client";
 import axios from "axios";
 import { useTranslations } from "next-intl";
@@ -481,13 +482,9 @@ export default function DashboardPage() {
                 </motion.div>
             )}
 
-            {/* AI Presentation — placeholder */}
+            {/* AI Presentation — Generation Form */}
             {activeTab === 'ai-presentation' && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="min-h-[40vh]"
-                />
+                <AiGenerationForm />
             )}
 
             {/* Topic Ideas */}
@@ -590,11 +587,11 @@ export default function DashboardPage() {
                                                 : 'border-white/15 text-zinc-300 hover:bg-white/[0.04]'
                                                 }`}
                                         >
-                                                {useReminder ? t('disable') : t('enable')}
+                                            {useReminder ? t('disable') : t('enable')}
                                         </button>
                                     </div>
                                     <p className="mb-2 text-xs text-zinc-300">
-                                            {t('reminderDesc')}
+                                        {t('reminderDesc')}
                                     </p>
                                     <button
                                         type="button"
@@ -911,6 +908,11 @@ function PresentationRow({ presentation, index, onDelete }: { presentation: Rece
                     <p className="font-bold text-sm truncate pr-4">{presentation.title}</p>
                     <p className="text-[10px] text-zinc-500 flex items-center gap-2 mt-0.5 font-medium uppercase tracking-tighter">
                         <span>{presentation.slide_count} {t('slides')}</span>
+                        {presentation.is_ai_generated && (
+                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary">
+                                {t('aiBadge')}
+                            </span>
+                        )}
                         <span className="w-1 h-1 rounded-full bg-zinc-700" />
                         <span>{new Date(presentation.created_at).toLocaleDateString('en-US')}</span>
                     </p>
@@ -1052,7 +1054,14 @@ function PresentationCard({
                             </button>
                         </div>
                     )}
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{presentation.slide_count} {t('slides')}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                        <span>{presentation.slide_count} {t('slides')}</span>
+                        {presentation.is_ai_generated && (
+                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary">
+                                {t('aiBadge')}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </td>
 

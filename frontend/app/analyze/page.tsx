@@ -17,6 +17,7 @@ import {
     FileText
 } from "lucide-react";
 import PresentationViewer from "../components/PresentationViewer";
+import AiSlidePreview, { AiSlide } from "../components/AiSlidePreview";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Link from "next/link";
@@ -84,6 +85,8 @@ export default function AnalyzePage() {
     const [chatTheme, setChatTheme] = useState<'dark' | 'light'>('dark');
     const [isPageLoading, setIsPageLoading] = useState(false);
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+    const [aiSlides, setAiSlides] = useState<AiSlide[]>([]);
+    const [aiColors, setAiColors] = useState<{ primary: string; accent: string }>({ primary: '#f97316', accent: '#06b6d4' });
 
 
     useEffect(() => {
@@ -101,9 +104,31 @@ export default function AnalyzePage() {
                 try {
                     const response = await client.get(`/api/v1/presentations/${presentationId}`);
                     setPresentationTitle(response.data.title);
-                    // Use PDF preview for PPTX files when available
-                    setPresentationFile(response.data.pdf_preview_path || response.data.file_path);
-                    setFileType(response.data.pdf_preview_path ? 'pdf' : response.data.file_type);
+                    if (response.data.file_type === 'ai') {
+                        setPresentationFile(null);
+                        setFileType('ai');
+                        // Fetch AI presentation state to render slides
+                        try {
+                            const stateRes = await client.get(`/api/v1/presentations/${presentationId}/ai-state`);
+                            const state = stateRes.data;
+                            if (state.slides && state.slides.length > 0) {
+                                setAiSlides(state.slides);
+                                setTotalPages(state.slides.length);
+                            }
+                            if (state.metadata) {
+                                setAiColors({
+                                    primary: state.metadata.primary_color || '#f97316',
+                                    accent: state.metadata.accent_color || '#06b6d4',
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Failed to fetch AI state:', e);
+                        }
+                    } else {
+                        // Use PDF preview for PPTX files when available
+                        setPresentationFile(response.data.pdf_preview_path || response.data.file_path);
+                        setFileType(response.data.pdf_preview_path ? 'pdf' : response.data.file_type);
+                    }
                     if (response.data.aspect_ratio) {
                         setAspectRatio(response.data.aspect_ratio);
                     }
@@ -210,6 +235,14 @@ export default function AnalyzePage() {
 
     const toggleFullScreen = () => {
         setIsFullScreen(!isFullScreen);
+    };
+
+    const handlePrevAiSlide = () => {
+        if (currentPage > 1) setCurrentPage(prev => prev - 1);
+    };
+
+    const handleNextAiSlide = () => {
+        if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
     };
 
     const handlePageJump = useCallback((page: number) => {
@@ -322,24 +355,36 @@ export default function AnalyzePage() {
 
                     {/* PDF / Slides View Area */}
                     <div className="flex-1 overflow-hidden relative px-0 md:px-4 pt-4 pb-8 md:pt-6 md:pb-10 bg-[#050505]">
-                        <PresentationViewer
-                            fileUrl={presentationFile}
-                            fileType={fileType}
-                            title={presentationTitle}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            isLoading={isPageLoading}
-                            onPageChange={(page) => {
-                                setIsPageLoading(true);
-                                setTimeout(() => {
-                                    setCurrentPage(page);
-                                }, 200);
-                            }}
-                            isFullScreen={isFullScreen}
-                            initialOrientation={orientation}
-                            aspectRatio={aspectRatio}
-                        />
-
+                        {fileType === 'ai' && aiSlides.length > 0 ? (
+                            <AiSlidePreview
+                                slide={aiSlides[currentPage - 1]}
+                                primaryColor={aiColors.primary}
+                                accentColor={aiColors.accent}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPrev={handlePrevAiSlide}
+                                onNext={handleNextAiSlide}
+                                isLoading={isPageLoading}
+                            />
+                        ) : (
+                            <PresentationViewer
+                                fileUrl={presentationFile}
+                                fileType={fileType}
+                                title={presentationTitle}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                isLoading={isPageLoading}
+                                onPageChange={(page) => {
+                                    setIsPageLoading(true);
+                                    setTimeout(() => {
+                                        setCurrentPage(page);
+                                    }, 200);
+                                }}
+                                isFullScreen={isFullScreen}
+                                initialOrientation={orientation}
+                                aspectRatio={aspectRatio}
+                            />
+                        )}
                     </div>
 
                 </div>

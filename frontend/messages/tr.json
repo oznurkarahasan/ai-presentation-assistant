@@ -430,6 +430,7 @@
     "permissionDenied": "İzin reddedildi. Bu işlemi yapma yetkiniz yok.",
     "presentationNotFound": "Sunum bulunamadı.",
     "serverError": "Sunucu hatası. Lütfen daha sonra tekrar deneyin.",
+    "aiBadge": "AI",
     "titleEmpty": "Sunum başlığı boş olamaz.",
     "titleUpdated": "Sunum başlığı güncellendi.",
     "titleUpdateFailed": "Sunum başlığı güncellenemedi.",
@@ -779,5 +780,188 @@
     "noSavedIdeas": "Henüz favori fikir yok",
     "startWithCategory": "Ya da bir kategoriyle başla",
     "trendingTopics": "Güncel Konular"
+  },
+  "aiGeneration": {
+    "title": "Yapay Zeka ile Sunum Üret",
+    "subtitle": "Sadece konuyu yazın, slayt sayısına ve tasarıma yapay zeka karar versin",
+    "generatedTitle": "AI ile Olusturulan Sunumlar",
+    "generatedSubtitle": "Tekrar token harcamadan duzenlemeye devam edin",
+    "generatedEmpty": "Henuz AI sunumu yok. Ilk sunumunu olustur.",
+    "generatedSlides": "{count} slayt",
+    "topicLabel": "Sunum Konusu (Topic)",
+    "topicPlaceholder": "Örn: 'PreCue.ai platformunun gelecek vizyonu, konuşmacı analitikleri ve pazar büyüme stratejisi'...",
+    "languageLabel": "Sunum Dili (Language)",
+    "submitButton": "AI ile Sunum Oluştur",
+    "errorTitle": "Sunum Oluşturulamadı",
+    "loadingTitle": "Yapay Zeka Sunumu Üretiyor",
+    "loadingNote": "Bu işlem ortalama 10-15 saniye sürebilir.",
+    "backToLibrary": "Kütüphaneye Dön",
+    "presentationEditor": "Sunum Editörü",
+    "step1": "Konu analiz ediliyor ve ana hatlar çıkarılıyor...",
+    "step2": "Yapay zeka slayt yapılarını kurguluyor...",
+    "step3": "Slayt içerikleri ve başlıkları detaylandırılıyor...",
+    "step4": "Görsel yerleşimleri ve sunum teması hazırlanıyor...",
+    "step5": "Konuşmacı notları ve akıllı sorular oluşturuluyor...",
+    "step6": "Sunum hazırlanıyor, editöre aktarılıyor...",
+    "slideCountLabel": "Slayt Sayısı",
+    "showAdvanced": "Gelişmiş seçenekler",
+    "hideAdvanced": "Gelişmiş seçenekleri gizle",
+    "presentationTypeLabel": "Sunum Tipi",
+    "typeAuto": "Otomatik",
+    "typePitchDeck": "Yatırımcı Sunumu",
+    "typeEducational": "Eğitim / Öğretim",
+    "typeWorkshop": "Workshop",
+    "typeProductDemo": "Ürün Tanıtımı",
+    "typeReport": "Rapor / Analiz",
+    "typeKeynote": "Keynote Konuşması",
+    "typeMarketing": "Pazarlama / Satış",
+    "toneLabel": "Ton",
+    "toneAuto": "Otomatik",
+    "toneProfessional": "Profesyonel",
+    "toneCasual": "Samimi / Günlük",
+    "toneInspiring": "İlham Verici",
+    "toneEducational": "Eğitici",
+    "toneCreative": "Yaratıcı",
+    "audienceLabel": "Hedef Kitle",
+    "audiencePlaceholder": "Ör: C-level yöneticiler, üniversite öğrencileri, teknik ekip..."
+  },
+  "editor": {
+    "defaultSlides": {
+      "slide1": {
+        "title": "PreCue.ai — Sunum Asistanı",
+        "item1": "Kumandayı geride bırakın: Doğal ses kontrolü ile slaytları yönetin.",
+        "item2": "Yapay zeka ses motoru ile niyetinize göre sayfa geçişleri sağlayın.",
+        "item3": "Analiz paneli sayesinde konuşma hızı ve duraklama analizleri alın.",
+        "speakerNote": "Sunuma güçlü ve kendinden emin başlayın. PreCue.ai vizyonunu anlatırken ses tonunuzu yüksek tutun."
+      },
+      "slide2": {
+        "title": "AI Ses Kontrolü",
+        "item1": "Chrome ses tanıma motoruyla %98 doğrulukta sesli yönetim.",
+        "item2": "Sunum akışını bozmayan \"Sonraki slayt\" gibi akıllı ses tetikleyicileri.",
+        "item3": "Arka plan gürültüsünü filtreleyen akıllı konuşma tespiti."
+      },
+      "slide3": {
+        "title": "Prova Analitiği",
+        "item1": "Konuşma hızı (kelime/dakika) takibiyle ideal tempoda kalın.",
+        "item2": "Sıklıkla tekrarlanan doldurucu kelimelerin otomatik tespiti.",
+        "item3": "Her slayta harcanan sürenin ayrıntılı dağılım grafikleri."
+      },
+      "slide4": {
+        "title": "Akıllı Öngörüler & Soru-Cevap",
+        "item1": "RAG altyapısı ile sunum içeriğinden otomatik soru-cevap setleri.",
+        "item2": "Slayt içeriğini analiz ederek önerilen konuşmacı kartları üretimi.",
+        "item3": "Hedef kitleye göre sunum tonu ayarlama önerileri."
+      },
+      "slide5": {
+        "title": "Sahne Sırası Sizde",
+        "item1": "PreCue.ai ile teknik aksaklıkları unutun, sahneye odaklanın.",
+        "item2": "Daha özgüvenli, daha akıcı ve daha profesyonel sunumlar.",
+        "item3": "Hemen kaydolun ve sunumlarınızı bir üst seviyeye taşıyın."
+      }
+    },
+    "sidebar": {
+      "header": "Slaytlar",
+      "slideCount": "{count} Slayt",
+      "deleteTooltip": "Slaytı Sil",
+      "untitled": "Başlıksız Slayt",
+      "addSlide": "Yeni Slayt",
+      "layoutStandard": "STANDART",
+      "layoutLeftImage": "SOL GÖRSEL",
+      "layoutRightImage": "SAĞ GÖRSEL",
+      "layoutTopImage": "ÜST GÖRSEL",
+      "layoutBottomImage": "ALT GÖRSEL",
+      "layoutBackgroundImage": "ARKA PLAN"
+    },
+    "canvas": {
+      "header": "Kanvas",
+      "subtitle": "Gerçek Zamanlı HTML/CSS Önizleme",
+      "titlePlaceholder": "Slayt Başlığı Girin...",
+      "itemPlaceholder": "Açıklama maddesi girin...",
+      "deleteItem": "Maddeyi Sil",
+      "addItem": "Yeni Madde Ekle",
+      "changeImage": "Görseli Değiştir",
+      "removeImage": "Görseli Kaldır",
+      "findImage": "Görsel Bul (Unsplash)",
+      "visualizeSubtitle": "Slaytı görselleştirin",
+      "layoutText": "Metin",
+      "layoutLeft": "Sol Görsel",
+      "layoutRight": "Sağ Görsel",
+      "layoutBg": "Arka Plan",
+      "speakerNotesHeader": "Konuşmacı Notları (Speaker Notes)",
+      "speakerNotesPlaceholder": "Sahnede konuşurken size yol gösterecek notları buraya ekleyin...",
+      "charLimit": "{count} / 800 Karakter"
+    },
+    "settings": {
+      "header": "Sunum Ayarları",
+      "subtitle": "Global Tasarım & Dışa Aktarma",
+      "titleLabel": "Sunum Başlığı",
+      "titlePlaceholder": "Sunum Başlığı...",
+      "colorPalettes": "Hazır Renk Paletleri",
+      "primaryColor": "Birincil Renk",
+      "accentColor": "Vurgu Rengi",
+      "fontFamily": "Yazı Tipi (Font)",
+      "downloadingPptx": "PPTX İndiriliyor...",
+      "downloadPptx": "PPTX İndir",
+      "sendingToAnalysis": "Analize Gönderiliyor...",
+      "sendToAnalysis": "Analize Gönder"
+    },
+    "notifications": {
+      "cannotDeleteLastSlide": "Sunumdaki son slayt silinemez. En az 1 slayt bulunmalıdır.",
+      "downloadSuccess": "Sunum PPTX formatında başarıyla oluşturuldu ve indirme başlatıldı.",
+      "downloadError": "PPTX dışa aktarma başarısız oldu. Lütfen tekrar deneyin.",
+      "saveRequiredError": "Analize göndermeden önce kaydedilmiş bir sunum gereklidir.",
+      "savingChanges": "Slayt Değişiklikleri Kaydediliyor...",
+      "updatingVectorDb": "Vektör Veritabanı (Embedding) Güncelleniyor...",
+      "preparingSpeakerRag": "Konuşmacı RAG Katmanı Hazırlanıyor...",
+      "configuringRehearsal": "Canlı Prova Altyapısı Yapılandırılıyor...",
+      "redirectingToAnalysis": "Tamamlandı! Analiz Paneline Yönlendiriliyorsunuz...",
+      "preparingPresentation": "Sunum Hazırlanıyor",
+      "unsplashHeader": "Unsplash Görsel Kütüphanesi",
+      "unsplashSubtitle": "Sunumunuzu profesyonel fotoğraflarla güçlendirin",
+      "searchImagesPlaceholder": "Görsel veya konu arayın (örn. teknoloji, yapay zeka, iş)...",
+      "popular": "Popüler:",
+      "photoAuthor": "Fotoğraf: {author}",
+      "imagesNotFound": "Görsel bulunamadı.",
+      "tryDifferentKeywords": "Lütfen farklı anahtar kelimeler aramayı deneyin."
+    },
+    "categories": {
+      "technology": "Teknoloji",
+      "ai": "Yapay Zeka",
+      "business": "İş",
+      "design": "Tasarım",
+      "stage": "Sahne",
+      "abstract": "Abstract"
+    },
+    "misc": {
+      "newBulletPoint": "Yeni Açıklama Noktası",
+      "newSlideTitle": "Yeni Slayt Başlığı",
+      "newSlideDescription": "Yeni madde açıklaması ekleyin.",
+      "defaultTitle": "PreCue.ai Sunumu",
+      "help": "Yardım"
+    },
+    "toolbar": {
+      "slideOf": "Slayt {current} / {total}",
+      "zoomIn": "Yakınlaştır",
+      "zoomOut": "Uzaklaştır",
+      "zoomFit": "Sığdır",
+      "fullscreen": "Tam Ekran",
+      "exitFullscreen": "Tam Ekrandan Çık",
+      "present": "Sunum Yap",
+      "showSlides": "Slaytları Göster",
+      "hideSlides": "Slaytları Gizle",
+      "showProperties": "Özellikleri Göster",
+      "hideProperties": "Özellikleri Gizle"
+    },
+    "statusBar": {
+      "slide": "Slayt",
+      "zoom": "Yakınlaştırma",
+      "notes": "Notlar",
+      "of": "/"
+    },
+    "tabs": {
+      "style": "Stil",
+      "slide": "Slayt",
+      "notes": "Notlar"
+    }
   }
 }
