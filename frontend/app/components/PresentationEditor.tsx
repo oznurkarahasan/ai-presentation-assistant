@@ -1,14 +1,17 @@
 'use client';
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Grid, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import SlideList, { PresentationSlide } from './SlideList';
 import SlideCanvas from './SlideCanvas';
 import RightStylePanel, { PresentationMetadata } from './RightStylePanel';
+import EditorToolbar from './EditorToolbar';
+import EditorStatusBar from './EditorStatusBar';
 import { useRouter } from 'next/navigation';
+import client from '../api/client';
 
 // Mass database of curated high-quality Unsplash image assets
 interface UnsplashImage {
@@ -371,12 +374,69 @@ export default function PresentationEditor() {
         }
     }, [t]);
 
+    // Auto-save: debounced persistence to DB
+    const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [autoSaveStatus, setAutoSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+
+    const persistToServer = useCallback(async (currentSlides: PresentationSlide[], currentMetadata: PresentationMetadata) => {
+        const presentationId = typeof window !== 'undefined'
+            ? sessionStorage.getItem('precue_active_presentation_id')
+            : null;
+        if (!presentationId) return;
+
+        setAutoSaveStatus('saving');
+        try {
+            const state = { metadata: currentMetadata, slides: currentSlides };
+            await client.put(`/api/v1/presentations/${presentationId}/ai-state`, state);
+            sessionStorage.setItem('precue_generated_presentation', JSON.stringify(state));
+            setAutoSaveStatus('saved');
+            setTimeout(() => setAutoSaveStatus('idle'), 2500);
+        } catch {
+            setAutoSaveStatus('error');
+            setTimeout(() => setAutoSaveStatus('idle'), 3000);
+        }
+    }, []);
+
+    const scheduleAutoSave = useCallback((currentSlides: PresentationSlide[], currentMetadata: PresentationMetadata) => {
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = setTimeout(() => {
+            persistToServer(currentSlides, currentMetadata);
+        }, 1500);
+    }, [persistToServer]);
+
     // Interaction & Action States
     const [isSaving, setIsSaving] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [saveProgress, setSaveProgress] = useState<string>('');
     const [showSaveOverlay, setShowSaveOverlay] = useState(false);
     const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+    // Panel & Zoom States
+    const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
+    const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
+    const [zoom, setZoom] = useState(0); // 0 = fit
+    const [isNotesOpen, setIsNotesOpen] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    const handleZoomIn = useCallback(() => setZoom(prev => prev === 0 ? 125 : Math.min(prev + 25, 200)), []);
+    const handleZoomOut = useCallback(() => setZoom(prev => prev === 0 ? 75 : Math.max(prev - 25, 50)), []);
+    const handleZoomFit = useCallback(() => setZoom(0), []);
+
+    const handleToggleFullscreen = useCallback(() => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen?.().catch(() => {});
+            setIsFullscreen(true);
+        } else {
+            document.exitFullscreen?.().catch(() => {});
+            setIsFullscreen(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        const handler = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handler);
+        return () => document.removeEventListener('fullscreenchange', handler);
+    }, []);
 
     // Image Unsplash Search Modal States
     const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -411,51 +471,62 @@ export default function PresentationEditor() {
 
     // Local Mutation Handlers
     const handleUpdateSlideTitle = (id: string, newTitle: string) => {
-        setSlides((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, title: newTitle } : s))
-        );
+        setSlides((prev) => {
+            const next = prev.map((s) => (s.id === id ? { ...s, title: newTitle } : s));
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     const handleUpdateSlideItem = (id: string, index: number, value: string) => {
-        setSlides((prev) =>
-            prev.map((s) => {
+        setSlides((prev) => {
+            const next = prev.map((s) => {
                 if (s.id !== id) return s;
                 const nextItems = [...s.items];
                 nextItems[index] = value;
                 return { ...s, items: nextItems };
-            })
-        );
+            });
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     const handleDeleteSlideItem = (id: string, index: number) => {
-        setSlides((prev) =>
-            prev.map((s) => {
+        setSlides((prev) => {
+            const next = prev.map((s) => {
                 if (s.id !== id) return s;
-                const nextItems = s.items.filter((_, idx) => idx !== index);
-                return { ...s, items: nextItems };
-            })
-        );
+                return { ...s, items: s.items.filter((_, idx) => idx !== index) };
+            });
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     const handleAddSlideItem = (id: string) => {
-        setSlides((prev) =>
-            prev.map((s) => {
+        setSlides((prev) => {
+            const next = prev.map((s) => {
                 if (s.id !== id) return s;
                 return { ...s, items: [...s.items, t('misc.newBulletPoint')] };
-            })
-        );
+            });
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     const handleUpdateSpeakerNote = (id: string, note: string) => {
-        setSlides((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, speaker_note: note } : s))
-        );
+        setSlides((prev) => {
+            const next = prev.map((s) => (s.id === id ? { ...s, speaker_note: note } : s));
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     const handleUpdateLayoutType = (id: string, type: string) => {
-        setSlides((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, content_type: type } : s))
-        );
+        setSlides((prev) => {
+            const next = prev.map((s) => (s.id === id ? { ...s, content_type: type } : s));
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     const handleTriggerImageSearch = (id: string) => {
@@ -465,28 +536,27 @@ export default function PresentationEditor() {
     };
 
     const handleRemoveImage = (id: string) => {
-        setSlides((prev) =>
-            prev.map((s) => (s.id === id ? { ...s, image: undefined } : s))
-        );
+        setSlides((prev) => {
+            const next = prev.map((s) => (s.id === id ? { ...s, image: undefined } : s));
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     const handleSelectImage = (img: UnsplashImage) => {
         if (!activeImageSearchSlideId) return;
 
-        setSlides((prev) =>
-            prev.map((s) => {
+        setSlides((prev) => {
+            const next = prev.map((s) => {
                 if (s.id !== activeImageSearchSlideId) return s;
                 return {
                     ...s,
-                    image: {
-                        prompt: img.alt,
-                        url: img.url,
-                        alt: img.alt,
-                        style: 'modern'
-                    }
+                    image: { prompt: img.alt, url: img.url, alt: img.alt, style: 'modern' }
                 };
-            })
-        );
+            });
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
 
         setImageModalOpen(false);
         setActiveImageSearchSlideId(null);
@@ -502,23 +572,24 @@ export default function PresentationEditor() {
             speaker_note: ''
         };
 
-        setSlides((prev) => [...prev, newSlide]);
+        setSlides((prev) => {
+            const next = [...prev, newSlide];
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
         setSelectedSlideId(newId);
     };
 
     const handleDeleteSlide = (id: string) => {
         if (slides.length <= 1) {
-            setToast({
-                type: 'error',
-                message: t('notifications.cannotDeleteLastSlide')
-            });
+            setToast({ type: 'error', message: t('notifications.cannotDeleteLastSlide') });
             return;
         }
 
         const nextSlides = slides.filter((s) => s.id !== id);
         setSlides(nextSlides);
+        scheduleAutoSave(nextSlides, metadata);
 
-        // If deleted slide was selected, select the first remaining slide
         if (selectedSlideId === id) {
             setSelectedSlideId(nextSlides[0].id);
         }
@@ -529,28 +600,47 @@ export default function PresentationEditor() {
         const [draggedItem] = nextSlides.splice(dragIndex, 1);
         nextSlides.splice(dropIndex, 0, draggedItem);
         setSlides(nextSlides);
+        scheduleAutoSave(nextSlides, metadata);
+    };
+
+    // When metadata changes, schedule auto-save too
+    const handleUpdateMetadataWithSave = (newMeta: PresentationMetadata) => {
+        setMetadata(newMeta);
+        scheduleAutoSave(slides, newMeta);
     };
 
     // Actions implementation
-    const handleDownloadPPTX = () => {
-        setIsDownloading(true);
-        // Simulate background PowerPoint generation
-        setTimeout(() => {
-            setIsDownloading(false);
-            setToast({
-                type: 'success',
-                message: t('notifications.downloadSuccess')
-            });
+    const handleDownloadPPTX = async () => {
+        const presentationId = typeof window !== 'undefined'
+            ? sessionStorage.getItem('precue_active_presentation_id')
+            : null;
 
-            // Simulate file download
-            const element = document.createElement('a');
-            const file = new Blob([JSON.stringify({ metadata, slides }, null, 2)], { type: 'text/plain' });
-            element.href = URL.createObjectURL(file);
-            element.download = `${metadata.title.toLowerCase().replace(/\s+/g, '-')}.precue.pptx`;
-            document.body.appendChild(element);
-            element.click();
-            document.body.removeChild(element);
-        }, 2200);
+        if (!presentationId) {
+            setToast({ type: 'error', message: t('notifications.saveRequiredError') });
+            return;
+        }
+
+        setIsDownloading(true);
+        try {
+            // First save current state, then export
+            await persistToServer(slides, metadata);
+            const response = await client.get(`/api/v1/presentations/${presentationId}/export-pptx`, {
+                responseType: 'blob',
+            });
+            const url = URL.createObjectURL(response.data);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${metadata.title.replace(/[^a-zA-Z0-9\s]/g, '').trim() || 'presentation'}.pptx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            setToast({ type: 'success', message: t('notifications.downloadSuccess') });
+        } catch {
+            setToast({ type: 'error', message: t('notifications.downloadError') || 'PPTX export failed.' });
+        } finally {
+            setIsDownloading(false);
+        }
     };
 
     const handleSendToAnalysis = () => {
@@ -594,49 +684,90 @@ export default function PresentationEditor() {
     };
 
     return (
-        <div className="w-full h-full min-h-[calc(100vh-10rem)] flex flex-col lg:flex-row gap-6 relative select-none">
-            {/* Left Panel: Slide List Navigator */}
-            <div className="w-full lg:w-[20%] h-[calc(100vh-12rem)] min-h-[550px]">
-                <SlideList
-                    slides={slides}
-                    selectedSlideId={selectedSlideId}
-                    onSelectSlide={setSelectedSlideId}
-                    onDeleteSlide={handleDeleteSlide}
-                    onAddSlide={handleAddSlide}
-                    onReorderSlides={handleReorderSlides}
-                    primaryColor={metadata.primary_color}
-                    accentColor={metadata.accent_color}
-                />
-            </div>
+        <div className="w-full h-full flex flex-col relative select-none bg-zinc-950 overflow-hidden">
+            {/* Top Toolbar */}
+            <EditorToolbar
+                title={metadata.title}
+                onTitleChange={(title) => handleUpdateMetadataWithSave({ ...metadata, title })}
+                activeLayout={activeSlide.content_type}
+                onLayoutChange={(layout) => handleUpdateLayoutType(activeSlide.id, layout)}
+                onDownloadPPTX={handleDownloadPPTX}
+                onSendToAnalysis={handleSendToAnalysis}
+                isSaving={isSaving}
+                isDownloading={isDownloading}
+                autoSaveStatus={autoSaveStatus}
+                isLeftPanelOpen={isLeftPanelOpen}
+                isRightPanelOpen={isRightPanelOpen}
+                onToggleLeftPanel={() => setIsLeftPanelOpen(prev => !prev)}
+                onToggleRightPanel={() => setIsRightPanelOpen(prev => !prev)}
+                primaryColor={metadata.primary_color}
+            />
 
-            {/* Middle Panel: Interactive Slide Canvas */}
-            <div className="w-full lg:w-[57%] h-[calc(100vh-12rem)] min-h-[550px] flex">
-                <SlideCanvas
-                    slide={activeSlide}
-                    primaryColor={metadata.primary_color}
-                    accentColor={metadata.accent_color}
-                    fontFamily={metadata.font_family}
-                    onUpdateSlideTitle={handleUpdateSlideTitle}
-                    onUpdateSlideItem={handleUpdateSlideItem}
-                    onDeleteSlideItem={handleDeleteSlideItem}
-                    onAddSlideItem={handleAddSlideItem}
-                    onUpdateSpeakerNote={handleUpdateSpeakerNote}
-                    onUpdateLayoutType={handleUpdateLayoutType}
-                    onTriggerImageSearch={handleTriggerImageSearch}
-                    onRemoveImage={handleRemoveImage}
-                />
-            </div>
+            {/* Main Editor Area */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Left Panel: Slide Thumbnails */}
+                {isLeftPanelOpen && (
+                    <div className="w-[200px] xl:w-[220px] shrink-0 editor-panel">
+                        <SlideList
+                            slides={slides}
+                            selectedSlideId={selectedSlideId}
+                            onSelectSlide={setSelectedSlideId}
+                            onDeleteSlide={handleDeleteSlide}
+                            onAddSlide={handleAddSlide}
+                            onReorderSlides={handleReorderSlides}
+                            primaryColor={metadata.primary_color}
+                            accentColor={metadata.accent_color}
+                        />
+                    </div>
+                )}
 
-            {/* Right Panel: Style Settings & Actions */}
-            <div className="w-full lg:w-[23%] h-[calc(100vh-12rem)] min-h-[550px]">
-                <RightStylePanel
-                    metadata={metadata}
-                    onUpdateMetadata={setMetadata}
-                    onDownloadPPTX={handleDownloadPPTX}
-                    onSendToAnalysis={handleSendToAnalysis}
-                    isSaving={isSaving}
-                    isDownloading={isDownloading}
-                />
+                {/* Middle: Canvas + Status Bar */}
+                <div className="flex-1 flex flex-col min-w-0">
+                    <SlideCanvas
+                        slide={activeSlide}
+                        primaryColor={metadata.primary_color}
+                        accentColor={metadata.accent_color}
+                        fontFamily={metadata.font_family}
+                        zoom={zoom}
+                        onUpdateSlideTitle={handleUpdateSlideTitle}
+                        onUpdateSlideItem={handleUpdateSlideItem}
+                        onDeleteSlideItem={handleDeleteSlideItem}
+                        onAddSlideItem={handleAddSlideItem}
+                        onUpdateSpeakerNote={handleUpdateSpeakerNote}
+                        onTriggerImageSearch={handleTriggerImageSearch}
+                        onRemoveImage={handleRemoveImage}
+                        isNotesOpen={isNotesOpen}
+                        onToggleNotes={() => setIsNotesOpen(prev => !prev)}
+                    />
+                    <EditorStatusBar
+                        currentSlide={slides.findIndex(s => s.id === selectedSlideId) + 1}
+                        totalSlides={slides.length}
+                        zoom={zoom}
+                        onZoomChange={setZoom}
+                        onZoomIn={handleZoomIn}
+                        onZoomOut={handleZoomOut}
+                        onZoomFit={handleZoomFit}
+                        isNotesOpen={isNotesOpen}
+                        onToggleNotes={() => setIsNotesOpen(prev => !prev)}
+                        isFullscreen={isFullscreen}
+                        onToggleFullscreen={handleToggleFullscreen}
+                    />
+                </div>
+
+                {/* Right Panel: Properties */}
+                {isRightPanelOpen && (
+                    <div className="w-[260px] xl:w-[280px] shrink-0 editor-panel">
+                        <RightStylePanel
+                            metadata={metadata}
+                            onUpdateMetadata={handleUpdateMetadataWithSave}
+                            activeSlideTitle={activeSlide.title}
+                            activeSlideLayout={activeSlide.content_type}
+                            activeSlideNote={activeSlide.speaker_note}
+                            onUpdateSlideLayout={(layout) => handleUpdateLayoutType(activeSlide.id, layout)}
+                            onUpdateSlideNote={(note) => handleUpdateSpeakerNote(activeSlide.id, note)}
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Save Overlay / Loader */}

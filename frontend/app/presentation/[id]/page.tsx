@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import client from "../../api/client";
 import PresentationViewer, { PresentationViewerRef } from "../../components/PresentationViewer";
+import AiSlidePreview, { AiSlide } from "../../components/AiSlidePreview";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
 
 
@@ -111,6 +112,8 @@ export default function RealTimePresentationPage() {
     const [aspectRatio, setAspectRatio] = useState<number | null>(null);
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [isSessionActive, setIsSessionActive] = useState(false);
+    const [aiSlides, setAiSlides] = useState<AiSlide[]>([]);
+    const [aiColors, setAiColors] = useState<{ primary: string; accent: string }>({ primary: '#f97316', accent: '#06b6d4' });
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -152,20 +155,36 @@ export default function RealTimePresentationPage() {
                 const data = response.data;
                 console.log("[API] Presentation metadata received:", data);
                 setPresentationTitle(data.title);
-                // Use PDF preview for PPTX files when available
-                setPresentationFile(data.pdf_preview_path || data.file_path);
-                setFileType(data.pdf_preview_path ? 'pdf' : data.file_type);
-                if (data.aspect_ratio) {
-                    setAspectRatio(data.aspect_ratio);
-                }
-                if (data.orientation) {
-                    setOrientation(data.orientation);
-                }
-                // Handle both naming conventions for robustness
 
-                const count = data.total_pages || data.slide_count || 1;
-                console.log(`[API] Total pages set to: ${count}`);
-                setTotalPages(count);
+                if (data.file_type === 'ai') {
+                    setPresentationFile(null);
+                    setFileType('ai');
+                    try {
+                        const stateRes = await client.get(`/api/v1/presentations/${presentationId}/ai-state`);
+                        const state = stateRes.data;
+                        if (state.slides?.length > 0) {
+                            setAiSlides(state.slides);
+                            setTotalPages(state.slides.length);
+                        }
+                        if (state.metadata) {
+                            setAiColors({
+                                primary: state.metadata.primary_color || '#f97316',
+                                accent: state.metadata.accent_color || '#06b6d4',
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Failed to fetch AI state:', e);
+                    }
+                } else {
+                    // Use PDF preview for PPTX files when available
+                    setPresentationFile(data.pdf_preview_path || data.file_path);
+                    setFileType(data.pdf_preview_path ? 'pdf' : data.file_type);
+                    if (data.aspect_ratio) setAspectRatio(data.aspect_ratio);
+                    if (data.orientation) setOrientation(data.orientation);
+                    const count = data.total_pages || data.slide_count || 1;
+                    console.log(`[API] Total pages set to: ${count}`);
+                    setTotalPages(count);
+                }
 
             } catch (error) {
                 console.error("Failed to fetch presentation:", error);
@@ -629,24 +648,48 @@ export default function RealTimePresentationPage() {
                         )}
 
 
-                        <PresentationViewer
-                            ref={viewerRef}
-                            fileUrl={presentationFile}
-                            fileType={fileType}
-                            title={presentationTitle}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            isLoading={isPageLoading}
-                            onPageChange={(page) => {
-                                setIsPageLoading(true);
-                                setTimeout(() => {
-                                    setCurrentPage(page);
-                                }, 200);
-                            }}
-                            isFullScreen={isFullScreen}
-                            initialOrientation={orientation}
-                            aspectRatio={aspectRatio}
-                        />
+                        {fileType === 'ai' && aiSlides.length > 0 ? (
+                            <div
+                                className="relative rounded-xl overflow-hidden border border-white/5 shadow-2xl bg-[#050507]"
+                                style={{
+                                    aspectRatio: '16/9',
+                                    width: '100%',
+                                    maxWidth: '100%',
+                                    maxHeight: '100%',
+                                }}
+                            >
+                                <AiSlidePreview
+                                    slide={aiSlides[currentPage - 1]}
+                                    primaryColor={aiColors.primary}
+                                    accentColor={aiColors.accent}
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPrev={handlePrevPage}
+                                    onNext={handleNextPage}
+                                    isLoading={isPageLoading}
+                                    showNav={false}
+                                />
+                            </div>
+                        ) : (
+                            <PresentationViewer
+                                ref={viewerRef}
+                                fileUrl={presentationFile}
+                                fileType={fileType}
+                                title={presentationTitle}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                isLoading={isPageLoading}
+                                onPageChange={(page) => {
+                                    setIsPageLoading(true);
+                                    setTimeout(() => {
+                                        setCurrentPage(page);
+                                    }, 200);
+                                }}
+                                isFullScreen={isFullScreen}
+                                initialOrientation={orientation}
+                                aspectRatio={aspectRatio}
+                            />
+                        )}
 
 
 
