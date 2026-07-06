@@ -1,9 +1,8 @@
 from enum import Enum
 from typing import Optional, Dict, Any
 import json
-from app.core.config import settings
 from app.core.logger import logger
-from openai import AsyncOpenAI
+from app.core.openai_client import get_openai_client as get_client
 
 class IntentType(str, Enum):
     NEXT_SLIDE = "NEXT_SLIDE"
@@ -26,14 +25,6 @@ class IntentResult:
             "slide_number": self.slide_number,
             "original_text": self.original_text
         }
-
-_client = None
-
-def get_client() -> AsyncOpenAI:
-    global _client
-    if _client is None:
-        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    return _client
 
 async def analyze_intent(text: str, current_slide: int = 1, total_slides: int = 1) -> IntentResult:
     """

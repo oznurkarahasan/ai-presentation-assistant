@@ -1,21 +1,11 @@
-from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
-from openai import AsyncOpenAI
 
 from app.api.v1 import auth
-from app.core.config import settings
 from app.core.logger import logger
+from app.core.openai_client import get_openai_client as get_client
 
 router = APIRouter()
-
-_client: Optional[AsyncOpenAI] = None
-
-def get_client() -> AsyncOpenAI:
-    global _client
-    if _client is None:
-        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    return _client
 
 
 class TopicIdeasRequest(BaseModel):

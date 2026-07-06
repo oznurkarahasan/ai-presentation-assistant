@@ -1,14 +1,12 @@
 from typing import Optional
 import re
 
-from openai import AsyncOpenAI, OpenAIError
+from openai import OpenAIError
 from fastapi import HTTPException, status
 
-from app.core.config import settings
 from app.core.logger import logger
+from app.core.openai_client import get_openai_client as get_client
 from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationState
-
-_client: Optional[AsyncOpenAI] = None
 
 # Curated Unsplash image database with category keywords for auto-matching
 UNSPLASH_IMAGE_DATABASE = [
@@ -184,14 +182,6 @@ def resolve_image_url(prompt: str, alt: Optional[str] = None) -> str:
             best_url = img["url"]
 
     return best_url
-
-
-def get_client() -> AsyncOpenAI:
-    global _client
-    if _client is None:
-        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        logger.info("OpenAI client initialized for generation service")
-    return _client
 
 
 def _build_system_prompt() -> str:

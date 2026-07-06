@@ -1,29 +1,7 @@
-from openai import AsyncOpenAI
-from app.core.config import settings
 from app.core.exceptions import EmbeddingError
 from app.core.logger import logger
+from app.core.openai_client import get_openai_client as get_client
 import asyncio
-
-# Lazy initialization of OpenAI client
-_client = None
-
-def get_client() -> AsyncOpenAI:
-    """
-    Get or create the OpenAI client instance with lazy initialization.
-    This allows proper error handling if the API key is missing or invalid.
-    """
-    global _client
-    if _client is None:
-        try:
-            _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-            logger.info("OpenAI client initialized successfully")
-        except Exception as e:
-            logger.error(f"Failed to initialize OpenAI client: {str(e)}")
-            raise EmbeddingError(
-                message="Failed to initialize OpenAI client",
-                details=str(e)
-            )
-    return _client
 
 # Batch processing configuration
 MAX_CONCURRENT_EMBEDDINGS = 10  # Process 10 embeddings at a time
