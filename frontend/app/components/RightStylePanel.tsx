@@ -4,14 +4,7 @@ import React, { useState } from 'react';
 import { Palette, Type, Check, Layers, StickyNote, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { SLIDE_LAYOUT_IDS, SLIDE_LAYOUT_ICONS, SlideLayoutId } from '../lib/slideLayouts';
-
-export interface PresentationMetadata {
-    title: string;
-    theme: string;
-    primary_color: string;
-    accent_color: string;
-    font_family: string;
-}
+import type { PresentationMetadata } from '../types/presentation';
 
 interface RightStylePanelProps {
     metadata: PresentationMetadata;

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Grid, AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import client from '../api/client';
+import Spinner from './Spinner';
 
 // Curated image catalog is served by the backend (single source of truth
 // shared with generation_service.UNSPLASH_IMAGE_DATABASE) via /image-library.
@@ -138,7 +139,7 @@ export default function ImagePickerModal({ open, onClose, onSelectImage, primary
                         <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
                             {isImageLibraryLoading ? (
                                 <div className="flex flex-col items-center justify-center py-16 text-center">
-                                    <div className="w-6 h-6 border-2 border-t-transparent border-zinc-500 rounded-full animate-spin mb-3" />
+                                    <Spinner size={24} borderColorClassName="border-zinc-500" className="mb-3" />
                                     <p className="text-xs font-bold text-zinc-400">{t('notifications.loadingImages')}</p>
                                 </div>
                             ) : filteredImages.length > 0 ? (

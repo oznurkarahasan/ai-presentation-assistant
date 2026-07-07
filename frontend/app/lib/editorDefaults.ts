@@ -1,5 +1,4 @@
-import type { PresentationSlide } from '../components/SlideList';
-import type { PresentationMetadata } from '../components/RightStylePanel';
+import type { PresentationSlide, PresentationMetadata } from '../types/presentation';
 import { isSlideLayoutId } from './slideLayouts';
 
 const SESSION_STORAGE_KEY = 'precue_generated_presentation';

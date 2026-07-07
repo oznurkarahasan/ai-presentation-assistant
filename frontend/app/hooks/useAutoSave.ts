@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import client from '../api/client';
-import type { PresentationSlide } from '../components/SlideList';
-import type { PresentationMetadata } from '../components/RightStylePanel';
+import type { PresentationSlide, PresentationMetadata } from '../types/presentation';
 import { writeStoredPresentation } from '../lib/editorDefaults';
 
 const ACTIVE_PRESENTATION_ID_KEY = 'precue_active_presentation_id';

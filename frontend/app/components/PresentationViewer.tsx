@@ -10,6 +10,7 @@ import {
     Minus
 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Spinner from "./Spinner";
 
 interface PresentationViewerProps {
     fileUrl: string | null;
@@ -230,7 +231,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                                     exit={{ opacity: 0 }}
                                     className="absolute inset-0 bg-[#050505] flex items-center justify-center z-40"
                                 >
-                                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    <Spinner size={40} />
                                 </motion.div>
                             )}
                         </AnimatePresence>

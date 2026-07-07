@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import client from "../../api/client";
+import { ButtonSpinner } from "../../components/Spinner";
 import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export default function ForgotPasswordPage() {
@@ -138,7 +139,7 @@ export default function ForgotPasswordPage() {
                     >
                         {loading ? (
                             <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <ButtonSpinner />
                                 {t("sending")}
                             </div>
                         ) : (

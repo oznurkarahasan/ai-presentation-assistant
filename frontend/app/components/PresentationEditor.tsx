@@ -4,14 +4,15 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import SlideList, { PresentationSlide } from './SlideList';
+import SlideList from './SlideList';
 import SlideCanvas from './SlideCanvas';
-import RightStylePanel, { PresentationMetadata } from './RightStylePanel';
+import RightStylePanel from './RightStylePanel';
 import EditorToolbar from './EditorToolbar';
 import EditorStatusBar from './EditorStatusBar';
 import EditorToast from './EditorToast';
 import ImagePickerModal from './ImagePickerModal';
 import client from '../api/client';
+import type { PresentationSlide, PresentationMetadata } from '../types/presentation';
 import {
     DEFAULT_METADATA,
     buildLocalizedDefaultSlides,

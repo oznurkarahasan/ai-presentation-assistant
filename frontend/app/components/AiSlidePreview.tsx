@@ -2,18 +2,11 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-
-export interface AiSlide {
-    id: string;
-    title: string;
-    content_type: string;
-    items: string[];
-    image?: { url?: string; alt?: string };
-    speaker_note?: string;
-}
+import Spinner from './Spinner';
+import type { PresentationSlide } from '../types/presentation';
 
 interface AiSlidePreviewProps {
-    slide: AiSlide | undefined;
+    slide: PresentationSlide | undefined;
     primaryColor: string;
     accentColor: string;
     currentPage: number;
@@ -32,7 +25,7 @@ function SlideContent({
     totalPages,
     isLoading,
 }: {
-    slide: AiSlide;
+    slide: PresentationSlide;
     primaryColor: string;
     accentColor: string;
     currentPage: number;
@@ -97,10 +90,7 @@ function SlideContent({
             {/* Loading overlay */}
             {isLoading && (
                 <div className="absolute inset-0 bg-[#050505]/70 flex items-center justify-center z-30">
-                    <div
-                        className="w-7 h-7 border-2 border-t-transparent rounded-full animate-spin"
-                        style={{ borderColor: primaryColor, borderTopColor: 'transparent' }}
-                    />
+                    <Spinner size={28} colorHex={primaryColor} />
                 </div>
             )}
         </div>

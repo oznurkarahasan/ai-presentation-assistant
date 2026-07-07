@@ -1,6 +1,5 @@
 import { Dispatch, SetStateAction, useState } from 'react';
-import type { PresentationSlide } from '../components/SlideList';
-import type { PresentationMetadata } from '../components/RightStylePanel';
+import type { PresentationSlide, PresentationMetadata } from '../types/presentation';
 import type { SlideLayoutId } from '../lib/slideLayouts';
 import type { UnsplashImage } from '../components/ImagePickerModal';
 import type { ToastState } from './useToast';

@@ -9,6 +9,7 @@ import client from "../../api/client";
 import AuthCard from "../../components/auth/AuthCard";
 import AlertBanner from "../../components/auth/AlertBanner";
 import FormField from "../../components/auth/FormField";
+import { ButtonSpinner } from "../../components/Spinner";
 import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export default function RegisterPage() {
@@ -157,7 +158,7 @@ export default function RegisterPage() {
                 >
                     {loading ? (
                         <div className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <ButtonSpinner />
                             {t("creatingAccount")}
                         </div>
                     ) : (

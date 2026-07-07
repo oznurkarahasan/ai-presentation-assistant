@@ -4,7 +4,7 @@
 import React, { useEffect } from 'react';
 import { Image as ImageIcon, Plus, Trash2, Sparkles, ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { PresentationSlide } from './SlideList';
+import type { PresentationSlide } from '../types/presentation';
 
 interface SlideCanvasProps {
     slide: PresentationSlide;

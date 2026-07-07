@@ -20,6 +20,7 @@ import PresentationViewer from "../components/PresentationViewer";
 import AiSlidePreview from "../components/AiSlidePreview";
 import { usePresentationData } from "../hooks/usePresentationData";
 import { useRequireAuth } from "../hooks/useRequireAuth";
+import Spinner from "../components/Spinner";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Link from "next/link";
@@ -235,7 +236,7 @@ export default function AnalyzePage() {
         return (
             <div className="flex h-screen items-center justify-center bg-black relative">
                 <div className="bg-grid" />
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin relative z-10" />
+                <Spinner size={32} className="relative z-10" />
             </div>
         );
     }
