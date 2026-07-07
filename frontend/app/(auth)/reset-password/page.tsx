@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Lock, ArrowRight, CheckCircle2, AlertCircle, Eye, EyeOff } from "lucide-react";
 import client from "../../api/client";
 import { useTranslations } from "next-intl";
+import { ButtonSpinner } from "../../components/Spinner";
+import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export default function ResetPasswordPage() {
     const t = useTranslations("resetPassword");
@@ -76,12 +78,7 @@ export default function ResetPasswordPage() {
             }, 3000);
         } catch (err: unknown) {
             console.error("Reset Password Error:", err);
-            let message = t("errors.resetFailed");
-            if (err && typeof err === 'object' && 'response' in err) {
-                const axiosError = err as { response: { data: { detail?: string } } };
-                message = axiosError.response?.data?.detail || message;
-            }
-            setError(message);
+            setError(getErrorMessage(err, t("errors.resetFailed")));
         } finally {
             setLoading(false);
         }
@@ -264,7 +261,7 @@ export default function ResetPasswordPage() {
                 >
                     {loading ? (
                         <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <ButtonSpinner />
                             {t("form.resetting")}
                         </>
                     ) : (

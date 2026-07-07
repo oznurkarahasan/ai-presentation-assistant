@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
     Send,
     ArrowLeft,
@@ -19,6 +19,8 @@ import {
 import PresentationViewer from "../components/PresentationViewer";
 import AiSlidePreview from "../components/AiSlidePreview";
 import { usePresentationData } from "../hooks/usePresentationData";
+import { useRequireAuth } from "../hooks/useRequireAuth";
+import Spinner from "../components/Spinner";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Link from "next/link";
@@ -55,7 +57,6 @@ function MrBeeAvatar({ size = 24 }: { size?: number }) {
 }
 
 export default function AnalyzePage() {
-    const router = useRouter();
     const t = useTranslations("analyze");
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -75,7 +76,7 @@ export default function AnalyzePage() {
     const backHref = returnToParam && returnToParam.startsWith('/') ? returnToParam : '/dashboard';
 
     const [showChat, setShowChat] = useState(true);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const { isChecking: isCheckingAuth } = useRequireAuth('/upload');
     const [currentPage, setCurrentPage] = useState(1);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [chatTheme, setChatTheme] = useState<'dark' | 'light'>('dark');
@@ -94,16 +95,6 @@ export default function AnalyzePage() {
     const presentationTitle = presentationError
         ? t("loadingError")
         : presentationData.title ?? t("loadingPresentation");
-
-    useEffect(() => {
-        const token = localStorage.getItem("access_token");
-        if (!token || token === 'undefined' || token === 'null' || token === '') {
-            router.push("/upload");
-            return;
-        }
-
-        setIsCheckingAuth(false);
-    }, [router]);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -245,7 +236,7 @@ export default function AnalyzePage() {
         return (
             <div className="flex h-screen items-center justify-center bg-black relative">
                 <div className="bg-grid" />
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin relative z-10" />
+                <Spinner size={32} className="relative z-10" />
             </div>
         );
     }

@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, MessageSquare, Globe, ArrowRight, AlertCircle, History, ExternalLink, Layers, Users, Volume2, SlidersHorizontal } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import client from '../../api/client';
+import { hasValidAccessToken } from '../../hooks/useRequireAuth';
+import { getErrorMessage } from '../../lib/getErrorMessage';
 
 type GeneratedPresentation = {
     id: number;
@@ -93,8 +95,7 @@ export default function AiGenerationForm() {
         }, 3000);
 
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
+            if (!hasValidAccessToken()) {
                 router.push('/login');
                 clearInterval(interval);
                 return;
@@ -126,9 +127,7 @@ export default function AiGenerationForm() {
             }
         } catch (err: unknown) {
             console.error('Presentation generation failed:', err);
-            const axiosError = err as { response?: { data?: { detail?: string } } };
-            const errorMessage = axiosError.response?.data?.detail || t('errorTitle');
-            setError(errorMessage);
+            setError(getErrorMessage(err, t('errorTitle')));
             setIsLoading(false);
         } finally {
             clearInterval(interval);

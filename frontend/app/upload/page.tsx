@@ -19,6 +19,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import client from "../api/client";
+import { hasValidAccessToken } from "../hooks/useRequireAuth";
+import { getErrorMessage } from "../lib/getErrorMessage";
+import axios from "axios";
 
 export default function UploadPage() {
     const router = useRouter();
@@ -156,13 +159,11 @@ export default function UploadPage() {
             }
         } catch (err: unknown) {
             console.error('Upload Error:', err);
-            const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } };
             // Handle 401 specifically for guest users
-            if (axiosErr.response?.status === 401) {
+            if (axios.isAxiosError(err) && err.response?.status === 401) {
                 setError(t("authRequired"));
             } else {
-                const detail = axiosErr.response?.data?.detail || t("uploadFailed");
-                setError(detail);
+                setError(getErrorMessage(err, t("uploadFailed")));
             }
             setUploadStatus('error');
         } finally {
@@ -180,10 +181,7 @@ export default function UploadPage() {
     };
 
     const handleAnalyzeClick = (e: React.MouseEvent) => {
-        const token = localStorage.getItem("access_token");
-
-        // Check if user is authenticated
-        if (!token || token === 'undefined' || token === 'null' || token === '') {
+        if (!hasValidAccessToken()) {
             e.preventDefault();
             setShowAuthModal(true);
             return;

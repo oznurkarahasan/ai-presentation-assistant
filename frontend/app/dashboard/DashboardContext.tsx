@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import client from "../api/client";
+import { useRequireAuth } from "../hooks/useRequireAuth";
 
 export interface UserProfile {
     id: number;
@@ -110,13 +111,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         router.push(`/dashboard?${params.toString()}`);
     }, [router, searchParams]);
 
-    const fetchDashboardData = useCallback(async () => {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-            router.push("/login");
-            return;
-        }
+    const { isChecking: isCheckingAuth } = useRequireAuth('/login');
 
+    const fetchDashboardData = useCallback(async () => {
         try {
             const [userRes, allRes, sessionsRes] = await Promise.all([
                 client.get("/api/v1/auth/me"),
@@ -155,8 +152,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }, [router]);
 
     useEffect(() => {
+        if (isCheckingAuth) return;
         fetchDashboardData();
-    }, [fetchDashboardData]);
+    }, [isCheckingAuth, fetchDashboardData]);
 
     useEffect(() => {
         localStorage.setItem('precue_favorite_ideas', JSON.stringify(favoriteTopicIdeas));

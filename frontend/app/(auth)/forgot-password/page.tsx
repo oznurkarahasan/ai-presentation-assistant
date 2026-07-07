@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import client from "../../api/client";
+import { ButtonSpinner } from "../../components/Spinner";
+import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
@@ -24,12 +26,7 @@ export default function ForgotPasswordPage() {
             setSuccess(true);
         } catch (err: unknown) {
             console.error("Forgot Password Error:", err);
-            let message = t("failedToSend");
-            if (err && typeof err === 'object' && 'response' in err) {
-                const axiosError = err as { response: { data: { detail?: string } } };
-                message = axiosError.response?.data?.detail || message;
-            }
-            setError(message);
+            setError(getErrorMessage(err, t("failedToSend")));
         } finally {
             setLoading(false);
         }
@@ -142,7 +139,7 @@ export default function ForgotPasswordPage() {
                     >
                         {loading ? (
                             <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <ButtonSpinner />
                                 {t("sending")}
                             </div>
                         ) : (

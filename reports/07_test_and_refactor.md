@@ -1,12 +1,13 @@
 # Changelog - July 7, 2026
 
 ## Branch
-- **Name:** `76-ai-presentation-generation-2`
-- **Scope:** Systematic backend cleanup following a full codebase duplication/architecture-debt audit (see `reports/.notes.md` for the complete 9-item backend + 8-item frontend findings list). This report covers all 9 backend items, tackled one at a time with full verification after each.
+- **Name:** `83-refactor-frontend`
+- **Scope:** Systematic cleanup following a full codebase duplication/architecture-debt audit (see `reports/.notes.md` for the complete 9-item backend + 8-item frontend findings list). This report covers all 9 backend items and all 8 frontend items, tackled one at a time with full verification after each.
 
 ## Change Summary
 - **All 9 backend findings resolved**, each verified independently: syntax check, full `pytest` suite (27/27 passing throughout), Docker container reload with no errors, plus targeted behavioral verification for the riskiest changes (exact error-message diffing, live end-to-end test against the real PostgreSQL + pgvector database, mocked OpenAI round-trips, a real generated-and-reopened `.pptx` file, live `404` checks against a real user).
-- User-facing API behavior changed in two places: item 1 makes previously-dead cleanup logic actually run, and item 9 fixes several endpoints to correctly return `404` instead of `400` for not-found resources.
+- **All 8 frontend findings resolved**, each verified with `tsc --noEmit`, `eslint` on every touched file, and live `fetch()` checks against the running dev container for every affected page.
+- User-facing API behavior changed in two backend places: item 1 makes previously-dead cleanup logic actually run, and item 9 fixes several endpoints to correctly return `404` instead of `400` for not-found resources. One frontend behavioral fix: the editor's default slides no longer flash in Turkish before switching to the active locale.
 
 ## 1. File Cleanup Worker Wired Up (`999e153`)
 - **Problem:** `app/services/file_cleanup.py` (139 lines) was entirely dead code — `cleanup_old_files()` and `cleanup_orphaned_files()` were never called from anywhere, so failed uploads and expired guest uploads accumulated on disk indefinitely.
@@ -61,13 +62,57 @@
   - Deleted `DatabaseError`, `AuthenticationError`, and `RateLimitError` from `exceptions.py` — confirmed via full-codebase grep that none were raised or imported anywhere (the same names imported in `presentations.py` from the `openai` package are unrelated third-party classes for OpenAI API errors, not these custom ones). Removed the now-unused `DatabaseError` handler and import from `main.py`.
 - **Verified:** full `pytest` suite (27/27), clean container reload, and live end-to-end checks against a real registered/logged-in user: `GET`, `PATCH`, and `DELETE` on a nonexistent presentation ID now return `404` with the correct `detail` message (previously `400`); nonexistent AI-state and nonexistent session deletion also confirmed `404`.
 
-## Remaining Work (not yet started)
-All 9 backend audit items are now resolved. Frontend items are still open:
-- `PresentationEditor.tsx` god-component, duplicated session-storage parsing, duplicated auth-check boilerplate, duplicated auth-page scaffolding, no shared `types/`, no shared error-message util, repeated spinner markup.
+---
+
+# Frontend
+
+## 1. Split the `PresentationEditor.tsx` God-Component
+- **Problem:** 851 lines holding session-storage parsing, autosave/debounce, the image-picker modal (~110 lines of JSX), the toast system, zoom/fullscreen state, and every slide-mutation handler, all in one file.
+- **Fix:** Extracted into focused pieces: `app/lib/editorDefaults.ts` (default slides + session-storage read/write), `app/hooks/useAutoSave.ts`, `app/hooks/useToast.ts` + `app/components/EditorToast.tsx`, `app/hooks/useZoomFullscreen.ts`, `app/components/ImagePickerModal.tsx` (self-contained, owns its own image-library fetch/cache), `app/hooks/useSlideMutations.ts` (all 11 slide CRUD handlers). `PresentationEditor.tsx` dropped from **851 to 295 lines** and is now mostly hook calls + JSX composition.
+- **Verified:** `tsc --noEmit` and `eslint` clean; live `GET /editor` (both with and without a `presentationId`) rendered successfully with no runtime errors.
+
+## 2. Deduplicated Session-Storage `JSON.parse` (4x → 1x)
+- **Problem:** The same `sessionStorage.getItem('precue_generated_presentation')` key was parsed independently in 4 places in the original file (three lazy `useState` initializers plus a mount `useEffect`), each with its own try/catch.
+- **Fix:** `readStoredPresentation()` in `editorDefaults.ts` parses it once; `PresentationEditor.tsx` calls it once via `useMemo` and derives `slides`/`selectedSlideId`/`metadata` from the single result.
+
+## 3. Removed the Duplicate Hardcoded-vs-Localized Default Slides
+- **Problem:** `DEFAULT_SLIDES` (a hardcoded Turkish 5-slide array) and a `buildLocalizedDefaultSlides(t)` function built from translation keys defined the *same* 5 slides twice. Worse, the original code rendered the hardcoded Turkish version first, then a mount effect silently swapped in the localized version a moment later — a visible flash of Turkish content for non-Turkish users.
+- **Fix:** Deleted `DEFAULT_SLIDES` entirely. Since `t` from `useTranslations` is already resolved synchronously when the component runs, the lazy `useState` initializer calls `buildLocalizedDefaultSlides(t)` directly — correct content from the very first render, no swap effect needed.
+- **Verified:** live-fetched `/editor`, confirmed no raw translation keys leaked into the HTML and the correct localized title rendered immediately.
+
+## 4. Shared `useRequireAuth()` Hook
+- **Problem:** "Check for a token, redirect if missing" was hand-rolled in `analyze/page.tsx`, `(ai-presentation)/editor/page.tsx`, and `DashboardContext.tsx` (three different redirect targets, one with a stricter `'undefined'`/`'null'`/`''` string check). Two more files (`AiGenerationForm.tsx`, `upload/page.tsx`) had a similar but *pre-flight* (not page-gate) shape. Note: the original audit also named `presentation/[id]/page.tsx`, but investigation showed its `access_token` read is for a WebSocket auth query param, not a page guard — left untouched.
+- **Fix:** New `app/hooks/useRequireAuth.ts` exporting `useRequireAuth(redirectTo)` (page-gate, returns `isChecking`) and `hasValidAccessToken()` (raw check, for the two pre-flight call sites). In `editor/page.tsx`, the auth check was previously entangled with "has the presentation loaded" — separated into `isCheckingAuth` (from the hook) and its own `isPresentationReady` state.
+- **Verified:** live-fetched `/analyze`, `/editor`, `/dashboard`, `/upload` — all 200, no errors; the SSR-hydration-safe `setState`-in-effect pattern needed the same lint exception the codebase already used for this exact case in `editor/page.tsx`.
+
+## 5. `AuthCard` / `FormField` / `AlertBanner` for Login & Register
+- **Problem:** `login/page.tsx` (222 lines) and `register/page.tsx` (271 lines) copy-pasted the entire visual skeleton — header, bordered card, labeled-icon input rows, success/error banners.
+- **Fix:** New `app/components/auth/AuthCard.tsx` (wrapper + header + card, with `banner`/`footer` slots and a `cardClassName` override for login's `p-8` vs register's `p-6`), `AlertBanner.tsx` (success/error variant, self-contained `AnimatePresence`), `FormField.tsx` (icon + label + input, with a `labelExtra` slot for login's "forgot password" link). `login/page.tsx` → 175 lines, `register/page.tsx` → 196 lines.
+
+## 6. Shared `getErrorMessage()` Axios-Error Util
+- **Problem:** The exact "network error / 5xx / response detail / no-response" chain was hand-parsed in 11 places: login, register, forgot-password, reset-password, `AiGenerationForm.tsx`, `upload/page.tsx`, and **5 near-identical blocks in `Profile.tsx`** alone (email verification, email confirm, profile update, password update, account deletion).
+- **Fix:** `app/lib/getErrorMessage.ts`, using `axios.isAxiosError()` as the type guard (more robust than the original files' hand-rolled duck-typing). Applied at all 11 sites; `upload/page.tsx` keeps its 401-specific "guest auth required" branch, delegating to the shared util only for the general case. `dashboard/page.tsx`'s status-code-to-i18n-key mapping was deliberately left alone — different concern (doesn't read `detail` from the response body).
+- **Verified:** `Profile.tsx`'s now-unused `axios` import was removed; live-fetched all 6 affected pages plus `/dashboard?tab=profile`.
+
+## 7. Consolidated Loading-Spinner Markup
+- **Problem:** Raw spinner `<div>`s hand-copied with minor size/color drift across ~8 places.
+- **Fix:** `app/components/Spinner.tsx` exports `Spinner` (the colored-ring-with-transparent-top pattern — `size`, `borderColorClassName`, `colorHex` props) applied in `analyze/page.tsx`, `PresentationViewer.tsx`, `AiSlidePreview.tsx` (dynamic runtime color), `ImagePickerModal.tsx`; and `ButtonSpinner` (the inverse-contrast white-ring pattern, zero props since it was byte-identical in all 4 places) applied in login/register/forgot-password/reset-password. The `editor/page.tsx` full-page double-layer spinner was left as-is — visually distinct (border-4, two nested layers) and single-use, not worth the extra prop surface.
+
+## 8. Shared `types/` Folder
+- **Problem:** Of 23 files with `interface` declarations, most were legitimate component-local Props (correct to keep local); the one genuine overlap was `PresentationSlide` (`SlideList.tsx`) and `AiSlide` (`AiSlidePreview.tsx`) — the same shape, drifted (`content_type: SlideLayoutId` vs a loose `string`; a narrower inline `image` type on `AiSlide`).
+- **Fix:** New `app/types/presentation.ts` with the canonical `SlideImage`, `PresentationSlide`, `PresentationMetadata`. Deleted `AiSlide` entirely — `AiSlidePreview.tsx` and `usePresentationData.ts` now use `PresentationSlide`. Updated all 5 files that imported the old component-local versions (`editorDefaults.ts`, `SlideCanvas.tsx`, `PresentationEditor.tsx`, `useSlideMutations.ts`, `useAutoSave.ts`) to import from the shared location directly — no re-export shims left behind. `DashboardContext.tsx`'s existing role as the de facto shared source for `UserProfile`/`RecentPresentation`/`RecentSession` (already correctly reused by `Library.tsx`/`Sessions.tsx`) was left untouched.
+- **Verified:** `tsc --noEmit` passed with 0 errors — confirms the stricter `SlideLayoutId` typing (replacing `AiSlide`'s loose `string`) didn't break any existing call site.
 
 ## Verification Summary
-Every item in this report was checked with all of the following before being considered done:
+
+**Backend** — every item checked with:
 1. `python -m ast.parse` on every touched file (syntax).
 2. Full backend `pytest` suite — stayed at 27/27 passing after each individual step.
 3. Docker container (`presentation_backend`) log inspection after each change to confirm a clean `--reload` with no import errors or tracebacks.
 4. Item-specific behavioral checks where the risk warranted it: exact exception-message diffing (item 4), live database round-trip with real embedding dimensions (item 5), mocked-OpenAI-client round-trips through the relocated service functions (item 6), a real generated `.pptx` re-opened and inspected slide-by-slide (item 7), live routing check after the module flatten (item 8), and live end-to-end `404` verification against a real registered user for every fixed not-found case (item 9).
+
+**Frontend** — every item checked with:
+1. `npx tsc --noEmit` inside the running `presentation_frontend` container — 0 errors after every step.
+2. `npx eslint` on every new/modified file — 0 errors after every step (two issues surfaced and were fixed along the way: a `react-hooks/set-state-in-effect` violation in `ImagePickerModal.tsx`'s search-reset logic, resolved with React's "adjust state during render" pattern; the same rule in `useRequireAuth.ts`, resolved with the same lint exception the codebase already uses for this SSR-hydration-safe case in `editor/page.tsx`).
+3. A live `fetch()` from inside the container against every affected route after each step, checking for `200` status and the absence of Next.js error-page markers.
+4. Docker container log inspection for tracebacks after each change; the container stopped once mid-session for an unrelated reason (clean exit code 0) and was restarted.

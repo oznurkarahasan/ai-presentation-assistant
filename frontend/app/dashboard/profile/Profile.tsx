@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useDashboard } from '../DashboardContext';
 import client from '@/app/api/client';
+import { getErrorMessage } from '@/app/lib/getErrorMessage';
 import { useTranslations } from 'next-intl';
 
 export default function Profile() {
@@ -79,10 +79,7 @@ export default function Profile() {
 			setAlert({ type: 'info', message: t('verificationCodeSent') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
-			const apiMessage = axios.isAxiosError(error)
-				? (error.response?.data?.detail as string | undefined)
-				: undefined;
-			setEmailVerificationError(apiMessage || t('failedToSendCode'));
+			setEmailVerificationError(getErrorMessage(error, t('failedToSendCode')));
 		} finally {
 			setIsSendingEmailCode(false);
 		}
@@ -116,10 +113,7 @@ export default function Profile() {
 			setAlert({ type: 'info', message: t('emailUpdated') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
-			const apiMessage = axios.isAxiosError(error)
-				? (error.response?.data?.detail as string | undefined)
-				: undefined;
-			setEmailVerificationError(apiMessage || t('verificationFailed'));
+			setEmailVerificationError(getErrorMessage(error, t('verificationFailed')));
 		} finally {
 			setIsVerifyingEmailCode(false);
 		}
@@ -157,10 +151,7 @@ export default function Profile() {
 			setAlert({ type: 'info', message: t('profileUpdated') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
-			const apiMessage = axios.isAxiosError(error)
-				? (error.response?.data?.detail as string | undefined)
-				: undefined;
-			setProfileError(apiMessage || t('profileUpdateFailed'));
+			setProfileError(getErrorMessage(error, t('profileUpdateFailed')));
 		} finally {
 			setIsUpdatingProfile(false);
 		}
@@ -198,10 +189,7 @@ export default function Profile() {
 			setAlert({ type: 'info', message: t('passwordUpdated') });
 			setTimeout(() => setAlert(null), 3500);
 		} catch (error) {
-			const apiMessage = axios.isAxiosError(error)
-				? (error.response?.data?.detail as string | undefined)
-				: undefined;
-			setPasswordError(apiMessage || t('passwordUpdateFailed'));
+			setPasswordError(getErrorMessage(error, t('passwordUpdateFailed')));
 		} finally {
 			setIsUpdatingPassword(false);
 		}
@@ -236,10 +224,7 @@ export default function Profile() {
 			setTimeout(() => setAlert(null), 3500);
 			router.push('/login');
 		} catch (error) {
-			const apiMessage = axios.isAxiosError(error)
-				? (error.response?.data?.detail as string | undefined)
-				: undefined;
-			setAlert({ type: 'error', message: apiMessage || t('accountDeletionFailed') });
+			setAlert({ type: 'error', message: getErrorMessage(error, t('accountDeletionFailed')) });
 			setTimeout(() => setAlert(null), 3500);
 		} finally {
 			setIsDeleting(false);

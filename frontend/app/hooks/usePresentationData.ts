@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import client from '../api/client';
-import type { AiSlide } from '../components/AiSlidePreview';
+import type { PresentationSlide } from '../types/presentation';
 
 export interface AiColors {
     primary: string;
@@ -14,7 +14,7 @@ export interface PresentationData {
     orientation: 'landscape' | 'portrait';
     aspectRatio: number | null;
     totalPages: number;
-    aiSlides: AiSlide[];
+    aiSlides: PresentationSlide[];
     aiColors: AiColors;
 }
 
