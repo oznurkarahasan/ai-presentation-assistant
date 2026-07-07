@@ -23,8 +23,7 @@ from app.core.exceptions import (
     ResourceNotFoundError,
     ValidationError
 )
-from app.api.v1 import auth, presentations, chat, orchestration, ideas
-from app.api.v1.dashboard.planner import planner
+from app.api.v1 import auth, presentations, chat, orchestration, ideas, planner
 from app.services.planner_reminder_service import run_reminder_worker
 from app.services.file_cleanup import run_cleanup_worker
 
