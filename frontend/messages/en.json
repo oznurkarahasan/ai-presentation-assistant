@@ -797,7 +797,13 @@
     "visualBalanceScore": "Visual Balance",
     "summaryLabel": "Summary",
     "slideFeedbackLabel": "Slide-by-Slide Feedback",
-    "slideLabel": "Slide"
+    "slideLabel": "Slide",
+    "practiceStatsLabel": "Practice Stats",
+    "noSessions": "No rehearsal or live sessions recorded for this presentation yet.",
+    "totalPracticeTime": "Total Time",
+    "rehearsals": "Rehearsals",
+    "liveSessions": "Live",
+    "lastPracticed": "Last practiced"
   },
   "aiGeneration": {
     "title": "Generate Presentation with AI",

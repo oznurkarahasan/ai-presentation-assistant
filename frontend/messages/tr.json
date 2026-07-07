@@ -797,7 +797,13 @@
     "visualBalanceScore": "Görsel Denge",
     "summaryLabel": "Özet",
     "slideFeedbackLabel": "Slayt Bazlı Geri Bildirim",
-    "slideLabel": "Slayt"
+    "slideLabel": "Slayt",
+    "practiceStatsLabel": "Prova İstatistikleri",
+    "noSessions": "Bu sunum için henüz kayıtlı prova veya canlı oturum yok.",
+    "totalPracticeTime": "Toplam Süre",
+    "rehearsals": "Prova",
+    "liveSessions": "Canlı",
+    "lastPracticed": "Son çalışma"
   },
   "aiGeneration": {
     "title": "Yapay Zeka ile Sunum Üret",
