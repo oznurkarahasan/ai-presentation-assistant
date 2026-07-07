@@ -225,9 +225,11 @@ function Header() {
     const { user, activeTab, searchQuery, setSearchQuery, setActiveTab, favoriteTopicIdeas, setPendingTopicIdea } = useDashboard();
     const t = useTranslations("dashboard");
     const tIdeas = useTranslations("topicIdeas");
-    const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing' || activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals' || activeTab === 'ai-presentation';
+    const isCompactHeaderTab = activeTab === 'presentations' || activeTab === 'sessions' || activeTab === 'profile' || activeTab === 'billing' || activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals' || activeTab === 'ai-presentation' || activeTab === 'ai-analysis';
     const compactTitle = activeTab === 'ai-presentation'
         ? 'AI Presentation Generation'
+        : activeTab === 'ai-analysis'
+        ? t("aiAnalysis")
         : activeTab === 'sessions'
         ? t("sessions")
         : activeTab === 'profile'
