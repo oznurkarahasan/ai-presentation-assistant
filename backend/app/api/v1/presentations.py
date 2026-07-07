@@ -6,9 +6,10 @@ from app.api.v1 import auth
 from app.core.database import get_db
 from app.core.logger import logger
 from app.core.exceptions import FileProcessingError, ResourceNotFoundError, ValidationError
-from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service
+from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service, analysis_service
 from app.core.limiter import limiter
 from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationGenerateResponse, PresentationState, ImageLibraryItem
+from app.schemas.analysis import PresentationAnalysisRequest, PresentationAnalysisResponse
 from pydantic import BaseModel, Field
 import asyncio
 import io
@@ -276,6 +277,41 @@ async def get_presentation(
         ]
 
     return response
+
+
+@router.post("/{presentation_id}/analyze", response_model=PresentationAnalysisResponse)
+async def analyze_presentation(
+    presentation_id: int,
+    request: PresentationAnalysisRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user = Depends(auth.get_current_user)
+):
+    stmt = select(Presentation).where(
+        Presentation.id == presentation_id,
+        Presentation.user_id == current_user.id
+    ).options(selectinload(Presentation.slides))
+
+    result = await db.execute(stmt)
+    presentation = result.scalar_one_or_none()
+
+    if not presentation:
+        raise ResourceNotFoundError("Presentation not found")
+    if not presentation.slides:
+        raise ValidationError("Presentation has no slides to analyze")
+
+    slides = sorted(presentation.slides, key=lambda s: s.page_number)
+
+    try:
+        return await analysis_service.analyze_presentation(
+            title=presentation.title,
+            slides=[{"page_number": s.page_number, "content_text": s.content_text} for s in slides],
+            language=request.language,
+        )
+    except (ResourceNotFoundError, ValidationError):
+        raise
+    except Exception as e:
+        logger.error(f"Analysis failed for presentation {presentation_id}: {e}")
+        raise HTTPException(status_code=500, detail="Failed to analyze presentation. Please try again.")
 
 
 @router.get("/{presentation_id}/ai-state", response_model=PresentationState)
