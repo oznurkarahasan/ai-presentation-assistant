@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PresentationEditor from '../../components/PresentationEditor';
 import client from '../../api/client';
+import { useRequireAuth } from '../../hooks/useRequireAuth';
 
 const ACTIVE_PRESENTATION_KEY = 'precue_active_presentation_id';
 const SESSION_PRESENTATION_KEY = 'precue_generated_presentation';
@@ -12,14 +13,11 @@ const SESSION_PRESENTATION_KEY = 'precue_generated_presentation';
 export default function PresentationEditorPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const { isChecking: isCheckingAuth } = useRequireAuth('/login');
+    const [isPresentationReady, setIsPresentationReady] = useState(false);
 
     useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
+        if (isCheckingAuth) return;
 
         const stored = sessionStorage.getItem(SESSION_PRESENTATION_KEY);
         const presentationId = searchParams.get('presentationId');
@@ -31,7 +29,7 @@ export default function PresentationEditorPage() {
                 .then((response) => {
                     sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(response.data));
                     sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, String(presentationId));
-                    setIsAuthenticated(true);
+                    setIsPresentationReady(true);
                 })
                 .catch(() => {
                     router.push('/dashboard?tab=ai-presentation');
@@ -46,7 +44,7 @@ export default function PresentationEditorPage() {
                     .then((response) => {
                         sessionStorage.setItem(SESSION_PRESENTATION_KEY, JSON.stringify(response.data));
                         sessionStorage.setItem(ACTIVE_PRESENTATION_KEY, String(presentationId));
-                        setIsAuthenticated(true);
+                        setIsPresentationReady(true);
                     })
                     .catch(() => {
                         router.push('/dashboard?tab=ai-presentation');
@@ -57,10 +55,10 @@ export default function PresentationEditorPage() {
             return;
         }
 
-        setIsAuthenticated(true);
-    }, [router, searchParams]);
+        setIsPresentationReady(true);
+    }, [isCheckingAuth, router, searchParams]);
 
-    if (!isAuthenticated) {
+    if (isCheckingAuth || !isPresentationReady) {
         return (
             <div className="w-screen h-screen flex items-center justify-center bg-zinc-950">
                 <div className="relative w-12 h-12">

@@ -19,6 +19,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import client from "../api/client";
+import { hasValidAccessToken } from "../hooks/useRequireAuth";
 
 export default function UploadPage() {
     const router = useRouter();
@@ -180,10 +181,7 @@ export default function UploadPage() {
     };
 
     const handleAnalyzeClick = (e: React.MouseEvent) => {
-        const token = localStorage.getItem("access_token");
-
-        // Check if user is authenticated
-        if (!token || token === 'undefined' || token === 'null' || token === '') {
+        if (!hasValidAccessToken()) {
             e.preventDefault();
             setShowAuthModal(true);
             return;

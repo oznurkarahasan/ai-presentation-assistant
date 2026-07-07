@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, MessageSquare, Globe, ArrowRight, AlertCircle, History, ExternalLink, Layers, Users, Volume2, SlidersHorizontal } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import client from '../../api/client';
+import { hasValidAccessToken } from '../../hooks/useRequireAuth';
 
 type GeneratedPresentation = {
     id: number;
@@ -93,8 +94,7 @@ export default function AiGenerationForm() {
         }, 3000);
 
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
+            if (!hasValidAccessToken()) {
                 router.push('/login');
                 clearInterval(interval);
                 return;
