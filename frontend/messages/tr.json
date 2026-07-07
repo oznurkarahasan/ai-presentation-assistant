@@ -402,7 +402,7 @@
     "hooksOpenings": "Kancalar & açılışlar",
     "visualDirection": "Görsel yön",
     "aiPresentation": "AI Sunumu",
-    "aiAnalysis": "AI Analizi",
+    "aiAnalysis": "Kalite Analizi",
     "actions": "Eylemler",
     "planner": "Planlayıcı",
     "billing": "Faturalama",
@@ -780,6 +780,24 @@
     "noSavedIdeas": "Henüz favori fikir yok",
     "startWithCategory": "Ya da bir kategoriyle başla",
     "trendingTopics": "Güncel Konular"
+  },
+  "aiAnalysis": {
+    "title": "Kalite Analizi",
+    "subtitle": "Sunumlarından herhangi biri için yapı, okunabilirlik ve görsel denge konusunda yapay zeka destekli geri bildirim al",
+    "noPresentations": "Analiz edilecek tamamlanmış bir sunumun yok.",
+    "selectPlaceholder": "Analiz edilecek bir sunum seç",
+    "slidesUnit": "slayt",
+    "analyze": "Analiz Et",
+    "reanalyze": "Yeniden Analiz Et",
+    "analyzing": "Analiz ediliyor...",
+    "errorMessage": "Sunum analiz edilemedi. Lütfen tekrar deneyin.",
+    "overallScore": "Genel",
+    "readabilityScore": "Okunabilirlik",
+    "structureScore": "Yapı",
+    "visualBalanceScore": "Görsel Denge",
+    "summaryLabel": "Özet",
+    "slideFeedbackLabel": "Slayt Bazlı Geri Bildirim",
+    "slideLabel": "Slayt"
   },
   "aiGeneration": {
     "title": "Yapay Zeka ile Sunum Üret",

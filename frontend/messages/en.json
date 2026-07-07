@@ -402,7 +402,7 @@
     "hooksOpenings": "Hooks & openings",
     "visualDirection": "Visual direction",
     "aiPresentation": "AI Presentation",
-    "aiAnalysis": "AI Analysis",
+    "aiAnalysis": "Quality Analysis",
     "actions": "Actions",
     "planner": "Planner",
     "billing": "Billing",
@@ -780,6 +780,24 @@
     "noSavedIdeas": "No favorites yet",
     "startWithCategory": "Or start with a category",
     "trendingTopics": "Trending Topics"
+  },
+  "aiAnalysis": {
+    "title": "Quality Analysis",
+    "subtitle": "Get AI-generated feedback on structure, readability, and visual balance for any of your presentations",
+    "noPresentations": "You don't have any completed presentations to analyze yet.",
+    "selectPlaceholder": "Select a presentation to analyze",
+    "slidesUnit": "slides",
+    "analyze": "Analyze",
+    "reanalyze": "Re-analyze",
+    "analyzing": "Analyzing...",
+    "errorMessage": "Failed to analyze the presentation. Please try again.",
+    "overallScore": "Overall",
+    "readabilityScore": "Readability",
+    "structureScore": "Structure",
+    "visualBalanceScore": "Visual Balance",
+    "summaryLabel": "Summary",
+    "slideFeedbackLabel": "Slide-by-Slide Feedback",
+    "slideLabel": "Slide"
   },
   "aiGeneration": {
     "title": "Generate Presentation with AI",
