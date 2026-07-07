@@ -2,11 +2,11 @@
 
 ## Branch
 - **Name:** `76-ai-presentation-generation-2`
-- **Scope:** Systematic backend cleanup following a full codebase duplication/architecture-debt audit (see `reports/.notes.md` for the complete 9-item backend + 8-item frontend findings list). This report covers the first 5 backend items, tackled one at a time with full verification after each.
+- **Scope:** Systematic backend cleanup following a full codebase duplication/architecture-debt audit (see `reports/.notes.md` for the complete 9-item backend + 8-item frontend findings list). This report covers all 9 backend items, tackled one at a time with full verification after each.
 
 ## Change Summary
-- **7 findings resolved**, each verified independently: syntax check, full `pytest` suite (27/27 passing throughout), Docker container reload with no errors, plus targeted behavioral verification for the riskiest changes (exact error-message diffing, live end-to-end test against the real PostgreSQL + pgvector database, mocked OpenAI round-trips, a real generated-and-reopened `.pptx` file).
-- No user-facing API behavior changed except item 1, which makes previously-dead cleanup logic actually run.
+- **All 9 backend findings resolved**, each verified independently: syntax check, full `pytest` suite (27/27 passing throughout), Docker container reload with no errors, plus targeted behavioral verification for the riskiest changes (exact error-message diffing, live end-to-end test against the real PostgreSQL + pgvector database, mocked OpenAI round-trips, a real generated-and-reopened `.pptx` file, live `404` checks against a real user).
+- User-facing API behavior changed in two places: item 1 makes previously-dead cleanup logic actually run, and item 9 fixes several endpoints to correctly return `404` instead of `400` for not-found resources.
 
 ## 1. File Cleanup Worker Wired Up (`999e153`)
 - **Problem:** `app/services/file_cleanup.py` (139 lines) was entirely dead code — `cleanup_old_files()` and `cleanup_orphaned_files()` were never called from anywhere, so failed uploads and expired guest uploads accumulated on disk indefinitely.
@@ -49,15 +49,25 @@
 - **Simplification found along the way:** the moved function used to alias `from pptx import Presentation as PptxPresentation` to avoid colliding with `presentations.py`'s own `Presentation` (the SQLAlchemy model). `pptx_service.py` has no such collision — it already imports the real `pptx.Presentation` at module level for its existing functions — so the alias was dropped in favor of using that import directly.
 - **Verified:** the container stopped cleanly mid-step for an unrelated reason (exit code 0, not a crash from this change) and was restarted. After restart: full `pytest` suite 27/27, `export-pptx` route still returns `401` without a token (routing intact), and — the strongest check — **called `pptx_service.generate_pptx_from_state()` directly with a real 3-slide `PresentationState`** (standard/left/background layouts, real Unsplash image URLs) and re-opened the resulting 234KB output with `python-pptx`: correct slide count, correct titles/bullets, correct sequential slide numbers (1, 2, 3), images embedded successfully (confirming the SSRF-guard helpers still work post-move).
 
+## 8. Flattened the Nested `planner` Router
+- **Problem:** `api/v1/dashboard/planner/planner.py` was the only nested router in the codebase — a 2-level folder for a single file, with an import path that stutters (`from app.api.v1.dashboard.planner import planner`). Investigation showed `dashboard/` used to hold sibling routers too (`library`, `profile`, `sessions` — only `__pycache__` remnants of them remain, no source), meaning the nesting wasn't an intentional design, just leftovers from an earlier, incomplete consolidation.
+- **Fix:** `git mv dashboard/planner/planner.py` → `api/v1/planner.py`. Deleted the now-empty `dashboard/` package (both `__init__.py` files, no remaining source). Updated `main.py`'s import to a single line: `from app.api.v1 import auth, presentations, chat, orchestration, ideas, planner`. Route path (`/api/v1/planner/...`) and file contents unchanged — no other file imported the old module path, only the route path (already covered by `tests/test_planner.py`).
+- **Verified:** syntax check, full `pytest` suite (27/27), clean container reload (`Application startup complete`, both workers started), and a live `GET /api/v1/planner/events` without a token returning `401` (routing intact).
+
+## 9. Fixed Misused Exceptions: Wrong Status Codes + Dead Classes
+- **Problem:** `app/core/exceptions.py` defined `DatabaseError`, `AuthenticationError`, `ResourceNotFoundError`, and `RateLimitError`, but none of them were ever raised anywhere in the codebase. Worse, `ResourceNotFoundError` already had a correct handler registered in `main.py` (→ 404), yet 7 "not found" cases in `presentations.py` (`get_presentation`, `get_ai_presentation_state`, `update_ai_presentation_state`, `export_ai_presentation_pptx`, `update_presentation_title`, `delete_presentation`, and session deletion) all raised `ValidationError` instead, incorrectly returning `400 Bad Request` for what should be `404 Not Found`. This was inconsistent with `auth.py`, `chat.py`, and `planner.py`, which already used the correct `404` status for their own not-found cases.
+- **Fix:**
+  - Replaced all 7 `raise ValidationError("... not found")` call sites in `presentations.py` with `raise ResourceNotFoundError(...)`, now correctly wired to the existing `404` handler.
+  - Deleted `DatabaseError`, `AuthenticationError`, and `RateLimitError` from `exceptions.py` — confirmed via full-codebase grep that none were raised or imported anywhere (the same names imported in `presentations.py` from the `openai` package are unrelated third-party classes for OpenAI API errors, not these custom ones). Removed the now-unused `DatabaseError` handler and import from `main.py`.
+- **Verified:** full `pytest` suite (27/27), clean container reload, and live end-to-end checks against a real registered/logged-in user: `GET`, `PATCH`, and `DELETE` on a nonexistent presentation ID now return `404` with the correct `detail` message (previously `400`); nonexistent AI-state and nonexistent session deletion also confirmed `404`.
+
 ## Remaining Work (not yet started)
-From the original audit, items 8-9 (backend) and the full frontend list are still open:
-- `api/v1/dashboard/planner/planner.py` is the only nested router; should flatten to `api/v1/planner.py`.
-- Unused exception classes (`DatabaseError`, `AuthenticationError`, `ResourceNotFoundError`, `RateLimitError`) are never raised; some "not found" cases incorrectly return 400 via `ValidationError` instead of 404.
-- Frontend: `PresentationEditor.tsx` god-component, duplicated session-storage parsing, duplicated auth-check boilerplate, duplicated auth-page scaffolding, no shared `types/`, no shared error-message util, repeated spinner markup.
+All 9 backend audit items are now resolved. Frontend items are still open:
+- `PresentationEditor.tsx` god-component, duplicated session-storage parsing, duplicated auth-check boilerplate, duplicated auth-page scaffolding, no shared `types/`, no shared error-message util, repeated spinner markup.
 
 ## Verification Summary
 Every item in this report was checked with all of the following before being considered done:
 1. `python -m ast.parse` on every touched file (syntax).
 2. Full backend `pytest` suite — stayed at 27/27 passing after each individual step.
 3. Docker container (`presentation_backend`) log inspection after each change to confirm a clean `--reload` with no import errors or tracebacks.
-4. Item-specific behavioral checks where the risk warranted it: exact exception-message diffing (item 4), live database round-trip with real embedding dimensions (item 5), mocked-OpenAI-client round-trips through the relocated service functions (item 6), a real generated `.pptx` re-opened and inspected slide-by-slide (item 7), and object-identity assertions (`is`) to confirm shared singletons are genuinely shared (items 2, 3).
+4. Item-specific behavioral checks where the risk warranted it: exact exception-message diffing (item 4), live database round-trip with real embedding dimensions (item 5), mocked-OpenAI-client round-trips through the relocated service functions (item 6), a real generated `.pptx` re-opened and inspected slide-by-slide (item 7), live routing check after the module flatten (item 8), and live end-to-end `404` verification against a real registered user for every fixed not-found case (item 9).

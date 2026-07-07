@@ -19,7 +19,6 @@ from app.core.exceptions import (
     FileProcessingError,
     PDFExtractionError,
     EmbeddingError,
-    DatabaseError,
     ResourceNotFoundError,
     ValidationError
 )
@@ -102,15 +101,6 @@ async def embedding_error_handler(request: Request, exc: EmbeddingError):
     return JSONResponse(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         content={"detail": "AI service temporarily unavailable. Please try again later."}
-    )
-
-@app.exception_handler(DatabaseError)
-async def database_error_handler(request: Request, exc: DatabaseError):
-    """Handle database errors"""
-    logger.critical(f"Database Error: {exc.message}", exc_info=True)
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Database error occurred. Our team has been notified."}
     )
 
 @app.exception_handler(ResourceNotFoundError)

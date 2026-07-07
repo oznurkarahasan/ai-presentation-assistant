@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1 import auth
 from app.core.database import get_db
 from app.core.logger import logger
-from app.core.exceptions import FileProcessingError, ValidationError
+from app.core.exceptions import FileProcessingError, ResourceNotFoundError, ValidationError
 from app.services import pdf_service, pptx_service, embedding_service, vector_db, file_validator, generation_service
 from app.core.limiter import limiter
 from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationGenerateResponse, PresentationState, ImageLibraryItem
@@ -209,7 +209,7 @@ async def delete_session(
     session = result.scalar_one_or_none()
 
     if session is None:
-        raise ValidationError("Session not found")
+        raise ResourceNotFoundError("Session not found")
 
     await db.delete(session)
     await db.commit()
@@ -234,8 +234,8 @@ async def get_presentation(
     presentation = result.scalar_one_or_none()
     
     if not presentation:
-        raise ValidationError("Presentation not found")
-        
+        raise ResourceNotFoundError("Presentation not found")
+
     # Detect orientation and aspect ratio for frontend
     orientation = "landscape"
     aspect_ratio = 1.777
@@ -293,7 +293,7 @@ async def get_ai_presentation_state(
     presentation = result.scalar_one_or_none()
 
     if not presentation or not presentation.ai_content_json:
-        raise ValidationError("AI presentation not found")
+        raise ResourceNotFoundError("AI presentation not found")
 
     return PresentationState.model_validate(presentation.ai_content_json)
 
@@ -314,7 +314,7 @@ async def update_ai_presentation_state(
     presentation = result.scalar_one_or_none()
 
     if not presentation:
-        raise ValidationError("AI presentation not found")
+        raise ResourceNotFoundError("AI presentation not found")
 
     presentation.ai_content_json = state.model_dump()
     presentation.title = state.metadata.title
@@ -341,7 +341,7 @@ async def export_ai_presentation_pptx(
     presentation = result.scalar_one_or_none()
 
     if not presentation or not presentation.ai_content_json:
-        raise ValidationError("AI presentation not found")
+        raise ResourceNotFoundError("AI presentation not found")
 
     state = PresentationState.model_validate(presentation.ai_content_json)
 
@@ -502,7 +502,7 @@ async def update_presentation_title(
     presentation = result.scalar_one_or_none()
 
     if not presentation:
-        raise ValidationError("Presentation not found")
+        raise ResourceNotFoundError("Presentation not found")
 
     normalized_title = payload.title.strip()
     if not normalized_title:
@@ -542,8 +542,8 @@ async def delete_presentation(
     presentation = result.scalar_one_or_none()
     
     if not presentation:
-        raise ValidationError("Presentation not found")
-    
+        raise ResourceNotFoundError("Presentation not found")
+
     # Delete file from disk
     if os.path.exists(presentation.file_path):
         try:
