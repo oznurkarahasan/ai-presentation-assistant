@@ -12,106 +12,17 @@ import EditorToolbar from './EditorToolbar';
 import EditorStatusBar from './EditorStatusBar';
 import { useRouter } from 'next/navigation';
 import client from '../api/client';
+import { isSlideLayoutId, SlideLayoutId } from '../lib/slideLayouts';
 
-// Mass database of curated high-quality Unsplash image assets
+// Curated image catalog is served by the backend (single source of truth
+// shared with generation_service.UNSPLASH_IMAGE_DATABASE) via /image-library,
+// so it isn't duplicated here — see fetch in the component below.
 interface UnsplashImage {
     url: string;
     alt: string;
-    categories: string[];
-    author: string;
+    keywords: string[];
+    author?: string | null;
 }
-
-const IMAGE_DATABASE: UnsplashImage[] = [
-    // Technology
-    {
-        url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80',
-        alt: 'Silicon microchip with glowing gold elements',
-        categories: ['technology', 'teknoloji', 'ai', 'cyber', 'yapay zeka'],
-        author: 'Nicolas Thomas'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80',
-        alt: 'Digital binary matrix computer code on screen',
-        categories: ['technology', 'teknoloji', 'data', 'veri', 'cyber'],
-        author: 'Markus Spiske'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80',
-        alt: 'Robotic hand gesturing in front of holographic UI',
-        categories: ['technology', 'teknoloji', 'ai', 'yapay zeka', 'robotics'],
-        author: 'Alex Knight'
-    },
-    // Business
-    {
-        url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80',
-        alt: 'Modern workspace setup with laptop and graphs',
-        categories: ['business', 'iş', 'office', 'ofis', 'success', 'başarı'],
-        author: 'Campaign Creators'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80',
-        alt: 'Financial analytics on laptop screen with warm lighting',
-        categories: ['business', 'iş', 'data', 'veri', 'analytics', 'analiz'],
-        author: 'Carlos Muza'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80',
-        alt: 'Team members collaborating in a high-contrast creative office',
-        categories: ['business', 'iş', 'team', 'ekip', 'office', 'ofis'],
-        author: 'Austin Distel'
-    },
-    // Design
-    {
-        url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&auto=format&fit=crop&q=80',
-        alt: 'Minimalist designer workstation with UI design wireframes',
-        categories: ['design', 'tasarım', 'ui', 'ux', 'art', 'sanat'],
-        author: 'Daniel Korpai'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1558655146-d09347e92766?w=800&auto=format&fit=crop&q=80',
-        alt: 'Design wireframes layout sketched on paper',
-        categories: ['design', 'tasarım', 'creative', 'yaratıcı', 'art'],
-        author: 'Halagate'
-    },
-    // AI & Abstract
-    {
-        url: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?w=800&auto=format&fit=crop&q=80',
-        alt: 'Abstract glowing node mesh network representing artificial intelligence',
-        categories: ['ai', 'yapay zeka', 'cyber', 'technology', 'network'],
-        author: 'Steve Johnson'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80',
-        alt: 'Futuristic abstract digital model of human neural connection',
-        categories: ['ai', 'yapay zeka', 'brain', 'beyin', 'future', 'gelecek'],
-        author: 'Google DeepMind'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80',
-        alt: 'Fluid gradient 3D rendering with neon orange and cyan hues',
-        categories: ['abstract', 'soyut', 'art', 'sanat', 'gradient'],
-        author: 'Fakurian Design'
-    },
-    // Presentation / Stage
-    {
-        url: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80',
-        alt: 'Presenter gesturing in front of screen in workshop session',
-        categories: ['presentation', 'sunum', 'stage', 'sahne', 'education'],
-        author: 'Headway'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80',
-        alt: 'Stage microphone ready for public speaking event',
-        categories: ['presentation', 'sunum', 'stage', 'sahne', 'voice', 'ses'],
-        author: 'Robinson Recalde'
-    },
-    {
-        url: 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&auto=format&fit=crop&q=80',
-        alt: 'Bright digital display screen on stage in front of audience seats',
-        categories: ['presentation', 'sunum', 'stage', 'sahne', 'conference'],
-        author: 'Alexandre Pellaes'
-    }
-];
 
 const DEFAULT_SLIDES: PresentationSlide[] = [
     {
@@ -191,13 +102,11 @@ const DEFAULT_SLIDES: PresentationSlide[] = [
     }
 ];
 
-const VALID_LAYOUTS = ['standard', 'left', 'right', 'background'];
-
 const normalizeSlides = (slidesList: PresentationSlide[]): PresentationSlide[] => {
     if (!slidesList) return [];
     return slidesList.map(slide => ({
         ...slide,
-        content_type: VALID_LAYOUTS.includes(slide.content_type) ? slide.content_type : 'standard'
+        content_type: isSlideLayoutId(slide.content_type) ? slide.content_type : 'standard'
     }));
 };
 
@@ -442,20 +351,32 @@ export default function PresentationEditor() {
     const [imageModalOpen, setImageModalOpen] = useState(false);
     const [activeImageSearchSlideId, setActiveImageSearchSlideId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [imageLibrary, setImageLibrary] = useState<UnsplashImage[]>([]);
+    const [isImageLibraryLoading, setIsImageLibraryLoading] = useState(true);
+
+    // Fetch the curated image catalog once, the first time the picker is opened
+    useEffect(() => {
+        if (!imageModalOpen || imageLibrary.length > 0) return;
+        client
+            .get('/api/v1/presentations/image-library')
+            .then((res) => setImageLibrary(res.data))
+            .catch((e) => console.error('Failed to load image library:', e))
+            .finally(() => setIsImageLibraryLoading(false));
+    }, [imageModalOpen, imageLibrary.length]);
 
     // Filter images when search query changes
     const filteredImages = React.useMemo(() => {
         if (!searchQuery.trim()) {
-            return IMAGE_DATABASE;
+            return imageLibrary;
         }
 
         const query = searchQuery.toLowerCase().trim();
-        return IMAGE_DATABASE.filter((img) =>
+        return imageLibrary.filter((img) =>
             img.alt.toLowerCase().includes(query) ||
-            img.categories.some((cat) => cat.includes(query)) ||
-            img.author.toLowerCase().includes(query)
+            img.keywords.some((kw) => kw.toLowerCase().includes(query)) ||
+            (img.author || '').toLowerCase().includes(query)
         );
-    }, [searchQuery]);
+    }, [imageLibrary, searchQuery]);
 
     // Toast Timer auto-dismiss
     useEffect(() => {
@@ -521,7 +442,7 @@ export default function PresentationEditor() {
         });
     };
 
-    const handleUpdateLayoutType = (id: string, type: string) => {
+    const handleUpdateLayoutType = (id: string, type: SlideLayoutId) => {
         setSlides((prev) => {
             const next = prev.map((s) => (s.id === id ? { ...s, content_type: type } : s));
             scheduleAutoSave(next, metadata);
@@ -860,7 +781,7 @@ export default function PresentationEditor() {
                                         return (
                                             <button
                                                 key={term}
-                                                onClick={() => setSearchQuery(localizedTerm)}
+                                                onClick={() => setSearchQuery(term)}
                                                 className="px-2.5 py-1 rounded-md bg-zinc-900 border border-white/5 hover:border-white/10 text-[9px] font-bold text-zinc-400 hover:text-white transition-all"
                                             >
                                                 {localizedTerm}
@@ -872,7 +793,12 @@ export default function PresentationEditor() {
 
                             {/* Search Results Grid */}
                             <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                                {filteredImages.length > 0 ? (
+                                {isImageLibraryLoading ? (
+                                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                                        <div className="w-6 h-6 border-2 border-t-transparent border-zinc-500 rounded-full animate-spin mb-3" />
+                                        <p className="text-xs font-bold text-zinc-400">{t('notifications.loadingImages')}</p>
+                                    </div>
+                                ) : filteredImages.length > 0 ? (
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                         {filteredImages.map((img) => (
                                             <div
@@ -888,7 +814,7 @@ export default function PresentationEditor() {
                                                 />
                                                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-3 flex flex-col justify-end">
                                                     <p className="text-[10px] font-bold text-white line-clamp-1">{img.alt}</p>
-                                                    <p className="text-[8px] text-zinc-400 mt-0.5">{t('notifications.photoAuthor', { author: img.author })}</p>
+                                                    <p className="text-[8px] text-zinc-400 mt-0.5">{t('notifications.photoAuthor', { author: img.author || 'Unsplash' })}</p>
                                                 </div>
                                             </div>
                                         ))}

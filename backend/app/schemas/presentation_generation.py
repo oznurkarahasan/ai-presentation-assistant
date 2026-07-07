@@ -71,3 +71,13 @@ class PresentationGenerateResponse(BaseModel):
 
     presentation_id: int
     state: PresentationState
+
+
+class ImageLibraryItem(BaseModel):
+    """A single curated image entry, as served by the image-library endpoint."""
+    model_config = ConfigDict(extra="forbid")
+
+    url: str
+    alt: str
+    keywords: list[str] = Field(default_factory=list)
+    author: Optional[str] = None

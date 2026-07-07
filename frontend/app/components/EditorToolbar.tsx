@@ -17,13 +17,14 @@ import {
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import LanguageSwitcher from './LanguageSwitcher';
+import { SLIDE_LAYOUT_IDS, SLIDE_LAYOUT_ICONS, SlideLayoutId } from '../lib/slideLayouts';
 
 interface EditorToolbarProps {
     title: string;
     onTitleChange: (title: string) => void;
     // Layout
-    activeLayout: string;
-    onLayoutChange: (layout: string) => void;
+    activeLayout: SlideLayoutId;
+    onLayoutChange: (layout: SlideLayoutId) => void;
     // Actions
     onDownloadPPTX: () => void;
     onSendToAnalysis: () => void;
@@ -96,12 +97,17 @@ export default function EditorToolbar({
         }
     };
 
-    const layouts = [
-        { id: 'standard', label: tCanvas('layoutText'), icon: '▣' },
-        { id: 'left', label: tCanvas('layoutLeft'), icon: '◧' },
-        { id: 'right', label: tCanvas('layoutRight'), icon: '◨' },
-        { id: 'background', label: tCanvas('layoutBg'), icon: '▤' },
-    ];
+    const layoutLabelKeys: Record<SlideLayoutId, string> = {
+        standard: 'layoutText',
+        left: 'layoutLeft',
+        right: 'layoutRight',
+        background: 'layoutBg',
+    };
+    const layouts = SLIDE_LAYOUT_IDS.map((id) => ({
+        id,
+        label: tCanvas(layoutLabelKeys[id]),
+        icon: SLIDE_LAYOUT_ICONS[id],
+    }));
 
     return (
         <header className="h-12 border-b border-white/[0.06] bg-zinc-950/90 backdrop-blur-lg flex items-center justify-between px-3 z-30 select-none shrink-0 w-full gap-2">

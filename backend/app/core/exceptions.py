@@ -25,16 +25,6 @@ class EmbeddingError(AppBaseException):
     pass
 
 
-class DatabaseError(AppBaseException):
-    """Raised when database operations fail"""
-    pass
-
-
-class AuthenticationError(AppBaseException):
-    """Raised when authentication fails"""
-    pass
-
-
 class ResourceNotFoundError(AppBaseException):
     """Raised when a requested resource is not found"""
     pass
@@ -42,9 +32,4 @@ class ResourceNotFoundError(AppBaseException):
 
 class ValidationError(AppBaseException):
     """Raised when input validation fails"""
-    pass
-
-
-class RateLimitError(AppBaseException):
-    """Raised when rate limit is exceeded"""
     pass

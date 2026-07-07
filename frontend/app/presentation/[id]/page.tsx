@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import client from "../../api/client";
 import PresentationViewer, { PresentationViewerRef } from "../../components/PresentationViewer";
-import AiSlidePreview, { AiSlide } from "../../components/AiSlidePreview";
+import AiSlidePreview from "../../components/AiSlidePreview";
 import LanguageSwitcher from "../../components/LanguageSwitcher";
+import { usePresentationData } from "../../hooks/usePresentationData";
 
 
 type CommandIntent = "NEXT_SLIDE" | "PREVIOUS_SLIDE" | "JUMP_TO_SLIDE";
@@ -93,14 +93,7 @@ export default function RealTimePresentationPage() {
     const t = useTranslations('presentation');
     const presentationId = params.id as string;
 
-    const [presentationTitle, setPresentationTitle] = useState("Loading...");
-    const [presentationFile, setPresentationFile] = useState<string | null>(null);
-    const [fileType, setFileType] = useState<string | null>(null);
-    const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
     const [currentPage, setCurrentPage] = useState(1);
-
-
-    const [totalPages, setTotalPages] = useState(1);
     const [isListening, setIsListening] = useState(false);
     const [transcript, setTranscript] = useState("");
     const [liveFeedback, setLiveFeedback] = useState("");
@@ -109,11 +102,20 @@ export default function RealTimePresentationPage() {
     const [sttError, setSttError] = useState<string | null>(null);
     const [wsStatus, setWsStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
     const sttLanguage = locale === "tr" ? "tr-TR" : "en-US";
-    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
     const [isSessionActive, setIsSessionActive] = useState(false);
-    const [aiSlides, setAiSlides] = useState<AiSlide[]>([]);
-    const [aiColors, setAiColors] = useState<{ primary: string; accent: string }>({ primary: '#f97316', accent: '#06b6d4' });
+
+    const { data: presentationData } = usePresentationData(presentationId);
+    const {
+        file: presentationFile,
+        fileType,
+        orientation,
+        aspectRatio,
+        totalPages,
+        aiSlides,
+        aiColors,
+    } = presentationData;
+    const presentationTitle = presentationData.title ?? "Loading...";
 
     const socketRef = useRef<WebSocket | null>(null);
     const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -146,52 +148,6 @@ export default function RealTimePresentationPage() {
             total_pages: totalPagesRef.current,
         }));
     }, []);
-
-    // Fetch presentation details
-    useEffect(() => {
-        const fetchPresentation = async () => {
-            try {
-                const response = await client.get(`/api/v1/presentations/${presentationId}`);
-                const data = response.data;
-                console.log("[API] Presentation metadata received:", data);
-                setPresentationTitle(data.title);
-
-                if (data.file_type === 'ai') {
-                    setPresentationFile(null);
-                    setFileType('ai');
-                    try {
-                        const stateRes = await client.get(`/api/v1/presentations/${presentationId}/ai-state`);
-                        const state = stateRes.data;
-                        if (state.slides?.length > 0) {
-                            setAiSlides(state.slides);
-                            setTotalPages(state.slides.length);
-                        }
-                        if (state.metadata) {
-                            setAiColors({
-                                primary: state.metadata.primary_color || '#f97316',
-                                accent: state.metadata.accent_color || '#06b6d4',
-                            });
-                        }
-                    } catch (e) {
-                        console.error('Failed to fetch AI state:', e);
-                    }
-                } else {
-                    // Use PDF preview for PPTX files when available
-                    setPresentationFile(data.pdf_preview_path || data.file_path);
-                    setFileType(data.pdf_preview_path ? 'pdf' : data.file_type);
-                    if (data.aspect_ratio) setAspectRatio(data.aspect_ratio);
-                    if (data.orientation) setOrientation(data.orientation);
-                    const count = data.total_pages || data.slide_count || 1;
-                    console.log(`[API] Total pages set to: ${count}`);
-                    setTotalPages(count);
-                }
-
-            } catch (error) {
-                console.error("Failed to fetch presentation:", error);
-            }
-        };
-        if (presentationId) fetchPresentation();
-    }, [presentationId]);
 
     const handlePrevPage = useCallback(() => {
         setCurrentPage(prev => {

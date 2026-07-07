@@ -1,14 +1,12 @@
 from typing import Optional
 import re
 
-from openai import AsyncOpenAI, OpenAIError
+from openai import OpenAIError
 from fastapi import HTTPException, status
 
-from app.core.config import settings
 from app.core.logger import logger
+from app.core.openai_client import get_openai_client as get_client
 from app.schemas.presentation_generation import PresentationGenerateRequest, PresentationState
-
-_client: Optional[AsyncOpenAI] = None
 
 # Curated Unsplash image database with category keywords for auto-matching
 UNSPLASH_IMAGE_DATABASE = [
@@ -16,121 +14,145 @@ UNSPLASH_IMAGE_DATABASE = [
         "url": "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
         "alt": "Silicon microchip with glowing gold elements",
         "keywords": ["technology", "chip", "microchip", "circuit", "hardware", "semiconductor", "tech", "digital", "electronic", "processor", "cpu", "computer", "engineering"],
+        "author": 'Nicolas Thomas',
     },
     {
         "url": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&auto=format&fit=crop&q=80",
         "alt": "Digital binary matrix computer code on screen",
         "keywords": ["code", "programming", "data", "binary", "matrix", "software", "developer", "cyber", "hacking", "database", "algorithm", "machine learning"],
+        "author": 'Markus Spiske',
     },
     {
         "url": "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&auto=format&fit=crop&q=80",
         "alt": "Robotic hand gesturing in front of holographic UI",
         "keywords": ["robot", "ai", "artificial intelligence", "automation", "future", "machine", "robotic", "innovation", "tech", "hologram", "futuristic"],
+        "author": 'Alex Knight',
     },
     {
         "url": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&auto=format&fit=crop&q=80",
         "alt": "Modern workspace setup with laptop and graphs",
         "keywords": ["business", "office", "work", "laptop", "professional", "meeting", "corporate", "strategy", "planning", "management", "productivity", "workspace"],
+        "author": 'Campaign Creators',
     },
     {
         "url": "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80",
         "alt": "Financial analytics on laptop screen with warm lighting",
         "keywords": ["analytics", "finance", "chart", "graph", "data", "business", "statistics", "dashboard", "metrics", "kpi", "report", "analysis", "growth"],
+        "author": 'Carlos Muza',
     },
     {
         "url": "https://images.unsplash.com/photo-1557804506-669a67965ba0?w=800&auto=format&fit=crop&q=80",
         "alt": "Team members collaborating in a creative office",
         "keywords": ["team", "collaboration", "people", "meeting", "group", "office", "colleagues", "teamwork", "brainstorm", "culture", "startup", "organization"],
+        "author": 'Austin Distel',
     },
     {
         "url": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=800&auto=format&fit=crop&q=80",
         "alt": "Minimalist designer workstation with UI design wireframes",
         "keywords": ["design", "ui", "ux", "wireframe", "creative", "art", "graphic", "prototype", "interface", "product", "visual", "layout"],
+        "author": 'Daniel Korpai',
     },
     {
         "url": "https://images.unsplash.com/photo-1558655146-d09347e92766?w=800&auto=format&fit=crop&q=80",
         "alt": "Design wireframes layout sketched on paper",
         "keywords": ["wireframe", "sketch", "design", "prototype", "ux", "planning", "creative", "brainstorm", "idea", "concept", "draft"],
+        "author": 'Halagate',
     },
     {
         "url": "https://images.unsplash.com/photo-1677442136019-21780efad99a?w=800&auto=format&fit=crop&q=80",
         "alt": "Abstract glowing node mesh network representing artificial intelligence",
         "keywords": ["ai", "network", "neural", "connection", "abstract", "technology", "nodes", "mesh", "pattern", "intelligence", "deep learning", "model"],
+        "author": 'Steve Johnson',
     },
     {
         "url": "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=800&auto=format&fit=crop&q=80",
         "alt": "Futuristic abstract digital model of human neural connection",
         "keywords": ["brain", "neural", "mind", "cognitive", "future", "human", "intelligence", "thought", "psychology", "learning", "abstract", "digital"],
+        "author": 'Google DeepMind',
     },
     {
         "url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&auto=format&fit=crop&q=80",
         "alt": "Fluid gradient 3D rendering with neon orange and cyan hues",
         "keywords": ["abstract", "gradient", "color", "art", "creative", "design", "background", "visual", "modern", "aesthetic", "render", "3d"],
+        "author": 'Fakurian Design',
     },
     {
         "url": "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80",
         "alt": "Presenter gesturing in front of screen in workshop session",
         "keywords": ["presentation", "speaker", "conference", "audience", "speech", "workshop", "training", "educator", "stage", "seminar", "talk", "lecture"],
+        "author": 'Headway',
     },
     {
         "url": "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
         "alt": "Stage microphone ready for public speaking event",
         "keywords": ["microphone", "speech", "speaking", "stage", "voice", "broadcast", "podcast", "event", "public speaking", "performance", "communicate"],
+        "author": 'Robinson Recalde',
     },
     {
         "url": "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&auto=format&fit=crop&q=80",
         "alt": "Bright digital display screen on stage in front of audience seats",
         "keywords": ["stage", "conference", "presentation", "screen", "audience", "event", "exhibition", "keynote", "display", "hall", "theater"],
+        "author": 'Alexandre Pellaes',
     },
     {
         "url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80",
         "alt": "Data visualization dashboard with colorful charts",
         "keywords": ["dashboard", "data", "visualization", "chart", "metrics", "analytics", "report", "statistics", "kpi", "business intelligence", "monitoring"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&auto=format&fit=crop&q=80",
         "alt": "Modern startup office with open workspace and natural light",
         "keywords": ["startup", "office", "modern", "workspace", "open", "company", "culture", "environment", "professional", "architecture"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&auto=format&fit=crop&q=80",
         "alt": "People in a business meeting discussing strategy with charts",
         "keywords": ["meeting", "strategy", "business", "discussion", "plan", "corporate", "boardroom", "management", "leadership", "decision"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=800&auto=format&fit=crop&q=80",
         "alt": "Smartphone showing social media and mobile app interface",
         "keywords": ["mobile", "phone", "app", "social media", "digital", "smartphone", "technology", "platform", "user", "interface", "screen"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80",
         "alt": "Portrait of confident professional person in business attire",
         "keywords": ["person", "professional", "leader", "people", "human", "portrait", "executive", "individual", "employee", "entrepreneur"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=800&auto=format&fit=crop&q=80",
         "alt": "Global map network connections representing international business",
         "keywords": ["global", "world", "map", "international", "network", "connection", "globe", "geography", "market", "expansion", "reach"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=800&auto=format&fit=crop&q=80",
         "alt": "Stack of coins and financial growth chart upward trend",
         "keywords": ["money", "finance", "growth", "investment", "revenue", "profit", "economy", "coins", "budget", "funding", "roi", "success"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80",
         "alt": "Person using laptop for online learning and education",
         "keywords": ["education", "learning", "online", "course", "student", "knowledge", "training", "skill", "university", "study", "book", "school"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80",
         "alt": "Clean modern office interior with glass walls and city view",
         "keywords": ["office", "building", "corporate", "architecture", "interior", "modern", "glass", "city", "headquarters", "real estate", "location"],
+        "author": None,
     },
     {
         "url": "https://images.unsplash.com/photo-1531545514256-b1400bc00f31?w=800&auto=format&fit=crop&q=80",
         "alt": "Creative team brainstorming with sticky notes on whiteboard",
         "keywords": ["brainstorm", "creative", "idea", "team", "whiteboard", "sticky", "notes", "agile", "collaboration", "design thinking", "innovation", "process"],
+        "author": None,
     },
 ]
 
@@ -160,14 +182,6 @@ def resolve_image_url(prompt: str, alt: Optional[str] = None) -> str:
             best_url = img["url"]
 
     return best_url
-
-
-def get_client() -> AsyncOpenAI:
-    global _client
-    if _client is None:
-        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-        logger.info("OpenAI client initialized for generation service")
-    return _client
 
 
 def _build_system_prompt() -> str:

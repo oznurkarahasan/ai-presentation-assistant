@@ -17,7 +17,8 @@ import {
     FileText
 } from "lucide-react";
 import PresentationViewer from "../components/PresentationViewer";
-import AiSlidePreview, { AiSlide } from "../components/AiSlidePreview";
+import AiSlidePreview from "../components/AiSlidePreview";
+import { usePresentationData } from "../hooks/usePresentationData";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Link from "next/link";
@@ -66,10 +67,6 @@ export default function AnalyzePage() {
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
-    const [presentationTitle, setPresentationTitle] = useState(t("loadingPresentation"));
-    const [presentationFile, setPresentationFile] = useState<string | null>(null);
-    const [fileType, setFileType] = useState<string | null>(null);
-    const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
 
     const chatEndRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
@@ -80,14 +77,23 @@ export default function AnalyzePage() {
     const [showChat, setShowChat] = useState(true);
     const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [chatTheme, setChatTheme] = useState<'dark' | 'light'>('dark');
     const [isPageLoading, setIsPageLoading] = useState(false);
-    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
-    const [aiSlides, setAiSlides] = useState<AiSlide[]>([]);
-    const [aiColors, setAiColors] = useState<{ primary: string; accent: string }>({ primary: '#f97316', accent: '#06b6d4' });
 
+    const { data: presentationData, error: presentationError } = usePresentationData(presentationId);
+    const {
+        file: presentationFile,
+        fileType,
+        orientation,
+        aspectRatio,
+        totalPages,
+        aiSlides,
+        aiColors,
+    } = presentationData;
+    const presentationTitle = presentationError
+        ? t("loadingError")
+        : presentationData.title ?? t("loadingPresentation");
 
     useEffect(() => {
         const token = localStorage.getItem("access_token");
@@ -97,57 +103,7 @@ export default function AnalyzePage() {
         }
 
         setIsCheckingAuth(false);
-
-        // Fetch presentation details if ID is present
-        if (presentationId) {
-            const fetchPresentation = async () => {
-                try {
-                    const response = await client.get(`/api/v1/presentations/${presentationId}`);
-                    setPresentationTitle(response.data.title);
-                    if (response.data.file_type === 'ai') {
-                        setPresentationFile(null);
-                        setFileType('ai');
-                        // Fetch AI presentation state to render slides
-                        try {
-                            const stateRes = await client.get(`/api/v1/presentations/${presentationId}/ai-state`);
-                            const state = stateRes.data;
-                            if (state.slides && state.slides.length > 0) {
-                                setAiSlides(state.slides);
-                                setTotalPages(state.slides.length);
-                            }
-                            if (state.metadata) {
-                                setAiColors({
-                                    primary: state.metadata.primary_color || '#f97316',
-                                    accent: state.metadata.accent_color || '#06b6d4',
-                                });
-                            }
-                        } catch (e) {
-                            console.error('Failed to fetch AI state:', e);
-                        }
-                    } else {
-                        // Use PDF preview for PPTX files when available
-                        setPresentationFile(response.data.pdf_preview_path || response.data.file_path);
-                        setFileType(response.data.pdf_preview_path ? 'pdf' : response.data.file_type);
-                    }
-                    if (response.data.aspect_ratio) {
-                        setAspectRatio(response.data.aspect_ratio);
-                    }
-
-                    if (response.data.slide_count) {
-                        setTotalPages(response.data.slide_count);
-                    }
-                    if (response.data.orientation) {
-                        setOrientation(response.data.orientation);
-                    }
-
-                } catch (error) {
-                    console.error("Failed to fetch presentation:", error);
-                    setPresentationTitle(t("loadingError"));
-                }
-            };
-            fetchPresentation();
-        }
-    }, [router, presentationId, t]);
+    }, [router]);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

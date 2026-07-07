@@ -921,6 +921,7 @@
       "searchImagesPlaceholder": "Search for image or topic (e.g. technology, AI, business)...",
       "popular": "Popular:",
       "photoAuthor": "Photo by: {author}",
+      "loadingImages": "Loading images...",
       "imagesNotFound": "No images found.",
       "tryDifferentKeywords": "Please try searching with different keywords."
     },
