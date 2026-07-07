@@ -28,6 +28,7 @@ import Profile from "./profile/Profile";
 import TopicIdeas from "./ideas/TopicIdeas";
 import AiGenerationForm from "./ai-presentation/AiGenerationForm";
 import AiAnalysis from "./analysis/AiAnalysis";
+import Billing from "./billing/Billing";
 import client from "../api/client";
 import axios from "axios";
 import { useTranslations } from "next-intl";
@@ -513,14 +514,8 @@ export default function DashboardPage() {
                 <Profile />
             )}
 
-            {/* Billing Tab — placeholder */}
-            {activeTab === 'billing' && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="min-h-[40vh]"
-                />
-            )}
+            {/* Billing Tab */}
+            {activeTab === 'billing' && <Billing />}
 
             {plannerModalPresentation && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">

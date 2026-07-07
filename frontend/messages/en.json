@@ -805,6 +805,14 @@
     "liveSessions": "Live",
     "lastPracticed": "Last practiced"
   },
+  "billing": {
+    "subtitle": "View your current plan and compare available plans",
+    "currentPlanLabel": "Current Plan",
+    "freeActiveNote": "You're on the free plan. Upgrade anytime for more presentations and features.",
+    "upgradeButton": "Upgrade",
+    "viewAllPlans": "View all plans",
+    "currentBadge": "Current"
+  },
   "aiGeneration": {
     "title": "Generate Presentation with AI",
     "subtitle": "Just enter the topic, let AI decide the slide count and design",

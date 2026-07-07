@@ -805,6 +805,14 @@
     "liveSessions": "Canlı",
     "lastPracticed": "Son çalışma"
   },
+  "billing": {
+    "subtitle": "Mevcut planını gör ve diğer planlarla karşılaştır",
+    "currentPlanLabel": "Mevcut Plan",
+    "freeActiveNote": "Şu an ücretsiz plandasın. İstediğin zaman daha fazla sunum ve özellik için yükseltebilirsin.",
+    "upgradeButton": "Yükselt",
+    "viewAllPlans": "Tüm planları gör",
+    "currentBadge": "Mevcut"
+  },
   "aiGeneration": {
     "title": "Yapay Zeka ile Sunum Üret",
     "subtitle": "Sadece konuyu yazın, slayt sayısına ve tasarıma yapay zeka karar versin",
