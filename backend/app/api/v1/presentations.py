@@ -280,9 +280,11 @@ async def get_presentation(
 
 
 @router.post("/{presentation_id}/analyze", response_model=PresentationAnalysisResponse)
+@limiter.limit("5/minute")
 async def analyze_presentation(
+    request: Request,
     presentation_id: int,
-    request: PresentationAnalysisRequest,
+    payload: PresentationAnalysisRequest,
     db: AsyncSession = Depends(get_db),
     current_user = Depends(auth.get_current_user)
 ):
@@ -305,7 +307,7 @@ async def analyze_presentation(
         return await analysis_service.analyze_presentation(
             title=presentation.title,
             slides=[{"page_number": s.page_number, "content_text": s.content_text} for s in slides],
-            language=request.language,
+            language=payload.language,
         )
     except (ResourceNotFoundError, ValidationError):
         raise
