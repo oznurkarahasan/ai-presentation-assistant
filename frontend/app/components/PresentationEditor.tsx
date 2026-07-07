@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -14,7 +14,6 @@ import ImagePickerModal from './ImagePickerModal';
 import client from '../api/client';
 import {
     DEFAULT_METADATA,
-    DEFAULT_SLIDES,
     buildLocalizedDefaultSlides,
     normalizeSlides,
     readStoredPresentation,
@@ -33,23 +32,18 @@ export default function PresentationEditor() {
     // Read session storage once; the three initial states below all derive from it.
     const storedPresentation = useMemo(() => readStoredPresentation(), []);
 
+    // `t` is already resolved synchronously here, so the localized fallback
+    // slides can be used directly — no separate hardcoded-language copy needed,
+    // and no post-mount effect to swap it in after the fact.
     const [slides, setSlides] = useState<PresentationSlide[]>(() =>
-        storedPresentation?.slides ? normalizeSlides(storedPresentation.slides) : DEFAULT_SLIDES
+        storedPresentation?.slides ? normalizeSlides(storedPresentation.slides) : buildLocalizedDefaultSlides(t)
     );
     const [selectedSlideId, setSelectedSlideId] = useState<string>(() =>
         storedPresentation?.slides?.[0]?.id ?? 'slide-1'
     );
     const [metadata, setMetadata] = useState<PresentationMetadata>(() =>
-        storedPresentation?.metadata ?? DEFAULT_METADATA
+        storedPresentation?.metadata ?? { ...DEFAULT_METADATA, title: t('misc.defaultTitle') }
     );
-
-    // Nothing was in session storage, so swap in translated default slides
-    // once `t` is ready (translations aren't available during lazy init above).
-    useEffect(() => {
-        if (storedPresentation) return;
-        setSlides(buildLocalizedDefaultSlides(t));
-        setMetadata(prev => ({ ...prev, title: t('misc.defaultTitle') }));
-    }, [t, storedPresentation]);
 
     const { autoSaveStatus, scheduleAutoSave, persistToServer } = useAutoSave();
     const { toast, showToast } = useToast();
