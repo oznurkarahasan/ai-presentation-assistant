@@ -27,6 +27,7 @@ import Sessions from "./sessions/Sessions";
 import Profile from "./profile/Profile";
 import TopicIdeas from "./ideas/TopicIdeas";
 import AiGenerationForm from "./ai-presentation/AiGenerationForm";
+import AiAnalysis from "./analysis/AiAnalysis";
 import client from "../api/client";
 import axios from "axios";
 import { useTranslations } from "next-intl";
@@ -489,6 +490,9 @@ export default function DashboardPage() {
 
             {/* Topic Ideas */}
             {activeTab === 'ideas-topics' && <TopicIdeas />}
+
+            {/* AI Analysis */}
+            {activeTab === 'ai-analysis' && <AiAnalysis />}
 
             {/* Ideas — placeholders (hooks & visuals remain pending) */}
             {(activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals') && (
