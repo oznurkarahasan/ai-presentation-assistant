@@ -150,7 +150,7 @@ Tested via a harness hook (`useHarness`) that wraps `useSlideMutations` with rea
 
 ## Not Covered — Frontend (flagged for a future pass)
 - Component-level tests beyond `login.test.tsx` — `AiGenerationForm`, `PresentationEditor` and its extracted pieces (`ImagePickerModal`, `EditorToast`, slide canvas), `RightStylePanel`, the dashboard tabs (`AiAnalysis`, `PracticeStats`, `Billing`) — all currently 0% covered at the component/render level
-- `useZoomFullscreen.ts`, `usePresentationData.ts`, `useAiAnalysis.ts` — untested hooks, roughly the same shape/risk profile as `useAutoSave`/`useToast` (`useSlideMutations.ts` is now covered — see Round 2 below)
+- `useZoomFullscreen.ts` — untested (small state hook: zoom clamping + `document.fullscreenElement` toggling); lowest remaining priority of the hooks (`useSlideMutations.ts`, `usePresentationData.ts`, `useAiAnalysis.ts` are now covered — see Round 2/3 below)
 - No end-to-end/browser test tooling in the project at all (no Playwright/Cypress) — everything above is unit/hook-level via jsdom, so real browser navigation, actual network calls, and visual regressions are unverified by any automated test
 - No coverage measurement configured (`@vitest/coverage-v8` not installed) — no way to quantify the gap with a number
 
@@ -162,6 +162,19 @@ The stale-closure bug documented in Round 2 was fixed the same day, on request.
 - **Test updated:** the regression test in `useSlideMutations.test.tsx` now asserts the *correct* post-fix outcome (`handleDeleteSlide('s2')` then `handleReorderSlides(0, 2)` in the same `act()` batch → `['s3', 's1']`, i.e. both mutations applied in order) instead of documenting the bug.
 - **Verified:** `npx vitest run` → 71/71 passing (regression test now green under the fixed behavior), `npx tsc --noEmit` clean, `npx eslint` clean on both changed files. Not manually exercised in the browser — the failure mode is a same-tick double state-update race that isn't practically triggerable by hand-clicking; the regression test reproduces the exact race directly and is the more reliable check here.
 
+## Follow-up Round 3: `usePresentationData` + `useAiAnalysis`
+Continued down the remaining-gap list by risk: `usePresentationData` next (async fetch with branching AI/non-AI logic and a race-condition guard — the same class of bug as the one just fixed, so worth locking in with a direct test) and `useAiAnalysis` (sessionStorage-cached AI analysis results, used by the Quality Analysis dashboard tab).
+
+### 9. `frontend/tests/usePresentationData.test.tsx` (8 tests)
+`client.get` mocked. Covers: no fetch when `presentationId` is falsy; a regular presentation preferring `pdf_preview_path` over the raw `file_path` when both are present, and falling back to the raw path when there's no preview; an AI presentation additionally fetching `/ai-state` for slides + colors, with a default-color fallback when `ai-state`'s metadata omits them; **the base presentation still resolves successfully even when the `/ai-state` fetch fails** (nested try/catch — error logged, not surfaced to the hook's `error` state, so the page doesn't hard-fail just because AI-state loading failed); a failed base fetch does surface `error`; and a **race-guard regression test**: change `presentationId` before the first request resolves, then resolve the stale (now-superseded) request *after* the new one — the hook's `cancelled` closure flag correctly discards the late response instead of clobbering the current data. Unlike the `useSlideMutations` bug, this hook's guard against the equivalent race was already correct — the test locks that in rather than fixing anything.
+
+### 10. `frontend/tests/useAiAnalysis.test.tsx` (13 tests)
+`client.post` mocked. Covers the exported `getCachedAnalysis()` helper directly (missing key, present key, wrong id, corrupted cache JSON — all resolve to `null` without throwing) and the hook: `isAnalyzing` is true while the request is in flight and false once it resolves (using a manually-resolved deferred promise to observe the intermediate state), a successful `analyze()` caches the result to `sessionStorage` keyed by presentation id **without clobbering other cached presentations' entries**, a failed `analyze()` sets a user-facing error via the already-tested `getErrorMessage()` and resets `isAnalyzing`, starting a new `analyze()` call clears a previous error, and `loadCached()` for a present/absent/falsy id.
+
+## Verification (Round 3)
+- `npx vitest run` inside `frontend/` → **92/92 passing** (71 previous + 21 new), zero regressions.
+- `npx tsc --noEmit` clean.
+
 ## Not Covered — Backend (flagged for a future pass)
 - `generation_service.generate_presentation_state()`'s OpenAI-backed generation flow (would need a mocked-completion test, similar to `test_intent_service.py`'s pattern) — `resolve_image_url()` is now covered, this is the remaining piece
 - `ideas_service.py` (`generate_topic_ideas`, `chat_about_topic`) and its two routes in `ideas.py`
@@ -172,5 +185,5 @@ The stale-closure bug documented in Round 2 was fixed the same day, on request.
 
 ## Backend + Frontend Combined Totals
 - **Backend:** 115/115 passing (11 test files)
-- **Frontend:** 71/71 passing (9 test files)
-- **Total: 186 tests, 0 failures**
+- **Frontend:** 92/92 passing (11 test files)
+- **Total: 207 tests, 0 failures**
