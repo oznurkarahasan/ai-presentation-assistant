@@ -7,7 +7,6 @@ import type { ToastState } from './useToast';
 /** Every handler that mutates the slide list, wired to auto-save on each change.
  * Centralized here since PresentationEditor previously defined all of these inline. */
 export function useSlideMutations(
-    slides: PresentationSlide[],
     setSlides: Dispatch<SetStateAction<PresentationSlide[]>>,
     metadata: PresentationMetadata,
     scheduleAutoSave: (slides: PresentationSlide[], metadata: PresentationMetadata) => void,
@@ -129,26 +128,31 @@ export function useSlideMutations(
     };
 
     const handleDeleteSlide = (id: string) => {
-        if (slides.length <= 1) {
-            showToast('error', t('notifications.cannotDeleteLastSlide'));
-            return;
-        }
+        setSlides((prev) => {
+            if (prev.length <= 1) {
+                showToast('error', t('notifications.cannotDeleteLastSlide'));
+                return prev;
+            }
 
-        const nextSlides = slides.filter((s) => s.id !== id);
-        setSlides(nextSlides);
-        scheduleAutoSave(nextSlides, metadata);
+            const next = prev.filter((s) => s.id !== id);
+            scheduleAutoSave(next, metadata);
 
-        if (selectedSlideId === id) {
-            setSelectedSlideId(nextSlides[0].id);
-        }
+            if (selectedSlideId === id) {
+                setSelectedSlideId(next[0].id);
+            }
+
+            return next;
+        });
     };
 
     const handleReorderSlides = (dragIndex: number, dropIndex: number) => {
-        const nextSlides = [...slides];
-        const [draggedItem] = nextSlides.splice(dragIndex, 1);
-        nextSlides.splice(dropIndex, 0, draggedItem);
-        setSlides(nextSlides);
-        scheduleAutoSave(nextSlides, metadata);
+        setSlides((prev) => {
+            const next = [...prev];
+            const [draggedItem] = next.splice(dragIndex, 1);
+            next.splice(dropIndex, 0, draggedItem);
+            scheduleAutoSave(next, metadata);
+            return next;
+        });
     };
 
     return {

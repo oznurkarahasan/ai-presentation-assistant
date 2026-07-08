@@ -153,7 +153,14 @@ Tested via a harness hook (`useHarness`) that wraps `useSlideMutations` with rea
 - `useZoomFullscreen.ts`, `usePresentationData.ts`, `useAiAnalysis.ts` — untested hooks, roughly the same shape/risk profile as `useAutoSave`/`useToast` (`useSlideMutations.ts` is now covered — see Round 2 below)
 - No end-to-end/browser test tooling in the project at all (no Playwright/Cypress) — everything above is unit/hook-level via jsdom, so real browser navigation, actual network calls, and visual regressions are unverified by any automated test
 - No coverage measurement configured (`@vitest/coverage-v8` not installed) — no way to quantify the gap with a number
-- The `handleDeleteSlide`/`handleReorderSlides` stale-closure bug found in Round 2 (below) is not fixed, only pinned by a regression test
+
+## Bug Fix: `handleDeleteSlide` / `handleReorderSlides` Stale Closure (`app/hooks/useSlideMutations.ts`)
+The stale-closure bug documented in Round 2 was fixed the same day, on request.
+
+- **Fix:** Both handlers now compute their result inside `setSlides((prev) => ...)`, matching the functional-updater pattern already used by the other 9 handlers in the file, instead of reading the `slides` argument from the hook's render-time closure. `scheduleAutoSave`/`setSelectedSlideId`/`showToast` calls moved inside the updater accordingly (same established pattern as e.g. `handleUpdateSlideTitle`, which already calls `scheduleAutoSave` from inside its updater).
+- **Side effect:** the `slides` parameter is now unused by the hook entirely, so it was dropped from the signature (`useSlideMutations(setSlides, metadata, scheduleAutoSave, selectedSlideId, setSelectedSlideId, showToast, t)`), and its one call site (`PresentationEditor.tsx`) updated to match — no other call sites existed.
+- **Test updated:** the regression test in `useSlideMutations.test.tsx` now asserts the *correct* post-fix outcome (`handleDeleteSlide('s2')` then `handleReorderSlides(0, 2)` in the same `act()` batch → `['s3', 's1']`, i.e. both mutations applied in order) instead of documenting the bug.
+- **Verified:** `npx vitest run` → 71/71 passing (regression test now green under the fixed behavior), `npx tsc --noEmit` clean, `npx eslint` clean on both changed files. Not manually exercised in the browser — the failure mode is a same-tick double state-update race that isn't practically triggerable by hand-clicking; the regression test reproduces the exact race directly and is the more reliable check here.
 
 ## Not Covered — Backend (flagged for a future pass)
 - `generation_service.generate_presentation_state()`'s OpenAI-backed generation flow (would need a mocked-completion test, similar to `test_intent_service.py`'s pattern) — `resolve_image_url()` is now covered, this is the remaining piece

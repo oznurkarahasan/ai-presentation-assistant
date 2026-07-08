@@ -13,7 +13,6 @@ function useHarness(initialSlides: PresentationSlide[], initialSelectedId: strin
     const [slides, setSlides] = useState(initialSlides)
     const [selectedSlideId, setSelectedSlideId] = useState(initialSelectedId)
     const mutations = useSlideMutations(
-        slides,
         setSlides,
         metadata,
         scheduleAutoSave,
@@ -236,16 +235,16 @@ describe('handleReorderSlides', () => {
 })
 
 describe('stale-closure regression: back-to-back mutations in the same tick', () => {
-    /** handleDeleteSlide and handleReorderSlides read `slides` from the hook's
-     * render-time closure instead of using the setSlides(prev => ...) updater
-     * form that every other handler in this file uses. If two such calls fire
+    /** handleDeleteSlide and handleReorderSlides previously read `slides` from
+     * the hook's render-time closure instead of using the setSlides(prev => ...)
+     * updater form every other handler in this file uses. Firing two such calls
      * within the same synchronous batch (no re-render in between — plausible
      * for a fast drag-reorder sequence, or a delete immediately followed by a
-     * reorder from a queued UI event), the second call recomputes its result
-     * from the same stale `slides` snapshot and silently overwrites the first
-     * mutation when both call setSlides. This test documents the current
-     * (buggy) behavior rather than asserting the ideally-correct one. */
-    it('a reorder issued in the same batch as a delete silently drops the delete', () => {
+     * queued reorder event) meant the second call recomputed its result from a
+     * stale pre-delete snapshot and silently overwrote the first mutation. Both
+     * handlers now use the functional updater form, so React applies them in
+     * order against each other's result instead of a shared stale closure. */
+    it('a reorder issued in the same batch as a delete applies on top of the delete, not before it', () => {
         const { result } = renderHook(() => useHarness(threeSlides(), 's1'))
 
         act(() => {
@@ -253,9 +252,8 @@ describe('stale-closure regression: back-to-back mutations in the same tick', ()
             result.current.handleReorderSlides(0, 2)
         })
 
-        // Expected if both mutations had applied: ['s1', 's3'] reordered -> ['s3', 's1'] (2 slides).
-        // Actual: the reorder recomputed from the pre-delete 3-slide snapshot wins.
-        expect(result.current.slides.map((s) => s.id)).toEqual(['s2', 's3', 's1'])
-        expect(result.current.slides).toHaveLength(3)
+        // ['s1','s2','s3'] -> delete 's2' -> ['s1','s3'] -> reorder(0,2) -> ['s3','s1']
+        expect(result.current.slides.map((s) => s.id)).toEqual(['s3', 's1'])
+        expect(result.current.slides).toHaveLength(2)
     })
 })
