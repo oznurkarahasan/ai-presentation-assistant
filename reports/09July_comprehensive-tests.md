@@ -137,10 +137,23 @@ Only one test existed in the whole app: `frontend/tests/login.test.tsx` (login f
 - `npx vitest run` inside `frontend/` → **52/52 passing** (1 pre-existing + 51 new across 7 new files), no regressions to `login.test.tsx`.
 - One iteration needed: two `useAutoSave` tests initially used Testing Library's `waitFor()` (which polls on real timers) together with `vi.useFakeTimers()` — real time never advances, so both timed out. Fixed by asserting directly after `vi.advanceTimersByTimeAsync()`, since the awaited mock promise resolves within that same flush.
 
+## Follow-up Round 2: `useSlideMutations` (highest-priority remaining gap)
+After the Tier-A gap closure, assessed what was still missing and flagged `useSlideMutations.ts` as the single highest-priority remaining gap: it's the entire CRUD surface of the AI editor (add/delete/reorder slides, edit titles/items/speaker notes/layout/images) — 11 handlers, previously completely untested, feeding directly into `useAutoSave` on every change.
+
+### 8. `frontend/tests/useSlideMutations.test.tsx` (19 tests)
+Tested via a harness hook (`useHarness`) that wraps `useSlideMutations` with real `useState` for `slides`/`selectedSlideId`, so every mutation round-trips through an actual re-render exactly as it does in `PresentationEditor`. Covers all 11 handlers: title/item/speaker-note/layout updates (targeted-slide-only, siblings untouched), item add/delete, image search trigger → select → assign-to-correct-slide → close modal (plus a no-op-if-no-active-search-slide case), slide add (translated defaults, auto-selects the new slide), slide delete (falls back to the first remaining slide when the selected one is deleted, leaves selection alone otherwise), **the "cannot delete the last slide" guard** (shows the error toast, `scheduleAutoSave` never called), and slide reordering in both directions plus a same-index no-op.
+
+**Bug found while writing these tests — documented, not fixed (out of scope for a testing task):** `handleDeleteSlide` and `handleReorderSlides` read the `slides` argument directly from the hook's render-time closure, unlike every other handler in the file, which uses the `setSlides(prev => ...)` functional-updater form specifically to avoid stale-closure issues. A dedicated regression test (`stale-closure regression: back-to-back mutations in the same tick`) proves the consequence: firing `handleDeleteSlide` then `handleReorderSlides` within the same synchronous batch (no re-render in between — plausible for a fast drag-reorder sequence, or a delete immediately followed by a queued reorder event) causes the reorder to recompute from the pre-delete snapshot and silently overwrite the delete; the deleted slide reappears and the app never learns the delete was dropped (no error, no toast — `scheduleAutoSave` fires with the wrong data and persists it). The test asserts the current *buggy* behavior rather than the ideally-correct one, so it acts as a tripwire: if someone fixes the closure bug later, this specific test will fail and needs its assertion flipped alongside the fix. Recommended fix (not applied): convert both handlers to `setSlides((prev) => ...)`, matching the other 9 handlers.
+
+## Verification (Round 2)
+- `npx vitest run` inside `frontend/` → **71/71 passing** (52 previous + 19 new), zero regressions.
+
 ## Not Covered — Frontend (flagged for a future pass)
 - Component-level tests beyond `login.test.tsx` — `AiGenerationForm`, `PresentationEditor` and its extracted pieces (`ImagePickerModal`, `EditorToast`, slide canvas), `RightStylePanel`, the dashboard tabs (`AiAnalysis`, `PracticeStats`, `Billing`) — all currently 0% covered at the component/render level
-- `useSlideMutations.ts`, `useZoomFullscreen.ts`, `usePresentationData.ts`, `useAiAnalysis.ts` — untested hooks, roughly the same shape/risk profile as `useAutoSave`/`useToast`
+- `useZoomFullscreen.ts`, `usePresentationData.ts`, `useAiAnalysis.ts` — untested hooks, roughly the same shape/risk profile as `useAutoSave`/`useToast` (`useSlideMutations.ts` is now covered — see Round 2 below)
 - No end-to-end/browser test tooling in the project at all (no Playwright/Cypress) — everything above is unit/hook-level via jsdom, so real browser navigation, actual network calls, and visual regressions are unverified by any automated test
+- No coverage measurement configured (`@vitest/coverage-v8` not installed) — no way to quantify the gap with a number
+- The `handleDeleteSlide`/`handleReorderSlides` stale-closure bug found in Round 2 (below) is not fixed, only pinned by a regression test
 
 ## Not Covered — Backend (flagged for a future pass)
 - `generation_service.generate_presentation_state()`'s OpenAI-backed generation flow (would need a mocked-completion test, similar to `test_intent_service.py`'s pattern) — `resolve_image_url()` is now covered, this is the remaining piece
@@ -152,5 +165,5 @@ Only one test existed in the whole app: `frontend/tests/login.test.tsx` (login f
 
 ## Backend + Frontend Combined Totals
 - **Backend:** 115/115 passing (11 test files)
-- **Frontend:** 52/52 passing (8 test files)
-- **Total: 167 tests, 0 failures**
+- **Frontend:** 71/71 passing (9 test files)
+- **Total: 186 tests, 0 failures**
