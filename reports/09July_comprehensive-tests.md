@@ -103,10 +103,54 @@ Pure unit tests for `resolve_image_url()` — no mocking needed, deterministic k
 
 2. **`backend/uploaded_files/` is owned by `root:root` (mode 755)** on this machine, not the local dev user — likely leftover from an earlier Docker-as-root run. The real `/upload` endpoint cannot currently write to it outside a root-owned process. Tests that exercise the upload-success path work around this with `monkeypatch.chdir(tmp_path)` (the endpoint writes to a hardcoded relative `uploaded_files/` path), but this same permission issue will block manual/local testing of uploads until the directory ownership is fixed, e.g. `sudo chown -R $(whoami):$(whoami) backend/uploaded_files`.
 
-## Not Covered (flagged for a future pass)
+---
+
+# Frontend
+
+## Starting State
+Only one test existed in the whole app: `frontend/tests/login.test.tsx` (login form render/input/submit, everything else mocked). No test config issues — `vitest.config.ts` + `vitest.setup.ts` already in place with jsdom + Testing Library. Same risk-based approach as the backend round: pure logic and security-relevant code (auth token handling) first, heavier component/integration tests left for a later pass.
+
+## New Test Files
+
+### 1. `frontend/tests/getErrorMessage.test.ts` (7 tests)
+`app/lib/getErrorMessage.ts` is the single place 8+ call sites (auth pages, upload, AI generation, profile forms) turn an axios error into a user-facing string. Covers every branch: `ERR_NETWORK`, a 500 (generic message, and confirms it does **not** leak the raw `detail` field from a 500 body), a 4xx with a `detail` field (passed through), a 4xx with no `detail` (falls back to the caller's message), a request-sent-but-no-response case, a non-axios `Error`, and a completely non-error thrown value.
+
+### 2. `frontend/tests/slideLayouts.test.ts` (6 tests)
+`app/lib/slideLayouts.ts`'s `isSlideLayoutId()` is a type-guard the backend PPTX exporter's layout ids must stay in sync with (per the file's own header comment). Parametrized over all 4 known ids (accepted), plus an unknown id, empty string, and a case-mismatch (all rejected). Also asserts every layout id has an icon defined.
+
+### 3. `frontend/tests/editorDefaults.test.ts` (11 tests)
+`app/lib/editorDefaults.ts`: `normalizeSlides()` (falsy input → `[]`, valid `content_type` preserved, invalid one coerced to `'standard'`, no mutation of the input), `readStoredPresentation`/`writeStoredPresentation` round-trip through `sessionStorage` (empty-slides-array and corrupted-JSON edge cases both resolve to `null` without throwing), and `buildLocalizedDefaultSlides()` (5 slides, every title routed through the translation function, every `content_type` a valid layout id).
+
+### 4. `frontend/tests/apiClient.test.ts` (5 tests)
+`app/api/client.ts` wires the two interceptors every authenticated request in the app depends on, previously completely untested. Since axios doesn't expose a public hook-invocation API, tests reach into the (stable) internal `interceptors.request/response.handlers[0]` array — a well-established pattern for this. Covers: Bearer header attached when a token is stored, no header when absent, **token cleared from `localStorage` on a 401 response**, and — the important negative case — token left intact on a 500 or a network error with no response (so a transient backend hiccup doesn't silently log the user out).
+
+### 5. `frontend/tests/useRequireAuth.test.tsx` (8 tests)
+`app/hooks/useRequireAuth.ts` gates every protected page. `hasValidAccessToken()` unit tests cover the documented edge cases in its own comment: the stored value can be the literal string `"undefined"` or `"null"` (a storage race) or an empty string — all three must be treated as "no token", not just a real absence of the key. The hook itself (via `renderHook` + a mocked `next/navigation` router) confirms it redirects to `/login` by default, redirects to a custom path when given one, and does **not** redirect (and clears `isChecking`) when a valid token exists.
+
+### 6. `frontend/tests/useToast.test.tsx` (5 tests)
+`app/hooks/useToast.ts`, using `vi.useFakeTimers()`: shows a toast with the given type/message, auto-dismisses at exactly the 4-second mark, confirms it's still visible before that window elapses, and confirms replacing a toast before it dismisses resets the dismiss timer to the new message rather than the old one leaking through.
+
+### 7. `frontend/tests/useAutoSave.test.tsx` (5 tests)
+`app/hooks/useAutoSave.ts` — the debounced editor-persistence hook every keystroke in the AI editor eventually goes through. `client.put` is mocked; fake timers drive the 1500ms debounce. Covers: no API call when no active presentation id is in `sessionStorage`, no call before the debounce window elapses, a call to the correct `PUT /api/v1/presentations/{id}/ai-state` endpoint with the right body once it does (status `saving` → `saved` → `idle` after 2.5s), **rapid successive edits reset the debounce timer and only the latest state is persisted** (not a stale intermediate one), and a failed save reports `error` status before recovering to `idle` after 3s.
+
+## Verification
+- `npx vitest run` inside `frontend/` → **52/52 passing** (1 pre-existing + 51 new across 7 new files), no regressions to `login.test.tsx`.
+- One iteration needed: two `useAutoSave` tests initially used Testing Library's `waitFor()` (which polls on real timers) together with `vi.useFakeTimers()` — real time never advances, so both timed out. Fixed by asserting directly after `vi.advanceTimersByTimeAsync()`, since the awaited mock promise resolves within that same flush.
+
+## Not Covered — Frontend (flagged for a future pass)
+- Component-level tests beyond `login.test.tsx` — `AiGenerationForm`, `PresentationEditor` and its extracted pieces (`ImagePickerModal`, `EditorToast`, slide canvas), `RightStylePanel`, the dashboard tabs (`AiAnalysis`, `PracticeStats`, `Billing`) — all currently 0% covered at the component/render level
+- `useSlideMutations.ts`, `useZoomFullscreen.ts`, `usePresentationData.ts`, `useAiAnalysis.ts` — untested hooks, roughly the same shape/risk profile as `useAutoSave`/`useToast`
+- No end-to-end/browser test tooling in the project at all (no Playwright/Cypress) — everything above is unit/hook-level via jsdom, so real browser navigation, actual network calls, and visual regressions are unverified by any automated test
+
+## Not Covered — Backend (flagged for a future pass)
 - `generation_service.generate_presentation_state()`'s OpenAI-backed generation flow (would need a mocked-completion test, similar to `test_intent_service.py`'s pattern) — `resolve_image_url()` is now covered, this is the remaining piece
 - `ideas_service.py` (`generate_topic_ideas`, `chat_about_topic`) and its two routes in `ideas.py`
 - `rag_service.ask_question()` itself is still only exercised indirectly (mocked) via `test_chat.py` — its internal vector-search/prompt logic has no direct unit test
 - Rate limiting behavior (`app/core/limiter.py` is force-disabled whenever `TESTING=True`, by design — would need a dedicated non-TESTING-mode test to exercise)
 - Real PDF/PPTX text-extraction correctness (`pdf_service.py`, `pptx_service.py` extraction paths) — current tests mock these out rather than exercising real parsing
 - Background workers (`planner_reminder_service.py`, `file_cleanup.py`) — no user-facing endpoint, lowest priority
+
+## Backend + Frontend Combined Totals
+- **Backend:** 115/115 passing (11 test files)
+- **Frontend:** 52/52 passing (8 test files)
+- **Total: 167 tests, 0 failures**
