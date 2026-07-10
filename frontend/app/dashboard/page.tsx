@@ -25,8 +25,13 @@ import { motion } from "framer-motion";
 import { useDashboard, RecentPresentation } from "./DashboardContext";
 import Sessions from "./sessions/Sessions";
 import Profile from "./profile/Profile";
+import TopicIdeas from "./ideas/TopicIdeas";
+import AiGenerationForm from "./ai-presentation/AiGenerationForm";
+import AiAnalysis from "./analysis/AiAnalysis";
+import Billing from "./billing/Billing";
 import client from "../api/client";
 import axios from "axios";
+import { useTranslations } from "next-intl";
 
 const TIME_24H_REGEX = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
@@ -80,6 +85,7 @@ function subtractMinutes(time: string, minutes: number): string {
 }
 
 export default function DashboardPage() {
+    const t = useTranslations('dashboard');
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -106,7 +112,7 @@ export default function DashboardPage() {
     } = useDashboard();
 
     const handleDeleteSession = async (sessionId: number) => {
-        if (!confirm("Are you sure you want to delete this session record?")) return;
+        if (!confirm(t("deleteSessionConfirm"))) return;
 
         try {
             await client.delete(`/api/v1/presentations/sessions/${sessionId}`);
@@ -138,10 +144,10 @@ export default function DashboardPage() {
 
                 return next;
             });
-            setAlert({ type: 'info', message: 'Session deleted.' });
+            setAlert({ type: 'info', message: t('sessionDeleted') });
             setTimeout(() => setAlert(null), 3500);
         } catch {
-            setAlert({ type: 'error', message: 'Session could not be deleted.' });
+            setAlert({ type: 'error', message: t('sessionDeleteFailed') });
             setTimeout(() => setAlert(null), 3500);
         }
     };
@@ -166,7 +172,7 @@ export default function DashboardPage() {
     const selectedReminderMinute = selectedReminderTime.split(':')[1];
 
     const handleDeletePresentation = async (id: number) => {
-        if (!confirm("Are you sure you want to delete this presentation?")) return;
+        if (!confirm(t("deletePresentationConfirm"))) return;
 
         try {
             await client.delete(`/api/v1/presentations/${id}`);
@@ -178,18 +184,18 @@ export default function DashboardPage() {
                     total_presentations: stats.total_presentations - 1
                 });
             }
-            setAlert({ type: 'info', message: 'Presentation deleted.' });
+            setAlert({ type: 'info', message: t('presentationDeleted') });
             setTimeout(() => setAlert(null), 3500);
         } catch (error) {
-            let msg = 'An error occurred while deleting the presentation.';
+            let msg = t('presentationDeleteFailed');
             const status = axios.isAxiosError(error) ? error.response?.status : undefined;
 
             if (status === 403) {
-                msg = "Permission denied. You don't have authority to delete this.";
+                msg = t('permissionDenied');
             } else if (status === 404) {
-                msg = "Presentation not found.";
+                msg = t('presentationNotFound');
             } else if (status && status >= 500) {
-                msg = "Server error. Please try again later.";
+                msg = t('serverError');
             }
 
             setAlert({ type: 'error', message: msg });
@@ -212,7 +218,7 @@ export default function DashboardPage() {
         const normalizedTitle = editingPresentationTitle.trim();
 
         if (!normalizedTitle) {
-            setAlert({ type: 'error', message: 'Presentation title cannot be empty.' });
+            setAlert({ type: 'error', message: t('titleEmpty') });
             setTimeout(() => setAlert(null), 3500);
             return;
         }
@@ -237,11 +243,11 @@ export default function DashboardPage() {
                 prev && prev.id === presentationId ? { ...prev, title: normalizedTitle } : prev
             );
 
-            setAlert({ type: 'info', message: 'Presentation title updated.' });
+            setAlert({ type: 'info', message: t('titleUpdated') });
             setTimeout(() => setAlert(null), 3500);
             cancelEditingPresentationTitle();
         } catch {
-            setAlert({ type: 'error', message: 'Presentation title could not be updated.' });
+            setAlert({ type: 'error', message: t('titleUpdateFailed') });
             setTimeout(() => setAlert(null), 3500);
             setIsSavingPresentationTitle(false);
         }
@@ -314,11 +320,11 @@ export default function DashboardPage() {
                 note: plannerNote.trim() || undefined,
             });
 
-            setAlert({ type: 'info', message: 'Presentation added to planner.' });
+            setAlert({ type: 'info', message: t('addedToPlanner') });
             setTimeout(() => setAlert(null), 3500);
             closePlannerModal();
         } catch {
-            setAlert({ type: 'error', message: 'Presentation could not be added to planner.' });
+            setAlert({ type: 'error', message: t('plannerAddFailed') });
             setTimeout(() => setAlert(null), 3500);
         }
     };
@@ -349,7 +355,7 @@ export default function DashboardPage() {
                             <div className="space-y-4 md:space-y-6">
                                 <div className="flex items-center gap-3">
                                     <div className="bg-primary/10 border border-primary/20 backdrop-blur-md rounded-full px-4 py-1.5 text-[10px] md:text-[11px] font-black text-primary tracking-[0.2em] w-fit">
-                                        STAGE READY
+                                        {t('stageReady')}
                                     </div>
                                     <div className="flex gap-1">
                                         <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
@@ -359,19 +365,19 @@ export default function DashboardPage() {
                                 </div>
 
                                 <h2 className="text-2xl sm:text-4xl lg:text-5xl font-black mb-3 leading-[1.1] italic uppercase tracking-tighter text-white">
-                                    The Shortest Path <br />
-                                    <span className="text-primary group-hover:text-white transition-colors duration-500">to Perfection</span>
+                                    {t('shortestPath')} <br />
+                                    <span className="text-primary group-hover:text-white transition-colors duration-500">{t('toPerfection')}</span>
                                 </h2>
 
                                 <p className="text-zinc-400 text-sm md:text-base max-w-sm font-medium leading-relaxed">
-                                    Scale your public speaking mastery. AI handles the cues, you capture the audience.
+                                    {t('aiHandlesCues')}
                                 </p>
                             </div>
 
                             <div className="mt-8 md:mt-12 flex flex-wrap gap-4 items-center">
                                 <Link href="/upload">
                                     <button className="bg-white text-black hover:bg-primary hover:text-white px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-tight flex items-center gap-2 transition-all active:scale-95 shadow-xl shadow-white/5 border border-transparent hover:border-white/10">
-                                        Initiate Session
+                                        {t('initiateSession')}
                                         <ArrowUpRight size={18} />
                                     </button>
                                 </Link>
@@ -381,7 +387,9 @@ export default function DashboardPage() {
                                             {i === 3 ? '+' : ''}
                                         </div>
                                     ))}
-                                    <span className="ml-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest self-center">1.2k+ Mastered</span>
+                                    <span className="ml-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest self-center">
+                                        {t('masteredCount', { count: '1.2k+' })}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -401,13 +409,13 @@ export default function DashboardPage() {
                         <div className="flex items-center justify-between mb-8">
                             <h3 className="text-xl font-bold flex items-center gap-3">
                                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                                Recent Presentations
+                                {t('recentPresentations')}
                             </h3>
                             <button
                                 onClick={() => setActiveTab('presentations')}
                                 className="text-xs text-zinc-500 hover:text-white flex items-center gap-1 transition-colors"
                             >
-                                See All <ArrowUpRight size={14} />
+                                {t('seeAll')} <ArrowUpRight size={14} />
                             </button>
                         </div>
 
@@ -415,7 +423,7 @@ export default function DashboardPage() {
                             {recentPresentations.length === 0 ? (
                                 <div className="py-12 flex flex-col items-center text-zinc-600 gap-3">
                                     <FileText size={48} className="opacity-20" />
-                                    <p className="text-sm">No presentations found.</p>
+                                    <p className="text-sm">{t('noPresentations')}</p>
                                 </div>
                             ) : (
                                 recentPresentations.slice(0, 4).map((p, i) => (
@@ -436,16 +444,16 @@ export default function DashboardPage() {
                 >
                     <div className="mt-8 space-y-3">
                         <p className="px-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                            Found {filteredPresentations.length} presentations
+                            {t('foundPresentations', { count: filteredPresentations.length })}
                         </p>
                         <div className="bg-[#0C0C0C] border border-white/5 rounded-[2rem] overflow-hidden">
                             <div className="overflow-x-auto">
                                 <table className="min-w-[760px] w-full text-left">
                                     <thead>
                                         <tr className="border-b border-white/5">
-                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Name</th>
-                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Date</th>
-                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Actions</th>
+                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('name')}</th>
+                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('date')}</th>
+                                            <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">{t('actionsCol')}</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-white/5">
@@ -469,24 +477,26 @@ export default function DashboardPage() {
                                 </table>
                             </div>
                             {filteredPresentations.length === 0 && (
-                                <div className="py-20 text-center text-zinc-600 italic">No presentations found.</div>
+                                <div className="py-20 text-center text-zinc-600 italic">{t('noPresentations')}</div>
                             )}
                         </div>
                     </div>
                 </motion.div>
             )}
 
-            {/* AI Presentation — placeholder */}
+            {/* AI Presentation — Generation Form */}
             {activeTab === 'ai-presentation' && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="min-h-[40vh]"
-                />
+                <AiGenerationForm />
             )}
 
-            {/* Ideas — placeholders */}
-            {(activeTab === 'ideas-topics' || activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals') && (
+            {/* Topic Ideas */}
+            {activeTab === 'ideas-topics' && <TopicIdeas />}
+
+            {/* AI Analysis */}
+            {activeTab === 'ai-analysis' && <AiAnalysis />}
+
+            {/* Ideas — placeholders (hooks & visuals remain pending) */}
+            {(activeTab === 'ideas-hooks' || activeTab === 'ideas-visuals') && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -504,21 +514,15 @@ export default function DashboardPage() {
                 <Profile />
             )}
 
-            {/* Billing Tab — placeholder */}
-            {activeTab === 'billing' && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="min-h-[40vh]"
-                />
-            )}
+            {/* Billing Tab */}
+            {activeTab === 'billing' && <Billing />}
 
             {plannerModalPresentation && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
                     <div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-[#0C0C0C] p-5 sm:p-6">
                         <div className="mb-4 flex items-start justify-between">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Add To Planner</h3>
+                                <h3 className="text-lg font-bold text-white">{t('addToPlannerTitle')}</h3>
                                 <p className="mt-1 text-xs text-zinc-400">{plannerModalPresentation.title}</p>
                             </div>
                             <button
@@ -534,23 +538,23 @@ export default function DashboardPage() {
                             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                 <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                     <CalendarDays size={12} />
-                                    Date
+                                    {t('dateLabel')}
                                 </p>
                                 <DatePickerDropdown
                                     value={plannerDate}
                                     onChange={setPlannerDate}
                                     ariaLabel="Planner date"
                                 />
-                                <p className="mt-2 text-[11px] text-zinc-500">Selected date: <span className="font-semibold text-zinc-200">{displayPlannerDate}</span></p>
+                                <p className="mt-2 text-[11px] text-zinc-500">{t('selectedDate')} <span className="font-semibold text-zinc-200">{displayPlannerDate}</span></p>
                             </div>
 
                             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                 <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                     <Clock size={12} />
-                                    Presentation Time
+                                    {t('presentationTime')}
                                 </p>
                                 <p className="mb-2 text-xs text-zinc-300">
-                                    This is the start time of your presentation.
+                                    {t('presentationTimeDesc')}
                                 </p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                     <TimeDropdown
@@ -567,13 +571,13 @@ export default function DashboardPage() {
                                         ariaLabel="Planner minute"
                                     />
                                 </div>
-                                <p className="mt-2 text-[11px] text-zinc-500">Presentation starts at: <span className="font-semibold text-zinc-200">{plannerTime}</span></p>
+                                <p className="mt-2 text-[11px] text-zinc-500">{t('presentationStartsAt')} <span className="font-semibold text-zinc-200">{plannerTime}</span></p>
                             </div>
 
                             {hasSelectedPresentationTime && isValid24HourTime(plannerTime) && (
                                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                     <div className="mb-2 flex items-center justify-between">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Email Reminder</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t('emailReminder')}</p>
                                         <button
                                             type="button"
                                             onClick={() => setUseReminder((v) => !v)}
@@ -582,18 +586,18 @@ export default function DashboardPage() {
                                                 : 'border-white/15 text-zinc-300 hover:bg-white/[0.04]'
                                                 }`}
                                         >
-                                            {useReminder ? 'Disable' : 'Enable'}
+                                            {useReminder ? t('disable') : t('enable')}
                                         </button>
                                     </div>
                                     <p className="mb-2 text-xs text-zinc-300">
-                                        This setting is only for the reminder email delivery time.
+                                        {t('reminderDesc')}
                                     </p>
                                     <button
                                         type="button"
                                         onClick={applyReminderThirtyMinutesAgo}
                                         className="mb-2 w-full rounded-lg border border-primary/35 bg-primary/12 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
                                     >
-                                        Email reminder 30 minutes ago
+                                        {t('thirtyMinReminder')}
                                     </button>
                                     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                         <TimeDropdown
@@ -610,24 +614,24 @@ export default function DashboardPage() {
                                             ariaLabel="Reminder minute"
                                         />
                                     </div>
-                                    <p className="mt-2 text-[11px] text-zinc-500">Email will be sent at: <span className="font-semibold text-zinc-200">{useReminder ? selectedReminderTime : 'No reminder'}</span></p>
+                                    <p className="mt-2 text-[11px] text-zinc-500">{t('emailSentAt')} <span className="font-semibold text-zinc-200">{useReminder ? selectedReminderTime : t('noReminder')}</span></p>
                                 </div>
                             )}
 
                             {!hasSelectedPresentationTime && (
                                 <p className="text-[11px] text-zinc-500">
-                                    Select presentation time first. Email reminder and note options appear after that.
+                                    {t('selectTimeFirst')}
                                 </p>
                             )}
 
                             {hasSelectedPresentationTime && isValid24HourTime(plannerTime) && (
                                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
-                                    <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Note (Optional)</p>
+                                    <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t('noteLabel')}</p>
                                     <textarea
                                         value={plannerNote}
                                         onChange={(e) => setPlannerNote(e.target.value)}
                                         maxLength={300}
-                                        placeholder="Add a note for this planner event..."
+                                        placeholder={t('notePlaceholder')}
                                         className="invisible-scrollbar min-h-[90px] w-full resize-none rounded-lg border border-white/10 bg-[#0C0C0C] px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-primary/50"
                                     />
                                 </div>
@@ -640,7 +644,7 @@ export default function DashboardPage() {
                                 onClick={closePlannerModal}
                                 className="rounded-lg border border-white/10 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04]"
                             >
-                                Cancel
+                                {t('cancel')}
                             </button>
                             <button
                                 type="button"
@@ -648,7 +652,7 @@ export default function DashboardPage() {
                                 disabled={!hasSelectedPresentationTime || !isValid24HourTime(plannerTime)}
                                 className="rounded-lg bg-primary py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Add To Planner
+                                {t('addToPlannerBtn')}
                             </button>
                         </div>
                     </div>
@@ -887,6 +891,7 @@ function DatePickerDropdown({
 }
 
 function PresentationRow({ presentation, index, onDelete }: { presentation: RecentPresentation, index: number, onDelete: (id: number) => void }) {
+    const t = useTranslations('dashboard');
     return (
         <motion.div
             initial={{ opacity: 0, x: -10 }}
@@ -901,7 +906,12 @@ function PresentationRow({ presentation, index, onDelete }: { presentation: Rece
                 <div className="min-w-0">
                     <p className="font-bold text-sm truncate pr-4">{presentation.title}</p>
                     <p className="text-[10px] text-zinc-500 flex items-center gap-2 mt-0.5 font-medium uppercase tracking-tighter">
-                        <span>{presentation.slide_count} Slides</span>
+                        <span>{presentation.slide_count} {t('slides')}</span>
+                        {presentation.is_ai_generated && (
+                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary">
+                                {t('aiBadge')}
+                            </span>
+                        )}
                         <span className="w-1 h-1 rounded-full bg-zinc-700" />
                         <span>{new Date(presentation.created_at).toLocaleDateString('en-US')}</span>
                     </p>
@@ -949,6 +959,7 @@ function PresentationCard({
     onSaveTitle: (presentationId: number) => void,
     isSavingTitle: boolean,
 }) {
+    const t = useTranslations('dashboard');
     const createdAt = new Date(presentation.created_at);
     const createdDate = `${String(createdAt.getDate()).padStart(2, '0')}/${String(createdAt.getMonth() + 1).padStart(2, '0')}/${createdAt.getFullYear()}`;
     const isEditing = editingPresentationId === presentation.id;
@@ -1008,14 +1019,14 @@ function PresentationCard({
                                 autoFocus
                                 maxLength={500}
                                 className="w-full max-w-md rounded-md border border-primary/40 bg-[#101010] px-2.5 py-1.5 text-xs font-semibold text-white outline-none focus:border-primary"
-                                aria-label="Edit presentation title"
+                                aria-label={t('editTitle')}
                             />
                             <button
                                 type="button"
                                 onClick={() => onSaveTitle(presentation.id)}
                                 disabled={isSavingTitle}
                                 className="inline-flex items-center justify-center rounded-md border border-primary/40 bg-primary/15 p-1.5 text-primary transition-colors hover:bg-primary/25 disabled:cursor-not-allowed disabled:opacity-60"
-                                title="Save title"
+                                title={t('saveTitle')}
                             >
                                 <Check size={13} />
                             </button>
@@ -1024,7 +1035,7 @@ function PresentationCard({
                                 onClick={onCancelEditing}
                                 disabled={isSavingTitle}
                                 className="inline-flex items-center justify-center rounded-md border border-white/10 bg-white/[0.03] p-1.5 text-zinc-300 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-                                title="Cancel edit"
+                                title={t('cancelEdit')}
                             >
                                 <X size={13} />
                             </button>
@@ -1036,13 +1047,20 @@ function PresentationCard({
                                 type="button"
                                 onClick={() => onStartEditing(presentation)}
                                 className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/[0.03] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-300 transition-colors hover:bg-white/[0.08] hover:text-white"
-                                title="Edit presentation title"
+                                title={t('editTitle')}
                             >
                                 <Pencil size={11} />
                             </button>
                         </div>
                     )}
-                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{presentation.slide_count} Slides</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">
+                        <span>{presentation.slide_count} {t('slides')}</span>
+                        {presentation.is_ai_generated && (
+                            <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[9px] font-bold tracking-widest text-primary">
+                                {t('aiBadge')}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </td>
 
@@ -1073,8 +1091,8 @@ function PresentationCard({
                             setIsActionMenuOpen(true);
                         }}
                         className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white"
-                        title="Presentation actions"
-                        aria-label="Presentation actions"
+                        title={t('presentationActions')}
+                        aria-label={t('presentationActions')}
                     >
                         <MoreVertical size={16} />
                     </button>
@@ -1096,7 +1114,7 @@ function PresentationCard({
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 transition-colors hover:bg-primary/15 hover:text-primary"
                                 >
                                     <CalendarDays size={14} />
-                                    Add to planner
+                                    {t('addToPlanner')}
                                 </button>
 
                                 <Link
@@ -1108,7 +1126,7 @@ function PresentationCard({
                                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
                                 >
                                     <Eye size={14} />
-                                    View
+                                    {t('view')}
                                 </Link>
 
                                 <Link
@@ -1120,7 +1138,7 @@ function PresentationCard({
                                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
                                 >
                                     <Play size={14} />
-                                    Present again
+                                    {t('presentAgain')}
                                 </Link>
 
                                 <button
@@ -1133,7 +1151,7 @@ function PresentationCard({
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 transition-colors hover:bg-red-500/10 hover:text-red-400"
                                 >
                                     <Trash2 size={14} />
-                                    Delete
+                                    {t('delete')}
                                 </button>
                             </div>,
                             document.body

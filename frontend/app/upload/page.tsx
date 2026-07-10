@@ -17,10 +17,15 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import client from "../api/client";
+import { hasValidAccessToken } from "../hooks/useRequireAuth";
+import { getErrorMessage } from "../lib/getErrorMessage";
+import axios from "axios";
 
 export default function UploadPage() {
     const router = useRouter();
+    const t = useTranslations("upload");
     const [dragActive, setDragActive] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -70,6 +75,7 @@ export default function UploadPage() {
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             handleFileSelection(e.dataTransfer.files[0]);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,12 +92,12 @@ export default function UploadPage() {
         setError(null);
 
         if (!validTypes.includes(selectedFile.type)) {
-            setError("Invalid file format. Please upload a PDF or PowerPoint file.");
+            setError(t("invalidFormat"));
             return;
         }
 
         if (selectedFile.size > maxSize) {
-            setError("File is too large. Maximum limit is 50MB.");
+            setError(t("fileTooLarge"));
             return;
         }
 
@@ -104,7 +110,7 @@ export default function UploadPage() {
 
         // Check for real internet connection
         if (!navigator.onLine) {
-            setError("No internet connection. Please check your connectivity.");
+            setError(t("noInternet"));
             setUploadStatus('error');
             return;
         }
@@ -153,13 +159,11 @@ export default function UploadPage() {
             }
         } catch (err: unknown) {
             console.error('Upload Error:', err);
-            const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } };
             // Handle 401 specifically for guest users
-            if (axiosErr.response?.status === 401) {
-                setError("This feature requires authentication. Please sign in to upload presentations.");
+            if (axios.isAxiosError(err) && err.response?.status === 401) {
+                setError(t("authRequired"));
             } else {
-                const detail = axiosErr.response?.data?.detail || "Failed to upload and process the presentation.";
-                setError(detail);
+                setError(getErrorMessage(err, t("uploadFailed")));
             }
             setUploadStatus('error');
         } finally {
@@ -177,10 +181,7 @@ export default function UploadPage() {
     };
 
     const handleAnalyzeClick = (e: React.MouseEvent) => {
-        const token = localStorage.getItem("access_token");
-
-        // Check if user is authenticated
-        if (!token || token === 'undefined' || token === 'null' || token === '') {
+        if (!hasValidAccessToken()) {
             e.preventDefault();
             setShowAuthModal(true);
             return;
@@ -233,8 +234,8 @@ export default function UploadPage() {
                                         <ArrowLeft size={24} />
                                     </button>
                                     <div>
-                                        <h1 className="text-4xl md:text-5xl font-black tracking-tight italic uppercase">New Presentation</h1>
-                                        <p className="text-sm text-zinc-500 mt-1 uppercase tracking-[0.3em] font-bold">Initiate your narrative and sync for stage</p>
+                                        <h1 className="text-4xl md:text-5xl font-black tracking-tight italic uppercase">{t("title")}</h1>
+                                        <p className="text-sm text-zinc-500 mt-1 uppercase tracking-[0.3em] font-bold">{t("subtitle")}</p>
                                     </div>
                                 </header>
 
@@ -258,10 +259,10 @@ export default function UploadPage() {
                                                         <Upload className="text-primary relative z-10" size={32} />
                                                     </div>
                                                     <div className="text-center relative z-10">
-                                                        <p className="text-2xl font-black text-zinc-100 italic uppercase mb-2 tracking-tighter">Target Slide Deck</p>
-                                                        <p className="text-zinc-500 text-xs font-medium uppercase tracking-widest mb-6">PDF or PPTX preferred for precision</p>
+                                                        <p className="text-2xl font-black text-zinc-100 italic uppercase mb-2 tracking-tighter">{t("targetSlideDeck")}</p>
+                                                        <p className="text-zinc-500 text-xs font-medium uppercase tracking-widest mb-6">{t("pdfPreferred")}</p>
                                                         <label className="cursor-pointer bg-white text-black hover:bg-primary hover:text-white px-10 py-4 rounded-2xl text-sm font-black transition-all active:scale-95 shadow-2xl shadow-white/5 relative z-10 uppercase tracking-tight">
-                                                            Select File
+                                                            {t("selectFile")}
                                                             <input
                                                                 type="file"
                                                                 className="hidden"
@@ -301,14 +302,14 @@ export default function UploadPage() {
                                                             onClick={handleUpload}
                                                             className="bg-primary hover:bg-orange-500 text-white px-12 py-5 rounded-[1.25rem] font-black transition-all active:scale-95 shadow-2xl shadow-primary/30 text-lg uppercase tracking-tighter"
                                                         >
-                                                            Process to Stage
+                                                            {t("processToStage")}
                                                         </button>
                                                     )}
 
                                                     {uploadStatus === 'uploading' && (
                                                         <div className="w-full max-w-xs space-y-4">
                                                             <div className="flex justify-between items-center px-1">
-                                                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary animate-pulse">Contextual Analysis...</span>
+                                                                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-primary animate-pulse">{t("analyzing")}</span>
                                                                 <span className="text-xl font-black italic">{uploadProgress}%</span>
                                                             </div>
                                                             <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-0.5 border border-white/5">
@@ -331,7 +332,7 @@ export default function UploadPage() {
                                                                 onClick={handleUpload}
                                                                 className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 hover:text-white transition-colors underline underline-offset-4"
                                                             >
-                                                                Retry
+                                                                {t("retry")}
                                                             </button>
                                                         </div>
                                                     )}
@@ -354,12 +355,12 @@ export default function UploadPage() {
                                         <div className="bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] p-8">
                                             <h3 className="font-black mb-6 flex items-center gap-3 text-white text-lg uppercase italic border-b border-white/5 pb-4">
                                                 <AlertCircle size={18} className="text-primary" />
-                                                Mastery Plan
+                                                {t("masteryPlan")}
                                             </h3>
                                             <div className="space-y-6">
-                                                <GuidelineItem title="Voice Mapping" desc="AI listens for intent, not keywords." />
-                                                <GuidelineItem title="Format Edge" desc="PDF results in 100% layout sync." />
-                                                <GuidelineItem title="Cue Extraction" desc="Notes become digital cards." />
+                                                <GuidelineItem title={t("voiceMapping")} desc={t("voiceMappingDesc")} />
+                                                <GuidelineItem title={t("formatEdge")} desc={t("formatEdgeDesc")} />
+                                                <GuidelineItem title={t("cueExtraction")} desc={t("cueExtractionDesc")} />
                                             </div>
                                         </div>
 
@@ -367,9 +368,9 @@ export default function UploadPage() {
                                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                                                 <Presentation size={80} />
                                             </div>
-                                            <h3 className="font-black text-white text-lg mb-3 italic uppercase">Next Gen Control</h3>
+                                            <h3 className="font-black text-white text-lg mb-3 italic uppercase">{t("nextGenControl")}</h3>
                                             <p className="text-[11px] text-zinc-500 leading-relaxed relative z-10 font-bold uppercase tracking-wider">
-                                                Your voice is the remote. Sync flawlessly with every slide.
+                                                {t("nextGenControlDesc")}
                                             </p>
                                         </div>
                                     </div>
@@ -385,9 +386,9 @@ export default function UploadPage() {
                                 <header className="text-center mb-6">
                                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full text-[10px] font-black text-green-500 uppercase tracking-[0.2em] mb-3">
                                         <CheckCircle2 size={12} />
-                                        Stage Ready
+                                        {t("stageReady")}
                                     </div>
-                                    <h2 className="text-4xl md:text-5xl font-black tracking-tight italic uppercase italic">Select <span className="text-primary italic">Mode</span></h2>
+                                    <h2 className="text-4xl md:text-5xl font-black tracking-tight italic uppercase italic">{t("selectMode")} <span className="text-primary italic">Mode</span></h2>
                                 </header>
 
                                 {/* Large Preview Box */}
@@ -424,10 +425,8 @@ export default function UploadPage() {
                                                         <Presentation size={64} className="text-primary relative z-10" />
                                                         <div className="bg-primary text-white text-[9px] font-black px-3 py-1 rounded-full relative z-10 uppercase tracking-widest">PPTX</div>
                                                     </div>
-                                                    <h3 className="text-xl font-black uppercase italic tracking-tighter mb-2 text-zinc-100">Deck Ready</h3>
-                                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] max-w-[240px] leading-relaxed">
-                                                        Visual preview for PowerPoint is limited in-browser. All structure has been analyzed for the session.
-                                                    </p>
+                                                    <h3 className="text-xl font-black uppercase italic tracking-tighter mb-2 text-zinc-100">{t("deckReady")}</h3>
+                                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] max-w-[240px] leading-relaxed">{t("pptxPreviewNote")}</p>
                                                     <div className="mt-6 flex gap-1.5">
                                                         <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
                                                         <div className="w-1 h-1 rounded-full bg-primary animate-pulse delay-75" />
@@ -452,8 +451,8 @@ export default function UploadPage() {
                                         <div className="bg-[#050505] group-hover:bg-primary transition-colors flex items-center justify-center gap-4 py-5 px-8 rounded-[0.9rem] h-full w-full">
                                             <Zap className="text-primary group-hover:text-white" size={24} />
                                             <div className="text-left">
-                                                <p className="text-xl font-black uppercase italic group-hover:text-white tracking-widest italic tracking-tighter leading-none">Analyze</p>
-                                                <p className="text-[8px] uppercase font-bold text-zinc-600 group-hover:text-white/70 tracking-widest mt-1">Get AI Insights</p>
+                                                <p className="text-xl font-black uppercase italic group-hover:text-white tracking-widest italic tracking-tighter leading-none">{t("analyze")}</p>
+                                                <p className="text-[8px] uppercase font-bold text-zinc-600 group-hover:text-white/70 tracking-widest mt-1">{t("getAIInsights")}</p>
                                             </div>
                                         </div>
                                     </button>
@@ -465,8 +464,8 @@ export default function UploadPage() {
                                         <div className="bg-[#050505] group-hover:bg-white transition-colors flex items-center justify-center gap-4 py-5 px-8 rounded-[0.9rem] h-full">
                                             <Play className="text-white group-hover:text-black" size={24} />
                                             <div className="text-left">
-                                                <p className="text-xl font-black uppercase italic group-hover:text-black tracking-widest italic tracking-tighter leading-none">Real-Time</p>
-                                                <p className="text-[8px] uppercase font-bold text-zinc-600 group-hover:text-black/70 tracking-widest mt-1">Start Stage Sync</p>
+                                                <p className="text-xl font-black uppercase italic group-hover:text-black tracking-widest italic tracking-tighter leading-none">{t("realTime")}</p>
+                                                <p className="text-[8px] uppercase font-bold text-zinc-600 group-hover:text-black/70 tracking-widest mt-1">{t("startStageSync")}</p>
                                             </div>
                                         </div>
                                     </button>
@@ -476,7 +475,7 @@ export default function UploadPage() {
                                     onClick={removeFile}
                                     className="mt-6 text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-red-400 transition-colors flex items-center gap-2 group"
                                 >
-                                    <X size={10} className="group-hover:rotate-90 transition-transform" /> Start Over with new deck
+                                    <X size={10} className="group-hover:rotate-90 transition-transform" /> {t("startOver")}
                                 </button>
                             </motion.div>
                         )}
@@ -507,9 +506,9 @@ export default function UploadPage() {
                                 <Lock size={32} className="text-primary" />
                             </div>
 
-                            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-3 relative z-10 text-white">Premium Feature</h3>
+                            <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-3 relative z-10 text-white">{t("premiumFeature")}</h3>
                             <p className="text-zinc-400 text-sm font-bold uppercase tracking-widest leading-relaxed mb-8 relative z-10">
-                                AI Analysis is available for registered users. Sign up to unlock advanced insights and analytics.
+                                {t("premiumDesc")}
                             </p>
 
                             <div className="flex flex-col gap-3 relative z-10">
@@ -517,19 +516,19 @@ export default function UploadPage() {
                                     href="/register"
                                     className="bg-primary hover:bg-orange-500 text-white py-4 rounded-2xl font-black uppercase italic tracking-widest transition-all text-center"
                                 >
-                                    Sign Up Free
+                                    {t("signUpFree")}
                                 </Link>
                                 <Link
                                     href="/login"
                                     className="border border-white/20 hover:bg-white/5 text-white py-4 rounded-2xl font-black uppercase italic tracking-widest transition-all text-center"
                                 >
-                                    Login
+                                    {t("loginBtn")}
                                 </Link>
                                 <button
                                     onClick={() => setShowAuthModal(false)}
                                     className="text-zinc-500 hover:text-white py-2 text-[10px] font-black uppercase tracking-[0.3em] transition-colors"
                                 >
-                                    Dismiss
+                                    {t("dismiss")}
                                 </button>
                             </div>
                         </motion.div>

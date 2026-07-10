@@ -3,14 +3,20 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Mail, Lock, User, Calendar, ArrowRight, CheckCircle2, AlertCircle } from "lucide-react";
+import { Mail, Lock, User, Calendar, ArrowRight, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import client from "../../api/client";
+import AuthCard from "../../components/auth/AuthCard";
+import AlertBanner from "../../components/auth/AlertBanner";
+import FormField from "../../components/auth/FormField";
+import { ButtonSpinner } from "../../components/Spinner";
+import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export default function RegisterPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
+    const t = useTranslations("register");
 
     const [formData, setFormData] = useState({
         full_name: "",
@@ -37,19 +43,19 @@ export default function RegisterPage() {
         setError(null);
 
         if (formData.password !== formData.confirm_password) {
-            setError("Passwords do not match!");
+            setError(t("passwordMismatch"));
             setLoading(false);
             return;
         }
 
         if (formData.password.length < 8) {
-            setError("Password must be at least 8 characters.");
+            setError(t("passwordTooShort"));
             setLoading(false);
             return;
         }
 
         if (!formData.birth_date) {
-            setError("Birth date is required.");
+            setError(t("birthDateRequired"));
             setLoading(false);
             return;
         }
@@ -68,203 +74,121 @@ export default function RegisterPage() {
 
         } catch (err: unknown) {
             console.error("Register Error:", err);
-            let message = "Registration failed. Please try again.";
-
-            if (err && typeof err === 'object') {
-                // Network error (backend not reachable)
-                if ('code' in err && err.code === 'ERR_NETWORK') {
-                    message = "Cannot connect to server. Please make sure the backend is running on http://localhost:8000";
-                }
-                // Axios error with response
-                else if ('response' in err) {
-                    const axiosError = err as { response: { status?: number; data?: { detail?: string } } };
-                    if (axiosError.response?.status === 400) {
-                        message = axiosError.response?.data?.detail || "Invalid registration data.";
-                    } else if (axiosError.response?.status === 500) {
-                        message = "Server error. Please try again later.";
-                    } else {
-                        message = axiosError.response?.data?.detail || message;
-                    }
-                }
-                // Request was made but no response received
-                else if ('request' in err) {
-                    message = "Server did not respond. Please check if backend is running.";
-                }
-            }
-            setError(message);
+            setError(getErrorMessage(err, t("registrationFailed")));
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="w-full max-w-md space-y-6 my-auto"
+        <AuthCard
+            subtitle={t("subtitle")}
+            cardClassName="p-6"
+            banner={<AlertBanner variant="error" message={error} />}
+            footer={
+                <p className="text-center text-xs text-zinc-500 px-8">
+                    {t("termsText")}{" "}
+                    <Link href="/legal/terms" className="underline hover:text-zinc-300">{t("termsOfService")}</Link>{" "}
+                    {t("and")}{" "}
+                    <Link href="/legal/privacy" className="underline hover:text-zinc-300">{t("privacyPolicy")}</Link>.
+                </p>
+            }
         >
-            <div className="text-center">
-                <motion.h1
-                    className="text-4xl font-bold tracking-tight text-white mb-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <FormField
+                    label={t("fullName")}
+                    icon={User}
+                    name="full_name"
+                    type="text"
+                    required
+                    value={formData.full_name}
+                    onChange={handleChange}
+                    placeholder="John Doe"
+                />
+
+                <FormField
+                    label={t("email")}
+                    icon={Mail}
+                    name="email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="name@example.com"
+                />
+
+                <FormField
+                    label={t("birthDate")}
+                    icon={Calendar}
+                    name="birth_date"
+                    type="date"
+                    required
+                    value={formData.birth_date}
+                    onChange={handleChange}
+                    className="appearance-none"
+                    style={{ colorScheme: 'dark' }}
+                />
+
+                <FormField
+                    label={t("password")}
+                    icon={Lock}
+                    name="password"
+                    type="password"
+                    required
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                />
+
+                <FormField
+                    label={t("confirmPassword")}
+                    icon={CheckCircle2}
+                    name="confirm_password"
+                    type="password"
+                    required
+                    value={formData.confirm_password}
+                    onChange={handleChange}
+                    placeholder="••••••••"
+                />
+
+                <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                    PreCue<span className="text-primary">.ai</span>
-                </motion.h1>
-                <motion.p
-                    className="text-zinc-400 text-sm"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                >
-                    Join us and master your preparation today
-                </motion.p>
-            </div>
-
-            <AnimatePresence>
-                {error && (
-                    <motion.div
-                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                        animate={{ opacity: 1, height: "auto", marginBottom: 24 }}
-                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                        className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center gap-3 text-sm"
-                    >
-                        <AlertCircle className="w-5 h-5 shrink-0" />
-                        {error}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-6 rounded-2xl shadow-2xl">
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Full Name</label>
-                        <div className="relative group">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                            <input
-                                name="full_name"
-                                type="text"
-                                required
-                                value={formData.full_name}
-                                onChange={handleChange}
-                                className="input-field pl-11"
-                                placeholder="John Doe"
-                            />
+                    {loading ? (
+                        <div className="flex items-center gap-2">
+                            <ButtonSpinner />
+                            {t("creatingAccount")}
                         </div>
+                    ) : (
+                        <>
+                            {t("createAccount")}
+                            <ArrowRight className="w-4 h-4" />
+                        </>
+                    )}
+                </button>
+            </form>
+
+            <div className="mt-6">
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-zinc-800"></div>
                     </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Email</label>
-                        <div className="relative group">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                            <input
-                                name="email"
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={handleChange}
-                                className="input-field pl-11"
-                                placeholder="name@example.com"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Birth Date</label>
-                        <div className="relative group">
-                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                            <input
-                                name="birth_date"
-                                type="date"
-                                required
-                                value={formData.birth_date}
-                                onChange={handleChange}
-                                className="input-field pl-11 appearance-none"
-                                style={{ colorScheme: 'dark' }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Password</label>
-                        <div className="relative group">
-                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                            <input
-                                name="password"
-                                type="password"
-                                required
-                                value={formData.password}
-                                onChange={handleChange}
-                                className="input-field pl-11"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Confirm Password</label>
-                        <div className="relative group">
-                            <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
-                            <input
-                                name="confirm_password"
-                                type="password"
-                                required
-                                value={formData.confirm_password}
-                                onChange={handleChange}
-                                className="input-field pl-11"
-                                placeholder="••••••••"
-                            />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="btn-primary mt-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {loading ? (
-                            <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Creating Account...
-                            </div>
-                        ) : (
-                            <>
-                                Create Account
-                                <ArrowRight className="w-4 h-4" />
-                            </>
-                        )}
-                    </button>
-                </form>
-
-                <div className="mt-6">
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-zinc-800"></div>
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-zinc-900 px-2 text-zinc-500">Already have an account?</span>
-                        </div>
-                    </div>
-
-                    <div className="mt-6">
-                        <Link
-                            href="/login"
-                            className="flex items-center justify-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all active:scale-[0.98]"
-                        >
-                            Sign back in
-                        </Link>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-zinc-900 px-2 text-zinc-500">{t("alreadyHaveAccount")}</span>
                     </div>
                 </div>
-            </div>
 
-            <p className="text-center text-xs text-zinc-500 px-8">
-                By clicking continue, you agree to our{" "}
-                <Link href="/legal/terms" className="underline hover:text-zinc-300">Terms of Service</Link>{" "}
-                and{" "}
-                <Link href="/legal/privacy" className="underline hover:text-zinc-300">Privacy Policy</Link>.
-            </p>
-        </motion.div>
+                <div className="mt-6">
+                    <Link
+                        href="/login"
+                        className="flex items-center justify-center gap-2 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-all active:scale-[0.98]"
+                    >
+                        {t("signBackIn")}
+                    </Link>
+                </div>
+            </div>
+        </AuthCard>
     );
 }

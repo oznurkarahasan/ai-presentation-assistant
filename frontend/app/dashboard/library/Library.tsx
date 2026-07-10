@@ -6,6 +6,7 @@ import { CalendarDays, ChevronDown, Clock, Eye, FileText, Play, PlusCircle, Tras
 import { motion } from 'framer-motion';
 import client from '../../api/client';
 import { RecentPresentation } from '../DashboardContext';
+import { useTranslations } from 'next-intl';
 
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
 const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
@@ -53,6 +54,7 @@ interface LibraryProps {
 }
 
 export default function Library({ presentations, searchQuery, onDelete, setAlert }: LibraryProps) {
+    const t = useTranslations('library');
     const [plannerModalPresentation, setPlannerModalPresentation] = useState<RecentPresentation | null>(null);
     const [plannerDate, setPlannerDate] = useState(() => toDateKey(new Date()));
     const [plannerTime, setPlannerTime] = useState('09:00');
@@ -71,11 +73,11 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
     );
 
     const latestUploadDate = useMemo(() => {
-        if (presentations.length === 0) return 'No uploads yet';
+        if (presentations.length === 0) return t('stats.noUploads');
         const latest = [...presentations]
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
         return new Date(latest.created_at).toLocaleDateString('en-US');
-    }, [presentations]);
+    }, [presentations, t]);
 
     const selectedPlannerHour = isValid24HourTime(plannerTime) ? plannerTime.split(':')[0] : '09';
     const selectedPlannerMinute = isValid24HourTime(plannerTime) ? plannerTime.split(':')[1] : '00';
@@ -145,11 +147,11 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                 note: plannerNote.trim() || undefined,
             });
 
-            setAlert({ type: 'info', message: 'Presentation added to planner.' });
+            setAlert({ type: 'info', message: t('alerts.addToPlannerSuccess') });
             setTimeout(() => setAlert(null), 3500);
             closePlannerModal();
         } catch {
-            setAlert({ type: 'error', message: 'Presentation could not be added to planner.' });
+            setAlert({ type: 'error', message: t('alerts.addToPlannerFailed') });
             setTimeout(() => setAlert(null), 3500);
         }
     };
@@ -160,20 +162,20 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                 <div className="rounded-[1.75rem] border border-white/5 bg-[#0C0C0C] p-4 sm:p-6 lg:p-7">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <h2 className="text-2xl font-bold font-display tracking-tight sm:text-3xl">My Library</h2>
-                            <p className="mt-1 text-sm text-zinc-500">Clean, searchable access to all your presentations.</p>
+                            <h2 className="text-2xl font-bold font-display tracking-tight sm:text-3xl">{t('title')}</h2>
+                            <p className="mt-1 text-sm text-zinc-500">{t('subtitle')}</p>
                         </div>
                         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end sm:gap-3">
                             <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Files</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t('stats.files')}</p>
                                 <p className="text-sm font-semibold text-white">{presentations.length}</p>
                             </div>
                             <div className="rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Slides</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t('stats.slides')}</p>
                                 <p className="text-sm font-semibold text-white">{totalSlides}</p>
                             </div>
                             <div className="col-span-2 rounded-xl border border-white/10 bg-white/[0.02] px-3 py-2 sm:col-span-1">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Latest Upload</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t('stats.latestUpload')}</p>
                                 <p className="text-sm font-semibold text-white">{latestUploadDate}</p>
                             </div>
                         </div>
@@ -181,12 +183,12 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
 
                     <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-xs text-zinc-400">
-                            Showing {filteredPresentations.length} of {presentations.length} presentations.
+                            {t('summary', { filtered: filteredPresentations.length, total: presentations.length })}
                         </p>
                         <Link href="/upload">
                             <button className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition-all hover:bg-primary-hover sm:w-auto">
                                 <PlusCircle size={18} />
-                                Add New
+                                {t('actions.addNew')}
                             </button>
                         </Link>
                     </div>
@@ -206,13 +208,13 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                         <div className="col-span-full flex flex-col items-center gap-4 rounded-[1.5rem] border border-dashed border-white/10 bg-[#0C0C0C] py-16 text-center text-zinc-500">
                             <FileText size={56} className="opacity-20" />
                             <div className="space-y-1">
-                                <p className="text-sm font-medium text-zinc-300">Your library is empty.</p>
-                                <p className="text-xs">Upload your first presentation to get started.</p>
+                                <p className="text-sm font-medium text-zinc-300">{t('empty.title')}</p>
+                                <p className="text-xs">{t('empty.subtitle')}</p>
                             </div>
                             <Link href="/upload">
                                 <button className="inline-flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/15 px-4 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary/20">
                                     <PlusCircle size={14} />
-                                    Upload Presentation
+                                    {t('empty.cta')}
                                 </button>
                             </Link>
                         </div>
@@ -225,7 +227,7 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                     <div className="w-full max-w-md rounded-[1.5rem] border border-white/10 bg-[#0C0C0C] p-5 sm:p-6">
                         <div className="mb-4 flex items-start justify-between">
                             <div>
-                                <h3 className="text-lg font-bold text-white">Add To Planner</h3>
+                                    <h3 className="text-lg font-bold text-white">{t('planner.title')}</h3>
                                 <p className="mt-1 text-xs text-zinc-400">{plannerModalPresentation.title}</p>
                             </div>
                             <button
@@ -241,7 +243,7 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                 <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                     <CalendarDays size={12} />
-                                    Date
+                                    {t('planner.dateLabel')}
                                 </p>
                                 <input
                                     type="date"
@@ -254,10 +256,10 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                 <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                     <Clock size={12} />
-                                    Presentation Time
+                                    {t('planner.presentationTime')}
                                 </p>
                                 <p className="mb-2 text-xs text-zinc-300">
-                                    This is the start time of your presentation.
+                                    {t('planner.presentationTimeDesc')}
                                 </p>
                                 <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                     <TimeDropdown
@@ -274,24 +276,24 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                                         ariaLabel="Planner minute"
                                     />
                                 </div>
-                                <p className="mt-2 text-[11px] text-zinc-500">Presentation starts at: <span className="font-semibold text-zinc-200">{plannerTime}</span></p>
+                                <p className="mt-2 text-[11px] text-zinc-500">{t('planner.presentationStartsAt')} <span className="font-semibold text-zinc-200">{plannerTime}</span></p>
                             </div>
 
                             {hasSelectedPresentationTime && isValid24HourTime(plannerTime) && (
                                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                     <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
                                         <Zap size={12} />
-                                        Email Reminder
+                                        {t('planner.emailReminder')}
                                     </div>
                                     <p className="mb-2 text-xs text-zinc-300">
-                                        This setting is only for the reminder email delivery time.
+                                        {t('planner.reminderDesc')}
                                     </p>
                                     <button
                                         type="button"
                                         onClick={applyReminderThirtyMinutesAgo}
                                         className="mb-2 w-full rounded-lg border border-primary/35 bg-primary/12 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
                                     >
-                                        Email reminder 30 minutes ago
+                                        {t('planner.thirtyMinReminder')}
                                     </button>
                                     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
                                         <TimeDropdown
@@ -309,7 +311,7 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                                         />
                                     </div>
                                     <div className="mt-2 flex items-center justify-between">
-                                        <p className="text-[11px] text-zinc-500">Email will be sent at: <span className="font-semibold text-zinc-200">{useReminder ? selectedReminderTime : 'No reminder'}</span></p>
+                                        <p className="text-[11px] text-zinc-500">{t('planner.emailSentAt')} <span className="font-semibold text-zinc-200">{useReminder ? selectedReminderTime : t('planner.noReminder')}</span></p>
                                         <button
                                             type="button"
                                             onClick={() => setUseReminder((v) => !v)}
@@ -318,7 +320,7 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                                                 : 'border-white/15 text-zinc-300 hover:bg-white/[0.04]'
                                                 }`}
                                         >
-                                            {useReminder ? 'Disable' : 'Enable'}
+                                            {useReminder ? t('planner.disable') : t('planner.enable')}
                                         </button>
                                     </div>
                                 </div>
@@ -326,21 +328,21 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
 
                             {!hasSelectedPresentationTime && (
                                 <p className="text-[11px] text-zinc-500">
-                                    Select presentation time first. Email reminder and note options appear after that.
+                                    {t('planner.selectTimeFirst')}
                                 </p>
                             )}
 
                             {hasSelectedPresentationTime && isValid24HourTime(plannerTime) && (
                                 <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
                                     <div className="mb-2 flex items-center justify-between">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Note (Optional)</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{t('planner.noteLabel')}</p>
                                         <p className="text-[10px] text-zinc-500">{plannerNote.length}/{NOTE_MAX_LENGTH}</p>
                                     </div>
                                     <textarea
                                         value={plannerNote}
                                         onChange={(e) => setPlannerNote(e.target.value)}
                                         maxLength={NOTE_MAX_LENGTH}
-                                        placeholder="Add a note for this planner event..."
+                                        placeholder={t('planner.notePlaceholder')}
                                         className="invisible-scrollbar min-h-[90px] w-full resize-none rounded-lg border border-white/10 bg-[#0C0C0C] px-3 py-2 text-sm text-white placeholder:text-zinc-500 outline-none focus:border-primary/50"
                                     />
                                 </div>
@@ -353,7 +355,7 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                                 onClick={closePlannerModal}
                                 className="rounded-lg border border-white/10 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/[0.04]"
                             >
-                                Cancel
+                                {t('planner.cancel')}
                             </button>
                             <button
                                 type="button"
@@ -361,7 +363,7 @@ export default function Library({ presentations, searchQuery, onDelete, setAlert
                                 disabled={!hasSelectedPresentationTime || !isValid24HourTime(plannerTime)}
                                 className="rounded-lg bg-primary py-2.5 text-sm font-bold text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                Add To Planner
+                                {t('planner.addToPlanner')}
                             </button>
                         </div>
                     </div>

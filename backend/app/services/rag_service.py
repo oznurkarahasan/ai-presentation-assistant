@@ -3,31 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.presentation import Slide
 from app.services import embedding_service
-from app.core.config import settings
-from app.core.logger import logger
-from app.core.exceptions import EmbeddingError
-from openai import AsyncOpenAI
-
-# Lazy initialization of OpenAI client
-_client = None
-
-def get_client() -> AsyncOpenAI:
-    """
-    Get or create the OpenAI client instance with lazy initialization.
-    This allows proper error handling if the API key is missing or invalid.
-    """
-    global _client
-    if _client is None:
-        try:
-            _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-            logger.info("OpenAI client initialized successfully in RAG service")
-        except Exception as e:
-            logger.error(f"Failed to initialize OpenAI client in RAG service: {str(e)}")
-            raise EmbeddingError(
-                message="Failed to initialize OpenAI client",
-                details=str(e)
-            )
-    return _client
+from app.core.openai_client import get_openai_client as get_client
 
 async def ask_question(
     db: AsyncSession, 

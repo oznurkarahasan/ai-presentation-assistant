@@ -6,29 +6,32 @@ from fastapi import FastAPI, Request, status
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy import text  
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from sqlalchemy import text
 
 from app.core.config import settings
 from app.core.database import engine, Base
+from app.core.limiter import limiter
 from app.core.logger import logger
 from app.core.exceptions import (
     AppBaseException,
     FileProcessingError,
     PDFExtractionError,
     EmbeddingError,
-    DatabaseError,
     ResourceNotFoundError,
     ValidationError
 )
-from app.api.v1 import auth, presentations, chat, orchestration
-from app.api.v1.dashboard.planner import planner
+from app.api.v1 import auth, presentations, chat, orchestration, ideas, planner
 from app.services.planner_reminder_service import run_reminder_worker
+from app.services.file_cleanup import run_cleanup_worker
 
 # Lifespan event to create tables and extensions
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Application startup initiated")
     reminder_worker_task = None
+    cleanup_worker_task = None
     if not os.getenv("TESTING"):
         try:
             async with engine.begin() as conn:
@@ -37,6 +40,7 @@ async def lifespan(app: FastAPI):
                 await conn.run_sync(Base.metadata.create_all)
             logger.info("Database initialized successfully")
             reminder_worker_task = asyncio.create_task(run_reminder_worker())
+            cleanup_worker_task = asyncio.create_task(run_cleanup_worker())
         except Exception as e:
             logger.error(f"Database initialization failed: {str(e)}")
             logger.warning("Application starting without database initialization. Expect errors if DB is needed.")
@@ -44,10 +48,11 @@ async def lifespan(app: FastAPI):
         logger.info("Skipping database initialization in TESTING mode")
     yield
 
-    if reminder_worker_task is not None:
-        reminder_worker_task.cancel()
-        with suppress(asyncio.CancelledError):
-            await reminder_worker_task
+    for task in (reminder_worker_task, cleanup_worker_task):
+        if task is not None:
+            task.cancel()
+            with suppress(asyncio.CancelledError):
+                await task
 
     logger.info("Application shutdown")
 
@@ -56,6 +61,9 @@ app = FastAPI(
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     lifespan=lifespan
 )
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Global Exception Handlers
 @app.exception_handler(AppBaseException)
@@ -93,15 +101,6 @@ async def embedding_error_handler(request: Request, exc: EmbeddingError):
     return JSONResponse(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         content={"detail": "AI service temporarily unavailable. Please try again later."}
-    )
-
-@app.exception_handler(DatabaseError)
-async def database_error_handler(request: Request, exc: DatabaseError):
-    """Handle database errors"""
-    logger.critical(f"Database Error: {exc.message}", exc_info=True)
-    return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Database error occurred. Our team has been notified."}
     )
 
 @app.exception_handler(ResourceNotFoundError)
@@ -150,6 +149,7 @@ app.include_router(presentations.router, prefix=settings.API_V1_STR + "/presenta
 app.include_router(chat.router, prefix=settings.API_V1_STR + "/chat", tags=["Chat"])
 app.include_router(orchestration.router, prefix=settings.API_V1_STR + "/orchestration", tags=["Orchestration"])
 app.include_router(planner.router, prefix=settings.API_V1_STR + "/planner", tags=["Planner"])
+app.include_router(ideas.router, prefix=settings.API_V1_STR + "/ideas", tags=["Ideas"])
 
 
 @app.get("/")

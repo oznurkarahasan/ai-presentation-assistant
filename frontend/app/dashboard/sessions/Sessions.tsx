@@ -6,6 +6,7 @@ import { Eye, MoreVertical, Play, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { createPortal } from 'react-dom';
 import { RecentSession } from '../DashboardContext';
+import { useTranslations } from 'next-intl';
 
 interface SessionsProps {
     sessions: RecentSession[];
@@ -14,6 +15,7 @@ interface SessionsProps {
 }
 
 export default function Sessions({ sessions, searchQuery, onDeleteSession }: SessionsProps) {
+    const t = useTranslations('dashboard');
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
     const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
 
@@ -73,7 +75,7 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
         >
             <div className="mt-8 space-y-3">
                 <p className="px-1 text-xs font-semibold uppercase tracking-widest text-zinc-500">
-                    Found {filteredSessions.length} sessions
+                    {t('foundSessions', { count: filteredSessions.length })}
                 </p>
 
                 <div className="bg-[#0C0C0C] border border-white/5 rounded-[2rem] overflow-hidden">
@@ -82,11 +84,12 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                             <thead>
                                 <tr className="border-b border-white/5">
                                     <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Presentation</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Type</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Duration</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Date</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">Time</th>
-                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">Action</th>
+                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('sessionPresentation')}</th>
+                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('type')}</th>
+                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('duration')}</th>
+                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('date')}</th>
+                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest">{t('timeLabel')}</th>
+                                    <th className="px-8 py-6 text-xs font-bold text-zinc-500 uppercase tracking-widest text-right">{t('actionCol')}</th>
                                 </tr>
                             </thead>
 
@@ -104,7 +107,7 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                                                         : 'bg-emerald-500/10 text-emerald-500'
                                                 }`}
                                             >
-                                                {s.session_type === 'rehearsal' ? 'Rehearsal' : 'Live'}
+                                                {s.session_type === 'rehearsal' ? t('rehearsal') : t('live')}
                                             </span>
                                         </td>
                                         <td className="px-8 py-5 text-sm text-zinc-400">
@@ -145,8 +148,8 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                                                         setOpenMenuId(s.id);
                                                     }}
                                                     className="rounded-lg p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white"
-                                                    title="Session actions"
-                                                    aria-label="Session actions"
+                                                    title={t('sessionActions')}
+                                                    aria-label={t('sessionActions')}
                                                 >
                                                     <MoreVertical size={16} />
                                                 </button>
@@ -159,7 +162,7 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                     </div>
 
                     {filteredSessions.length === 0 && (
-                        <div className="py-20 text-center text-zinc-600 italic">No recorded sessions found.</div>
+                        <div className="py-20 text-center text-zinc-600 italic">{t('noSessions')}</div>
                     )}
 
                     {openMenuSession && menuPosition && typeof document !== 'undefined' &&
@@ -179,7 +182,7 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 transition-colors hover:bg-red-500/10 hover:text-red-400"
                                 >
                                     <Trash2 size={14} />
-                                    Delete
+                                    {t('delete')}
                                 </button>
 
                                 <Link
@@ -191,7 +194,7 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
                                 >
                                     <Play size={14} />
-                                    New session
+                                    {t('newSession')}
                                 </Link>
 
                                 <Link
@@ -203,7 +206,7 @@ export default function Sessions({ sessions, searchQuery, onDeleteSession }: Ses
                                     className="flex w-full items-center gap-2 px-3 py-2 text-sm text-zinc-200 transition-colors hover:bg-white/5 hover:text-white"
                                 >
                                     <Eye size={14} />
-                                    View
+                                    {t('view')}
                                 </Link>
                             </div>,
                             document.body

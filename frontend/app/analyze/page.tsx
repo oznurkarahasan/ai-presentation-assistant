@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
     Send,
     ArrowLeft,
@@ -17,12 +17,18 @@ import {
     FileText
 } from "lucide-react";
 import PresentationViewer from "../components/PresentationViewer";
+import AiSlidePreview from "../components/AiSlidePreview";
+import { usePresentationData } from "../hooks/usePresentationData";
+import { useRequireAuth } from "../hooks/useRequireAuth";
+import Spinner from "../components/Spinner";
 import { motion, AnimatePresence } from "framer-motion";
 
 import Link from "next/link";
 import Image from "next/image";
 import client from "../api/client";
 import { useCallback } from "react";
+import { useTranslations } from "next-intl";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 interface Message {
     id: string;
@@ -51,21 +57,17 @@ function MrBeeAvatar({ size = 24 }: { size?: number }) {
 }
 
 export default function AnalyzePage() {
-    const router = useRouter();
+    const t = useTranslations("analyze");
     const [messages, setMessages] = useState<Message[]>([
         {
             id: '1',
             role: 'assistant',
-            content: "Hi, I am Mr Bee. I will analyze your presentation and help you with key insights, concise summaries, and practical improvement tips.",
+            content: t("assistantGreeting"),
             timestamp: new Date()
         }
     ]);
     const [input, setInput] = useState("");
     const [isTyping, setIsTyping] = useState(false);
-    const [presentationTitle, setPresentationTitle] = useState("Loading Presentation...");
-    const [presentationFile, setPresentationFile] = useState<string | null>(null);
-    const [fileType, setFileType] = useState<string | null>(null);
-    const [orientation, setOrientation] = useState<'landscape' | 'portrait'>('landscape');
 
     const chatEndRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
@@ -74,52 +76,25 @@ export default function AnalyzePage() {
     const backHref = returnToParam && returnToParam.startsWith('/') ? returnToParam : '/dashboard';
 
     const [showChat, setShowChat] = useState(true);
-    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+    const { isChecking: isCheckingAuth } = useRequireAuth('/upload');
     const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
     const [isFullScreen, setIsFullScreen] = useState(false);
     const [chatTheme, setChatTheme] = useState<'dark' | 'light'>('dark');
     const [isPageLoading, setIsPageLoading] = useState(false);
-    const [aspectRatio, setAspectRatio] = useState<number | null>(null);
 
-
-    useEffect(() => {
-        const token = localStorage.getItem("access_token");
-        if (!token || token === 'undefined' || token === 'null' || token === '') {
-            router.push("/upload");
-            return;
-        }
-
-        setIsCheckingAuth(false);
-
-        // Fetch presentation details if ID is present
-        if (presentationId) {
-            const fetchPresentation = async () => {
-                try {
-                    const response = await client.get(`/api/v1/presentations/${presentationId}`);
-                    setPresentationTitle(response.data.title);
-                    // Use PDF preview for PPTX files when available
-                    setPresentationFile(response.data.pdf_preview_path || response.data.file_path);
-                    setFileType(response.data.pdf_preview_path ? 'pdf' : response.data.file_type);
-                    if (response.data.aspect_ratio) {
-                        setAspectRatio(response.data.aspect_ratio);
-                    }
-
-                    if (response.data.slide_count) {
-                        setTotalPages(response.data.slide_count);
-                    }
-                    if (response.data.orientation) {
-                        setOrientation(response.data.orientation);
-                    }
-
-                } catch (error) {
-                    console.error("Failed to fetch presentation:", error);
-                    setPresentationTitle("Error loading presentation");
-                }
-            };
-            fetchPresentation();
-        }
-    }, [router, presentationId]);
+    const { data: presentationData, error: presentationError } = usePresentationData(presentationId);
+    const {
+        file: presentationFile,
+        fileType,
+        orientation,
+        aspectRatio,
+        totalPages,
+        aiSlides,
+        aiColors,
+    } = presentationData;
+    const presentationTitle = presentationError
+        ? t("loadingError")
+        : presentationData.title ?? t("loadingPresentation");
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -157,7 +132,7 @@ export default function AnalyzePage() {
             const errorMessage: Message = {
                 id: Date.now().toString(),
                 role: 'assistant',
-                content: "I'm sorry, I encountered an error while generating a response. Please try again.",
+                content: t("chatError"),
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, errorMessage]);
@@ -209,6 +184,14 @@ export default function AnalyzePage() {
         setIsFullScreen(!isFullScreen);
     };
 
+    const handlePrevAiSlide = () => {
+        if (currentPage > 1) setCurrentPage(prev => prev - 1);
+    };
+
+    const handleNextAiSlide = () => {
+        if (currentPage < totalPages) setCurrentPage(prev => prev + 1);
+    };
+
     const handlePageJump = useCallback((page: number) => {
         if (page >= 1 && page <= totalPages && !isPageLoading) {
             setIsPageLoading(true);
@@ -253,7 +236,7 @@ export default function AnalyzePage() {
         return (
             <div className="flex h-screen items-center justify-center bg-black relative">
                 <div className="bg-grid" />
-                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin relative z-10" />
+                <Spinner size={32} className="relative z-10" />
             </div>
         );
     }
@@ -286,18 +269,19 @@ export default function AnalyzePage() {
                                 </div>
                                 <div>
                                     <h2 className="text-sm font-bold tracking-tight uppercase italic truncate max-w-[200px] md:max-w-xs">{presentationTitle}</h2>
-                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-none mt-0.5">Presentation Analysis Mode</p>
+                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-none mt-0.5">{t("analysisMode")}</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-2">
+                            <LanguageSwitcher />
                             <Link
                                 href={`/presentation/${presentationId}`}
                                 className="px-4 py-2 bg-primary/10 hover:bg-primary/20 border border-primary/20 rounded-lg transition-all text-primary text-xs font-bold uppercase tracking-wider flex items-center gap-2 hidden md:flex"
                             >
                                 <Presentation size={16} />
-                                Real-Time Mode
+                                {t("realtimeMode")}
                             </Link>
 
                             <button
@@ -318,24 +302,36 @@ export default function AnalyzePage() {
 
                     {/* PDF / Slides View Area */}
                     <div className="flex-1 overflow-hidden relative px-0 md:px-4 pt-4 pb-8 md:pt-6 md:pb-10 bg-[#050505]">
-                        <PresentationViewer
-                            fileUrl={presentationFile}
-                            fileType={fileType}
-                            title={presentationTitle}
-                            currentPage={currentPage}
-                            totalPages={totalPages}
-                            isLoading={isPageLoading}
-                            onPageChange={(page) => {
-                                setIsPageLoading(true);
-                                setTimeout(() => {
-                                    setCurrentPage(page);
-                                }, 200);
-                            }}
-                            isFullScreen={isFullScreen}
-                            initialOrientation={orientation}
-                            aspectRatio={aspectRatio}
-                        />
-
+                        {fileType === 'ai' && aiSlides.length > 0 ? (
+                            <AiSlidePreview
+                                slide={aiSlides[currentPage - 1]}
+                                primaryColor={aiColors.primary}
+                                accentColor={aiColors.accent}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPrev={handlePrevAiSlide}
+                                onNext={handleNextAiSlide}
+                                isLoading={isPageLoading}
+                            />
+                        ) : (
+                            <PresentationViewer
+                                fileUrl={presentationFile}
+                                fileType={fileType}
+                                title={presentationTitle}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                isLoading={isPageLoading}
+                                onPageChange={(page) => {
+                                    setIsPageLoading(true);
+                                    setTimeout(() => {
+                                        setCurrentPage(page);
+                                    }, 200);
+                                }}
+                                isFullScreen={isFullScreen}
+                                initialOrientation={orientation}
+                                aspectRatio={aspectRatio}
+                            />
+                        )}
                     </div>
 
                 </div>
@@ -359,9 +355,9 @@ export default function AnalyzePage() {
                                         <MrBeeAvatar size={24} />
                                     </div>
                                     <div>
-                                        <h2 className={`text-sm font-black italic uppercase tracking-wider ${chatTheme === 'light' ? 'text-zinc-900' : ''}`}>Mr Bee will help you</h2>
+                                        <h2 className={`text-sm font-black italic uppercase tracking-wider ${chatTheme === 'light' ? 'text-zinc-900' : ''}`}>{t("assistantHeader")}</h2>
                                         <div className="flex items-center gap-1.5 mt-0.5">
-                                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Mr Bee is hardworking like a bee</span>
+                                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{t("assistantSubheader")}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -409,7 +405,7 @@ export default function AnalyzePage() {
                                                     {message.role === 'assistant' ? renderMessageContent(message.content) : message.content}
                                                 </div>
                                                 <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-1">
-                                                    {message.role === 'assistant' ? 'Mr Bee' : 'You'} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    {message.role === 'assistant' ? t("assistantLabel") : t("userLabel")} • {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </span>
                                             </div>
                                         </motion.div>
@@ -440,7 +436,7 @@ export default function AnalyzePage() {
                                         type="text"
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
-                                        placeholder="Ask PreCue.ai anything about your deck..."
+                                        placeholder={t("askPlaceholder")}
                                         className={`w-full border rounded-2xl py-4 pl-6 pr-14 text-sm transition-all relative z-10 
                                             ${chatTheme === 'dark'
                                                 ? 'bg-white/5 border-white/10 text-zinc-100 focus:border-primary/50 focus:bg-white/[0.08] placeholder:text-zinc-600'
@@ -455,7 +451,7 @@ export default function AnalyzePage() {
                                     </button>
                                 </form>
                                 <p className="text-[9px] text-zinc-600 text-center mt-4 font-bold uppercase tracking-[0.2em]">
-                                    PreCue.ai can make errors. Verify important information.
+                                    {t("disclaimer")}
                                 </p>
                             </div>
                         </motion.aside>

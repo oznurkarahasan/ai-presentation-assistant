@@ -20,9 +20,11 @@ tiktoken
 loguru
 pytest
 pytest-asyncio
+pytest-timeout
 httpx
 aiosqlite
 flake8
 bandit
 safety
 aiosmtplib
+slowapi>=0.1.9

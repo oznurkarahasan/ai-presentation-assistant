@@ -5,27 +5,30 @@ import { useState } from "react";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 export default function Navbar() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const t = useTranslations("navbar");
 
     const navLinks = [
-        { name: "Home", href: "/", hasDot: true },
-        { name: "Features", href: "/#features" },
-        { name: "Pricing", href: "/pricing" },
-        { name: "Customers", href: "/#customers" },
+        { name: t("home"), href: "/", hasDot: true },
+        { name: t("features"), href: "/#features" },
+        { name: t("pricing"), href: "/pricing" },
+        { name: t("customers"), href: "/#customers" },
     ];
 
     const secondaryLinks = [
-        { name: "Careers", href: "/#careers", hasArrow: true },
-        { name: "Blog", href: "/blog", hasArrow: true },
-        { name: "Contact", href: "/contact", hasArrow: true },
-        { name: "Docs", href: "/#docs", hasArrow: true },
+        { name: t("careers"), href: "/#careers", hasArrow: true },
+        { name: t("blog"), href: "/blog", hasArrow: true },
+        { name: t("contact"), href: "/contact", hasArrow: true },
+        { name: t("docs"), href: "/#docs", hasArrow: true },
     ];
 
     return (
         <div className="fixed top-0 left-0 right-0 z-50 px-6 py-8 pointer-events-none">
-            <nav className="max-w-[1600px] mx-auto bg-[#0a0a0c]/60 backdrop-blur-xl border border-white/10 rounded-[24px] pointer-events-auto shadow-2xl overflow-hidden">
+            <nav className="max-w-[1600px] mx-auto bg-[#0a0a0c]/60 backdrop-blur-xl border border-white/10 rounded-[24px] pointer-events-auto shadow-2xl">
                 <div className="px-6 lg:px-12">
                     <div className="flex justify-between items-center h-[64px]">
                         {/* Left Section: Logo & Main Links */}
@@ -77,19 +80,20 @@ export default function Navbar() {
                                 ))}
                             </div>
 
-                            <div className="flex items-center gap-5 lg:gap-10 border-l border-white/5 pl-5 lg:pl-10 ml-0 lg:ml-2">
+                            <div className="flex items-center gap-3 lg:gap-6 border-l border-white/5 pl-5 lg:pl-10 ml-0 lg:ml-2">
+                                <LanguageSwitcher />
                                 <Link
                                     href="/login"
                                     className="hidden md:flex items-center gap-0.5 text-[13px] font-medium text-secondary-text hover:text-white transition-all duration-200 group"
                                 >
-                                    Login
+                                    {t("login")}
                                     <ArrowUpRight size={13} className="opacity-40 group-hover:opacity-100 transition-all" />
                                 </Link>
                                 <Link
                                     href="/register"
                                     className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-[14px] text-[13px] font-bold transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(249,115,22,0.1)]"
                                 >
-                                    Get started
+                                    {t("getStarted")}
                                 </Link>
 
                                 <button
@@ -105,10 +109,10 @@ export default function Navbar() {
 
                 {/* Mobile Menu */}
                 {mobileMenuOpen && (
-                    <div className="lg:hidden bg-[#0a0a0c]/95 border-t border-white/5 overflow-hidden p-6 space-y-6 animate-in slide-in-from-top duration-300">
+                    <div className="lg:hidden bg-[#0a0a0c]/95 border-t border-white/5 rounded-b-[24px] overflow-hidden p-6 space-y-6 animate-in slide-in-from-top duration-300">
                         <div className="grid grid-cols-2 gap-8">
                             <div className="space-y-4">
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Product</p>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{t("product")}</p>
                                 <div className="flex flex-col gap-3">
                                     {navLinks.map((link) => (
                                         <Link
@@ -123,7 +127,7 @@ export default function Navbar() {
                                 </div>
                             </div>
                             <div className="space-y-4 border-l border-white/5 pl-8">
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Company</p>
+                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">{t("company")}</p>
                                 <div className="flex flex-col gap-3">
                                     {secondaryLinks.map((link) => (
                                         <Link
@@ -144,15 +148,18 @@ export default function Navbar() {
                                 className="block w-full py-3 text-center text-zinc-400 hover:text-white font-medium border border-white/5 rounded-xl transition-all"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                Login
+                                {t("login")}
                             </Link>
                             <Link
                                 href="/register"
                                 className="block w-full bg-[#d2e2f0] text-zinc-950 py-3 rounded-xl text-center font-bold transition-all shadow-lg"
                                 onClick={() => setMobileMenuOpen(false)}
                             >
-                                Get Started
+                                {t("getStarted")}
                             </Link>
+                            <div className="flex justify-center pt-2">
+                                <LanguageSwitcher />
+                            </div>
                         </div>
                     </div>
                 )}

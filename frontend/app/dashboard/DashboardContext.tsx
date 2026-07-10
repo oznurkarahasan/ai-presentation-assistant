@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import client from "../api/client";
+import { useRequireAuth } from "../hooks/useRequireAuth";
 
 export interface UserProfile {
     id: number;
@@ -28,6 +29,13 @@ export interface RecentPresentation {
     slide_count: number;
     status: string;
     created_at: string;
+    is_ai_generated?: boolean;
+}
+
+export interface SavedTopicIdea {
+    title: string;
+    description: string;
+    angle: string;
 }
 
 export interface RecentSession {
@@ -65,6 +73,10 @@ interface DashboardContextType {
     setRecentPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
     setRecentSessions: React.Dispatch<React.SetStateAction<RecentSession[]>>;
     setPresentations: React.Dispatch<React.SetStateAction<RecentPresentation[]>>;
+    favoriteTopicIdeas: SavedTopicIdea[];
+    setFavoriteTopicIdeas: React.Dispatch<React.SetStateAction<SavedTopicIdea[]>>;
+    pendingTopicIdea: SavedTopicIdea | null;
+    setPendingTopicIdea: React.Dispatch<React.SetStateAction<SavedTopicIdea | null>>;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -81,6 +93,15 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [alert, setAlert] = useState<{ type: 'info' | 'error', message: string } | null>(null);
+    const [favoriteTopicIdeas, setFavoriteTopicIdeas] = useState<SavedTopicIdea[]>(() => {
+        try {
+            const stored = localStorage.getItem('precue_favorite_ideas');
+            return stored ? JSON.parse(stored) : [];
+        } catch {
+            return [];
+        }
+    });
+    const [pendingTopicIdea, setPendingTopicIdea] = useState<SavedTopicIdea | null>(null);
 
     const activeTab = searchParams.get('tab') || 'overview';
 
@@ -90,13 +111,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
         router.push(`/dashboard?${params.toString()}`);
     }, [router, searchParams]);
 
-    const fetchDashboardData = useCallback(async () => {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-            router.push("/login");
-            return;
-        }
+    const { isChecking: isCheckingAuth } = useRequireAuth('/login');
 
+    const fetchDashboardData = useCallback(async () => {
         try {
             const [userRes, allRes, sessionsRes] = await Promise.all([
                 client.get("/api/v1/auth/me"),
@@ -135,11 +152,18 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }, [router]);
 
     useEffect(() => {
+        if (isCheckingAuth) return;
         fetchDashboardData();
-    }, [fetchDashboardData]);
+    }, [isCheckingAuth, fetchDashboardData]);
+
+    useEffect(() => {
+        localStorage.setItem('precue_favorite_ideas', JSON.stringify(favoriteTopicIdeas));
+    }, [favoriteTopicIdeas]);
 
     const handleLogout = () => {
         localStorage.removeItem("access_token");
+        sessionStorage.removeItem("precue_trending_ideas_en");
+        sessionStorage.removeItem("precue_trending_ideas_tr");
         router.push("/login");
     };
 
@@ -148,7 +172,9 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
             user, stats, recentPresentations, recentSessions, presentations,
             loading, activeTab, setActiveTab, sidebarOpen, setSidebarOpen,
             searchQuery, setSearchQuery, handleLogout, refreshData: fetchDashboardData,
-            alert, setAlert, setStats, setRecentPresentations, setRecentSessions, setPresentations
+            alert, setAlert, setStats, setRecentPresentations, setRecentSessions, setPresentations,
+            favoriteTopicIdeas, setFavoriteTopicIdeas,
+            pendingTopicIdea, setPendingTopicIdea
         }}>
             {children}
         </DashboardContext.Provider>

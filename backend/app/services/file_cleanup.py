@@ -1,13 +1,17 @@
 """
 File cleanup service for managing old uploaded files.
 """
-from pathlib import Path
+import asyncio
 from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
+from app.core.database import AsyncSessionLocal
 from app.models.presentation import Presentation, PresentationStatus
 from app.core.logger import logger
 import os
+
+CLEANUP_INTERVAL_SECONDS = 24 * 60 * 60  # once a day
+FAILED_UPLOAD_RETENTION_DAYS = 7
 
 async def cleanup_old_files(
     db: AsyncSession,
@@ -106,34 +110,17 @@ async def cleanup_old_files(
     
     return stats
 
-async def cleanup_orphaned_files(upload_dir: str = "uploaded_files") -> dict:
-    """
-    Removes files from disk that don't have corresponding database records.
-    
-    Args:
-        upload_dir: Directory containing uploaded files
-        
-    Returns:
-        dict: Statistics about cleanup
-    """
-    stats = {
-        "checked": 0,
-        "orphaned": 0,
-        "deleted": 0,
-        "freed_bytes": 0
-    }
-    
-    upload_path = Path(upload_dir)
-    if not upload_path.exists():
-        logger.warning(f"Upload directory does not exist: {upload_dir}")
-        return stats
-    
-    # Get all files in upload directory
-    all_files = list(upload_path.glob("**/*.*"))
-    stats["checked"] = len(all_files)
-    
-    # This function should be called with database session
-    # For now, just log orphaned files
-    logger.info(f"Found {len(all_files)} files in {upload_dir}")
-    
-    return stats
+async def run_cleanup_worker() -> None:
+    """Background worker that periodically removes failed/expired uploads."""
+    logger.info("File cleanup worker started")
+    try:
+        while True:
+            try:
+                async with AsyncSessionLocal() as db:
+                    await cleanup_old_files(db, failed_days=FAILED_UPLOAD_RETENTION_DAYS)
+            except Exception as exc:
+                logger.error(f"File cleanup worker cycle failed: {exc}", exc_info=True)
+            await asyncio.sleep(CLEANUP_INTERVAL_SECONDS)
+    except asyncio.CancelledError:
+        logger.info("File cleanup worker stopped")
+        raise

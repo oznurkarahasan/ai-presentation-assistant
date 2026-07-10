@@ -4,13 +4,17 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle, Send } from "lucide-react";
+import { useTranslations } from "next-intl";
 import client from "../../api/client";
+import { ButtonSpinner } from "../../components/Spinner";
+import { getErrorMessage } from "../../lib/getErrorMessage";
 
 export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const t = useTranslations("forgotPassword");
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,12 +26,7 @@ export default function ForgotPasswordPage() {
             setSuccess(true);
         } catch (err: unknown) {
             console.error("Forgot Password Error:", err);
-            let message = "Failed to send reset email. Please try again.";
-            if (err && typeof err === 'object' && 'response' in err) {
-                const axiosError = err as { response: { data: { detail?: string } } };
-                message = axiosError.response?.data?.detail || message;
-            }
-            setError(message);
+            setError(getErrorMessage(err, t("failedToSend")));
         } finally {
             setLoading(false);
         }
@@ -45,19 +44,17 @@ export default function ForgotPasswordPage() {
                     <div className="w-16 h-16 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
                         <CheckCircle2 className="w-8 h-8 text-green-400" />
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-3">Check Your Email</h2>
+                    <h2 className="text-2xl font-bold text-white mb-3">{t("checkEmailTitle")}</h2>
                     <p className="text-zinc-400 mb-6">
-                        We&apos;ve sent a password reset link to <span className="text-white font-medium">{email}</span>
+                        {t("checkEmailDesc")} <span className="text-white font-medium">{email}</span>
                     </p>
-                    <p className="text-sm text-zinc-500 mb-8">
-                        Didn&apos;t receive the email? Check your spam folder or try again.
-                    </p>
+                    <p className="text-sm text-zinc-500 mb-8">{t("spamNote")}</p>
                     <Link
                         href="/login"
                         className="inline-flex items-center gap-2 text-primary hover:text-primary-hover transition-colors font-medium"
                     >
                         <ArrowLeft size={18} />
-                        Back to Sign In
+                        {t("backToSignIn")}
                     </Link>
                 </div>
             </motion.div>
@@ -88,7 +85,7 @@ export default function ForgotPasswordPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                 >
-                    Forgot Password?
+                    {t("title")}
                 </motion.h1>
                 <motion.p
                     className="text-zinc-400 text-sm"
@@ -96,7 +93,7 @@ export default function ForgotPasswordPage() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
                 >
-                    No worries, we&apos;ll send you reset instructions
+                    {t("subtitle")}
                 </motion.p>
             </div>
 
@@ -117,7 +114,7 @@ export default function ForgotPasswordPage() {
             <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800 p-8 rounded-2xl shadow-2xl">
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium text-zinc-300 ml-1">Email Address</label>
+                        <label className="text-sm font-medium text-zinc-300 ml-1">{t("emailAddress")}</label>
                         <div className="relative group">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-primary transition-colors" />
                             <input
@@ -132,9 +129,7 @@ export default function ForgotPasswordPage() {
                                 placeholder="name@example.com"
                             />
                         </div>
-                        <p className="text-xs text-zinc-500 ml-1 mt-2">
-                            Enter the email address associated with your account
-                        </p>
+                        <p className="text-xs text-zinc-500 ml-1 mt-2">{t("emailHint")}</p>
                     </div>
 
                     <button
@@ -144,13 +139,13 @@ export default function ForgotPasswordPage() {
                     >
                         {loading ? (
                             <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Sending...
+                                <ButtonSpinner />
+                                {t("sending")}
                             </div>
                         ) : (
                             <>
                                 <Send className="w-4 h-4" />
-                                Send Reset Link
+                                {t("sendResetLink")}
                             </>
                         )}
                     </button>
@@ -162,15 +157,15 @@ export default function ForgotPasswordPage() {
                         className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors"
                     >
                         <ArrowLeft size={16} />
-                        Back to Sign In
+                        {t("backToSignIn")}
                     </Link>
                 </div>
             </div>
 
             <p className="text-center text-xs text-zinc-500 px-8">
-                Remember your password?{" "}
+                {t("rememberPassword")}{" "}
                 <Link href="/login" className="text-primary hover:text-primary-hover transition-colors">
-                    Sign in here
+                    {t("signInHere")}
                 </Link>
             </p>
         </motion.div>

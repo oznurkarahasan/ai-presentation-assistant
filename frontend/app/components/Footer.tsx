@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Github, Twitter, Linkedin, Mail } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 export default function Footer() {
+    const t = useTranslations("footer");
+
     return (
         <footer className="border-t border-zinc-800 bg-black/50 backdrop-blur-xl mt-auto">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -24,7 +29,7 @@ export default function Footer() {
                             </span>
                         </div>
                         <p className="text-zinc-400 text-sm">
-                            Master your presentations with AI-powered voice control and analytics.
+                            {t("description")}
                         </p>
                         <div className="flex gap-3">
                             <a
@@ -55,63 +60,63 @@ export default function Footer() {
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-white mb-4">Product</h3>
+                        <h3 className="font-semibold text-white mb-4">{t("product")}</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/#features" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Features
+                                    {t("features")}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/pricing" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Pricing
+                                    {t("pricing")}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/dashboard" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Demo
+                                    {t("demo")}
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-white mb-4">Company</h3>
+                        <h3 className="font-semibold text-white mb-4">{t("company")}</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/#customers" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Customers
+                                    {t("customers")}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/blog" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Blog
+                                    {t("blog")}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/contact" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Contact
+                                    {t("contact")}
                                 </Link>
                             </li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className="font-semibold text-white mb-4">Legal</h3>
+                        <h3 className="font-semibold text-white mb-4">{t("legal")}</h3>
                         <ul className="space-y-3">
                             <li>
                                 <Link href="/legal/privacy" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Privacy Policy
+                                    {t("privacyPolicy")}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/legal/terms" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Terms of Service
+                                    {t("termsOfService")}
                                 </Link>
                             </li>
                             <li>
                                 <Link href="/legal/cookies" className="text-zinc-400 hover:text-white transition-colors text-sm">
-                                    Cookie Policy
+                                    {t("cookiePolicy")}
                                 </Link>
                             </li>
                         </ul>
@@ -120,7 +125,7 @@ export default function Footer() {
 
                 <div className="pt-8 border-t border-zinc-800 flex flex-col md:flex-row justify-between items-center gap-4">
                     <p className="text-zinc-500 text-sm">
-                        © {new Date().getFullYear()} PreCue.ai. All rights reserved.
+                        {t("copyright", { year: new Date().getFullYear() })}
                     </p>
                     <div className="flex items-center gap-2 text-zinc-500 text-sm">
                         <Mail size={16} />

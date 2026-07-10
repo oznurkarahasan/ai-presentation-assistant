@@ -4,17 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.api.v1 import auth
-from app.core.database import AsyncSessionLocal
+from app.core.database import get_db
 from app.core.logger import logger
 from app.services import rag_service
 from app.models.presentation import Presentation
 from app.schemas.chat import ChatRequest, ChatResponse
 
 router = APIRouter()
-
-async def get_db():
-    async with AsyncSessionLocal() as session:
-        yield session
 
 @router.post("/{presentation_id}", response_model=ChatResponse)
 async def ask_presentation(

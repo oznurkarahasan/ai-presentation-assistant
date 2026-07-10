@@ -9,6 +9,8 @@ import {
     Plus,
     Minus
 } from "lucide-react";
+import { useTranslations } from "next-intl";
+import Spinner from "./Spinner";
 
 interface PresentationViewerProps {
     fileUrl: string | null;
@@ -42,6 +44,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
     initialOrientation = 'landscape',
     aspectRatio = null
 }, ref) => {
+    const t = useTranslations("viewer");
     const [orientation, setOrientation] = useState<'landscape' | 'portrait'>(initialOrientation);
     const [zoom, setZoom] = useState<number | null>(null); // null means "Fit"
     const [pageInputValue, setPageInputValue] = useState(currentPage.toString());
@@ -147,9 +150,9 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                                 <button
                                     onClick={resetZoom}
                                     className="text-[10px] font-mono font-bold text-zinc-300 w-12 text-center hover:bg-white/5 rounded py-0.5 transition-colors"
-                                    title="Reset to Fit"
+                                    title={t("resetToFit")}
                                 >
-                                    {zoom ? `${zoom}%` : 'FIT'}
+                                    {zoom ? `${zoom}%` : t("fit")}
                                 </button>
                                 <button onClick={handleZoomIn} className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400">
                                     <Plus size={14} />
@@ -162,7 +165,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                                     onClick={handlePrevPage}
                                     disabled={currentPage <= 1 || isLoading}
                                     className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
-                                    title="Previous Slide"
+                                    title={t("prevSlide")}
                                 >
                                     <ChevronRight className="rotate-180" size={14} />
                                 </button>
@@ -181,7 +184,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                                     onClick={handleNextPage}
                                     disabled={currentPage >= totalPages || isLoading}
                                     className="p-1 hover:bg-white/10 rounded-md transition-colors text-zinc-400 disabled:opacity-20"
-                                    title="Next Slide"
+                                    title={t("nextSlide")}
                                 >
                                     <ChevronRight size={14} />
                                 </button>
@@ -207,7 +210,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                                     key={`${currentPage}-${displayAsLandscape ? 'landscape' : 'portrait'}`}
                                     src={getIframeSrc()}
                                     className="border-none pointer-events-none absolute"
-                                    title="Presentation Preview"
+                                    title={t("presentationPreview")}
                                     style={{
                                         top: '-56px',
                                         left: 0,
@@ -228,7 +231,7 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                                     exit={{ opacity: 0 }}
                                     className="absolute inset-0 bg-[#050505] flex items-center justify-center z-40"
                                 >
-                                    <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                    <Spinner size={40} />
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -238,14 +241,14 @@ const PresentationViewer = forwardRef<PresentationViewerRef, PresentationViewerP
                         <div className="p-12 h-full flex flex-col text-black font-sans">
                             <div className="flex justify-between items-start mb-12">
                                 <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold">P</div>
-                                <div className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">PowerPoint Preview</div>
+                                <div className="text-[10px] font-bold text-zinc-400 tracking-widest uppercase">{t("pptxPreview")}</div>
                             </div>
                             <h3 className="text-5xl font-black italic uppercase tracking-tighter leading-none mb-6">{title}</h3>
                             <div className="h-1 w-24 bg-primary mb-8" />
                             <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-zinc-100 rounded-2xl bg-zinc-50/50">
                                 <Presentation size={64} className="text-zinc-200 mb-4" />
                                 <p className="text-zinc-400 font-bold uppercase tracking-widest text-xs text-center px-8">
-                                    PPTX Viewer is coming soon. Use &quot;Real-Time&quot; mode for live presentation controls.
+                                    {t("pptxComingSoon")}
                                 </p>
                             </div>
                         </div>
