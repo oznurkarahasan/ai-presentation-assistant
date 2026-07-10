@@ -25,7 +25,7 @@ from app.services import pptx_service
     ("127.0.0.1", False),       # loopback
     ("169.254.169.254", False),  # link-local — cloud metadata endpoint
     ("224.0.0.1", False),       # multicast
-    ("0.0.0.0", False),         # unspecified
+    ("0.0.0.0", False),         # unspecified address, not a server bind call  # nosec B104
     ("::1", False),             # IPv6 loopback
     ("fe80::1", False),         # IPv6 link-local
 ])
