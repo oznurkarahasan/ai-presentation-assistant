@@ -84,7 +84,7 @@ export default function PresentationEditor() {
         handleAddSlide,
         handleDeleteSlide,
         handleReorderSlides,
-    } = useSlideMutations(slides, setSlides, metadata, scheduleAutoSave, selectedSlideId, setSelectedSlideId, showToast, t);
+    } = useSlideMutations(setSlides, metadata, scheduleAutoSave, selectedSlideId, setSelectedSlideId, showToast, t);
 
     const handleUpdateMetadataWithSave = (newMeta: PresentationMetadata) => {
         setMetadata(newMeta);
